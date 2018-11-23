@@ -7,6 +7,8 @@ from keras.optimizers import Adam
 from .unet import create_convolution_block, concatenate
 from ..metrics import weighted_dice_coefficient_loss
 
+from keras.utils import multi_gpu_model
+
 
 create_convolution_block = partial(create_convolution_block, activation=LeakyReLU, instance_normalization=True)
 
@@ -78,6 +80,10 @@ def isensee2017_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5
 
     model = Model(inputs=inputs, outputs=activation_block)
     model.compile(optimizer=optimizer(lr=initial_learning_rate), loss=loss_function)
+    try:
+        model = multi_gpu_model(model)
+    except:
+        pass
     return model
 
 

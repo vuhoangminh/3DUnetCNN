@@ -129,15 +129,6 @@ def convert_brats_folder(in_folder, out_folder, truth_name='seg', no_bias_correc
         out_file = os.path.abspath(os.path.join(out_folder, name + ".nii.gz"))
         perform_bias_correction = no_bias_correction_modalities and name not in no_bias_correction_modalities
         normalize_image(image_file, out_file, bias_correction=perform_bias_correction)
-    # copy the truth file
-    try:
-        truth_file = get_image(in_folder, truth_name)
-    except RuntimeError:
-        truth_file = get_image(in_folder, truth_name.split("_")[0])
-
-    out_file = os.path.abspath(os.path.join(out_folder, "truth.nii.gz"))
-    shutil.copy(truth_file, out_file)
-    check_origin(out_file, get_image(in_folder, config["all_modalities"][0]))
 
 
 def convert_brats_data(brats_folder, out_folder, overwrite=False, no_bias_correction_modalities=("flair",)):
@@ -165,5 +156,5 @@ def convert_brats_data(brats_folder, out_folder, overwrite=False, no_bias_correc
 
 
 if __name__ == "__main__":
-    convert_brats_data("data\\original", "data\\preprocessed")
+    convert_brats_data("data2\\original", "data2\\preprocessed")
     print()

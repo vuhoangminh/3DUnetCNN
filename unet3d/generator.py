@@ -10,7 +10,7 @@ from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch
 from .augment import augment_data, random_permutation_x_y
 
 
-def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
+def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file, n_steps_file,
                                            data_split=0.8, overwrite=False, labels=None, augment=False,
                                            augment_flip=True, augment_distortion_factor=0.25, patch_shape=None,
                                            validation_patch_overlap=0, training_patch_start_offset=None,
@@ -56,6 +56,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                                           training_file=training_keys_file,
                                                           validation_file=validation_keys_file)
 
+    print(">> training data generator")
     training_generator = data_generator(data_file, training_list,
                                         batch_size=batch_size,
                                         n_labels=n_labels,
@@ -68,6 +69,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                         patch_start_offset=training_patch_start_offset,
                                         skip_blank=skip_blank,
                                         permute=permute)
+    print(">> valid data generator")                                        
     validation_generator = data_generator(data_file, validation_list,
                                           batch_size=validation_batch_size,
                                           n_labels=n_labels,
@@ -77,16 +79,19 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                           skip_blank=skip_blank)
 
     # Set the number of training and testing samples per epoch correctly
-    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-                                                                   skip_blank=skip_blank,
-                                                                   patch_start_offset=training_patch_start_offset,
-                                                                   patch_overlap=0), batch_size)
-    print("Number of training steps: ", num_training_steps)
-
-    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                     skip_blank=skip_blank,
-                                                                     patch_overlap=validation_patch_overlap),
-                                               validation_batch_size)
+    if overwrite or not os.path.exists(n_steps_file):
+        print(">> compute number of training and validation steps")
+        num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+                                                                    skip_blank=skip_blank,
+                                                                    patch_start_offset=training_patch_start_offset,
+                                                                    patch_overlap=0), batch_size)
+        num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+                                                                    skip_blank=skip_blank,
+                                                                    patch_overlap=validation_patch_overlap),
+                                                                    validation_batch_size)
+    else:
+        num_training_steps, num_validation_steps = pickle_load(n_steps_file)
+    print("Number of training steps: ", num_training_steps)                                               
     print("Number of validation steps: ", num_validation_steps)
 
     return training_generator, validation_generator, num_training_steps, num_validation_steps

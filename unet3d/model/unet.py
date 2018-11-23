@@ -5,6 +5,7 @@ from keras.layers import Conv3D, MaxPooling3D, UpSampling3D, Activation, BatchNo
 from keras.optimizers import Adam
 
 from unet3d.metrics import dice_coefficient_loss, get_label_dice_coefficient_function, dice_coefficient
+from keras.utils import multi_gpu_model
 
 K.set_image_data_format("channels_first")
 
@@ -79,6 +80,10 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
             metrics = label_wise_dice_metrics
 
     model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coefficient_loss, metrics=metrics)
+    try:
+        model = multi_gpu_model(model)
+    except:
+        pass
     return model
 
 
