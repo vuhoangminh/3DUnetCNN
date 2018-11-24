@@ -1,20 +1,15 @@
 import os
 import glob
 
-# import sys
-# sys.path.append("C://Users//minhm//Documents//GitHub//3DUnetCNN")
-# os.chdir("C://Users//minhm//Documents//GitHub//3DUnetCNN//brats")
-
 from unet3d.data import write_data_to_file, open_data_file
 from unet3d.generator import get_training_and_validation_generators
 from unet3d.model import isensee2017_model
 from unet3d.training import load_old_model, train_model
 
+
 config = dict()
-# config["image_shape"] = (128, 128, 128)  # This determines what shape the images will be cropped/resampled to.
-config["image_shape"] = (240, 240, 155)  # This determines what shape the images will be cropped/resampled to.
-config["patch_shape"] = (128, 128, 128)  # switch to None to train on the whole image
-# config["patch_shape"] = None  # switch to None to train on the whole image
+config["image_shape"] = (128, 128, 128)  # This determines what shape the images will be cropped/resampled to.
+config["patch_shape"] = None  # switch to None to train on the whole image
 config["labels"] = (1, 2, 4)  # the label numbers on the input image
 config["n_base_filters"] = 16
 config["n_labels"] = len(config["labels"])
@@ -28,8 +23,8 @@ else:
 config["truth_channel"] = config["nb_channels"]
 config["deconvolution"] = True  # if False, will use upsampling instead of deconvolution
 
-config["batch_size"] = 2
-config["validation_batch_size"] = 4
+config["batch_size"] = 1
+config["validation_batch_size"] = 2
 config["n_epochs"] = 500  # cutoff the training after this many epochs
 config["patience"] = 10  # learning rate will be reduced after this many epochs if the validation loss is not improving
 config["early_stop"] = 50  # training will be stopped after this many epochs without the validation loss improving
@@ -48,7 +43,6 @@ config["data_file"] = os.path.abspath("brats_data_isensee.h5")
 config["model_file"] = os.path.abspath("isensee_2017_model.h5")
 config["training_file"] = os.path.abspath("isensee_training_ids.pkl")
 config["validation_file"] = os.path.abspath("isensee_validation_ids.pkl")
-config["n_steps_file"] = os.path.abspath("isensee_n_step.pkl")
 config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
 
 
@@ -68,15 +62,7 @@ def fetch_training_data_files(return_subject_ids=False):
 
 
 def main(overwrite=False):
-    print("-"*60)
-    print(" configs:")
-    print("-"*60)
-    print(config)
     # convert input images into an hdf5 file
-    print("-"*60)
-    print("# convert input images into an hdf5 file")
-    print("-"*60)
-    print(os.getcwd())    
     if overwrite or not os.path.exists(config["data_file"]):
         training_files, subject_ids = fetch_training_data_files(return_subject_ids=True)
 
@@ -84,24 +70,13 @@ def main(overwrite=False):
                            subject_ids=subject_ids)
     data_file_opened = open_data_file(config["data_file"])
 
-    print("-"*60)
-    print("# Load or init model")
-    print("-"*60)
     if not overwrite and os.path.exists(config["model_file"]):
-        print("load old model")
         model = load_old_model(config["model_file"])
     else:
         # instantiate new model
-        print("init model model")
         model = isensee2017_model(input_shape=config["input_shape"], n_labels=config["n_labels"],
                                   initial_learning_rate=config["initial_learning_rate"],
                                   n_base_filters=config["n_base_filters"])
-
-    model.summary()
-    # get training and testing generators
-    print("-"*60)
-    print("# get training and testing generators")
-    print("-"*60)
 
     # get training and testing generators
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators(
@@ -111,7 +86,6 @@ def main(overwrite=False):
         overwrite=overwrite,
         validation_keys_file=config["validation_file"],
         training_keys_file=config["training_file"],
-        n_steps_file=config["n_steps_file"],
         n_labels=config["n_labels"],
         labels=config["labels"],
         patch_shape=config["patch_shape"],
@@ -124,9 +98,6 @@ def main(overwrite=False):
         augment_flip=config["flip"],
         augment_distortion_factor=config["distort"])
 
-    print("-"*60)
-    print("# start training")
-    print("-"*60)
     # run training
     train_model(model=model,
                 model_file=config["model_file"],

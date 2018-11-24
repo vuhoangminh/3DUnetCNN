@@ -79,11 +79,13 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
         else:
             metrics = label_wise_dice_metrics
 
-    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coefficient_loss, metrics=metrics)
     try:
-        model = multi_gpu_model(model)
+        model = multi_gpu_model(model, gpus=2)
+        print('!! train on multi gpus')
     except:
-        pass
+        print('!! train on single gpu')
+        pass    
+    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coefficient_loss, metrics=metrics)
     return model
 
 

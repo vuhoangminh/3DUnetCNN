@@ -89,6 +89,8 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                                                     skip_blank=skip_blank,
                                                                     patch_overlap=validation_patch_overlap),
                                                                     validation_batch_size)
+        data = [num_training_steps, num_validation_steps]
+        pickle_dump(data, n_steps_file)
     else:
         num_training_steps, num_validation_steps = pickle_load(n_steps_file)
     print("Number of training steps: ", num_training_steps)                                               
