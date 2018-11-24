@@ -1,9 +1,9 @@
 import os
 import glob
 
-# import sys
-# sys.path.append("C://Users//minhm//Documents//GitHub//3DUnetCNN")
-# os.chdir("C://Users//minhm//Documents//GitHub//3DUnetCNN//brats")
+import sys
+sys.path.append("C://Users//minhm//Documents//GitHub//3DUnetCNN")
+os.chdir("C://Users//minhm//Documents//GitHub//3DUnetCNN//brats")
 
 from unet3d.data import write_data_to_file, open_data_file
 from unet3d.generator import get_training_and_validation_generators

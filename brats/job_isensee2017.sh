@@ -10,7 +10,7 @@ ml GCC/6.4.0-2.28  CUDA/9.0.176  OpenMPI/2.1.1
 
 export KERAS_BACKEND="tensorflow"
 
-export command="python train_isensee2017.py "
+export command="python -u train_isensee2017.py "
 echo "$command"
 srun $command
 
