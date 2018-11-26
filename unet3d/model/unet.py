@@ -73,7 +73,8 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
         metrics = [metrics]
 
     if include_label_wise_dice_coefficients and n_labels > 1:
-        label_wise_dice_metrics = [get_label_dice_coefficient_function(index) for index in range(n_labels)]
+        label_wise_dice_metrics = [get_label_dice_coefficient_function(
+            index) for index in range(n_labels)]
         if metrics:
             metrics = metrics + label_wise_dice_metrics
         else:
@@ -84,8 +85,9 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
         print('!! train on multi gpus')
     except:
         print('!! train on single gpu')
-        pass    
-    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coefficient_loss, metrics=metrics)
+        pass
+    model.compile(optimizer=Adam(lr=initial_learning_rate),
+                  loss=dice_coefficient_loss, metrics=metrics)
     return model
 
 
@@ -102,7 +104,8 @@ def create_convolution_block(input_layer, n_filters, batch_normalization=False, 
     :param padding:
     :return:
     """
-    layer = Conv3D(n_filters, kernel, padding=padding, strides=strides)(input_layer)
+    layer = Conv3D(n_filters, kernel, padding=padding,
+                   strides=strides)(input_layer)
     if batch_normalization:
         layer = BatchNormalization(axis=1)(layer)
     elif instance_normalization:
@@ -128,7 +131,8 @@ def compute_level_output_shape(n_filters, depth, pool_size, image_shape):
     :param depth: The number of levels down in the U-shaped model a given node is.
     :return: 5D vector of the shape of the output node 
     """
-    output_image_shape = np.asarray(np.divide(image_shape, np.power(pool_size, depth)), dtype=np.int32).tolist()
+    output_image_shape = np.asarray(
+        np.divide(image_shape, np.power(pool_size, depth)), dtype=np.int32).tolist()
     return tuple([None, n_filters] + output_image_shape)
 
 

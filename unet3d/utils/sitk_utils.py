@@ -8,7 +8,8 @@ def calculate_origin_offset(new_spacing, old_spacing):
 
 def sitk_resample_to_spacing(image, new_spacing=(1.0, 1.0, 1.0), interpolator=sitk.sitkLinear, default_value=0.):
     zoom_factor = np.divide(image.GetSpacing(), new_spacing)
-    new_size = np.asarray(np.ceil(np.round(np.multiply(zoom_factor, image.GetSize()), decimals=5)), dtype=np.int16)
+    new_size = np.asarray(np.ceil(np.round(np.multiply(
+        zoom_factor, image.GetSize()), decimals=5)), dtype=np.int16)
     offset = calculate_origin_offset(new_spacing, image.GetSpacing())
     reference_image = sitk_new_blank_image(size=new_size, spacing=new_spacing, direction=image.GetDirection(),
                                            origin=image.GetOrigin() + offset, default_value=default_value)
@@ -32,7 +33,8 @@ def sitk_resample_to_image(image, reference_image, default_value=0., interpolato
 
 
 def sitk_new_blank_image(size, spacing, direction, origin, default_value=0.):
-    image = sitk.GetImageFromArray(np.ones(size, dtype=np.float).T * default_value)
+    image = sitk.GetImageFromArray(
+        np.ones(size, dtype=np.float).T * default_value)
     image.SetSpacing(spacing)
     image.SetDirection(direction)
     image.SetOrigin(origin)
