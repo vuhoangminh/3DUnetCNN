@@ -10,6 +10,7 @@ import sys
 sys.path.append("C://Users//minhm//Documents//GitHub//3DUnetCNN")
 os.chdir("C://Users//minhm//Documents//GitHub//3DUnetCNN//brats")
 
+abc
 
 config = dict()
 config["pool_size"] = (2, 2, 2)  # pool size for the max pooling operations
