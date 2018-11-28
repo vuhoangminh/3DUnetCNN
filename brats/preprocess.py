@@ -151,6 +151,8 @@ def convert_brats_data(brats_folder, out_folder, overwrite=False, no_bias_correc
     or tuple.
     :return:
     """
+    print(glob.glob(os.path.join(brats_folder, "*", "*")))
+    print(os.path.join(brats_folder, "*", "*"))
     for subject_folder in glob.glob(os.path.join(brats_folder, "*", "*")):
         print ("processing ", subject_folder)
         if os.path.isdir(subject_folder):
@@ -166,4 +168,3 @@ def convert_brats_data(brats_folder, out_folder, overwrite=False, no_bias_correc
 
 if __name__ == "__main__":
     convert_brats_data("data\\original", "data\\preprocessed")
-    print()

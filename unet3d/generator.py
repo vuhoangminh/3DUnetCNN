@@ -69,7 +69,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                         patch_start_offset=training_patch_start_offset,
                                         skip_blank=skip_blank,
                                         permute=permute)
-    print(">> valid data generator")
+    print(">> valid data generator")                                        
     validation_generator = data_generator(data_file, validation_list,
                                           batch_size=validation_batch_size,
                                           n_labels=n_labels,
@@ -82,18 +82,18 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     if overwrite or not os.path.exists(n_steps_file):
         print(">> compute number of training and validation steps")
         num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-                                                                       skip_blank=skip_blank,
-                                                                       patch_start_offset=training_patch_start_offset,
-                                                                       patch_overlap=0), batch_size)
+                                                                    skip_blank=skip_blank,
+                                                                    patch_start_offset=training_patch_start_offset,
+                                                                    patch_overlap=0), batch_size)
         num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                         skip_blank=skip_blank,
-                                                                         patch_overlap=validation_patch_overlap),
-                                                   validation_batch_size)
+                                                                    skip_blank=skip_blank,
+                                                                    patch_overlap=validation_patch_overlap),
+                                                                    validation_batch_size)
         data = [num_training_steps, num_validation_steps]
         pickle_dump(data, n_steps_file)
     else:
         num_training_steps, num_validation_steps = pickle_load(n_steps_file)
-    print("Number of training steps: ", num_training_steps)
+    print("Number of training steps: ", num_training_steps)                                               
     print("Number of validation steps: ", num_validation_steps)
 
     return training_generator, validation_generator, num_training_steps, num_validation_steps
@@ -122,8 +122,7 @@ def get_validation_split(data_file, training_file, validation_file, data_split=0
         print("Creating validation split...")
         nb_samples = data_file.root.data.shape[0]
         sample_list = list(range(nb_samples))
-        training_list, validation_list = split_list(
-            sample_list, split=data_split)
+        training_list, validation_list = split_list(sample_list, split=data_split)
         pickle_dump(training_list, training_file)
         pickle_dump(validation_list, validation_file)
         return training_list, validation_list
@@ -176,8 +175,7 @@ def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap
         for index in index_list:
             x_list = list()
             y_list = list()
-            add_data(x_list, y_list, data_file, index,
-                     skip_blank=skip_blank, patch_shape=patch_shape)
+            add_data(x_list, y_list, data_file, index, skip_blank=skip_blank, patch_shape=patch_shape)
             if len(x_list) > 0:
                 count += 1
         return count
@@ -189,13 +187,10 @@ def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
     patch_index = list()
     for index in index_list:
         if patch_start_offset is not None:
-            random_start_offset = np.negative(
-                get_random_nd_index(patch_start_offset))
-            patches = compute_patch_indices(
-                image_shape, patch_shape, overlap=patch_overlap, start=random_start_offset)
+            random_start_offset = np.negative(get_random_nd_index(patch_start_offset))
+            patches = compute_patch_indices(image_shape, patch_shape, overlap=patch_overlap, start=random_start_offset)
         else:
-            patches = compute_patch_indices(
-                image_shape, patch_shape, overlap=patch_overlap)
+            patches = compute_patch_indices(image_shape, patch_shape, overlap=patch_overlap)
         patch_index.extend(itertools.product([index], patches))
     return patch_index
 
@@ -225,8 +220,7 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False
             affine = data_file.root.affine[index[0]]
         else:
             affine = data_file.root.affine[index]
-        data, truth = augment_data(
-            data, truth, affine, flip=augment_flip, scale_deviation=augment_distortion_factor)
+        data, truth = augment_data(data, truth, affine, flip=augment_flip, scale_deviation=augment_distortion_factor)
 
     if permute:
         if data.shape[-3] != data.shape[-2] or data.shape[-2] != data.shape[-1]:

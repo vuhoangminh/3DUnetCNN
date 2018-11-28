@@ -47,8 +47,7 @@ def get_patch_from_3d_data(data, patch_shape, patch_index):
     patch_shape = np.asarray(patch_shape)
     image_shape = data.shape[-3:]
     if np.any(patch_index < 0) or np.any((patch_index + patch_shape) > image_shape):
-        data, patch_index = fix_out_of_bound_patch_attempt(
-            data, patch_shape, patch_index)
+        data, patch_index = fix_out_of_bound_patch_attempt(data, patch_shape, patch_index)
     return data[..., patch_index[0]:patch_index[0]+patch_shape[0], patch_index[1]:patch_index[1]+patch_shape[1],
                 patch_index[2]:patch_index[2]+patch_shape[2]]
 
@@ -63,12 +62,10 @@ def fix_out_of_bound_patch_attempt(data, patch_shape, patch_index, ndim=3):
     """
     image_shape = data.shape[-ndim:]
     pad_before = np.abs((patch_index < 0) * patch_index)
-    pad_after = np.abs(((patch_index + patch_shape) > image_shape)
-                       * ((patch_index + patch_shape) - image_shape))
+    pad_after = np.abs(((patch_index + patch_shape) > image_shape) * ((patch_index + patch_shape) - image_shape))
     pad_args = np.stack([pad_before, pad_after], axis=1)
     if pad_args.shape[0] < len(data.shape):
-        pad_args = [[0, 0]] * \
-            (len(data.shape) - pad_args.shape[0]) + pad_args.tolist()
+        pad_args = [[0, 0]] * (len(data.shape) - pad_args.shape[0]) + pad_args.tolist()
     data = np.pad(data, pad_args, mode="edge")
     patch_index += pad_before
     return data, patch_index
@@ -111,7 +108,6 @@ def reconstruct_from_patches(patches, patch_indices, data_shape, default_value=0
 
         averaged_data_index = np.logical_and(patch_index, count > 0)
         if np.any(averaged_data_index):
-            data[averaged_data_index] = (data[averaged_data_index] * count[averaged_data_index] +
-                                         patch_data[averaged_data_index]) / (count[averaged_data_index] + 1)
+            data[averaged_data_index] = (data[averaged_data_index] * count[averaged_data_index] + patch_data[averaged_data_index]) / (count[averaged_data_index] + 1)
         count[patch_index] += 1
     return data

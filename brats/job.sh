@@ -11,7 +11,7 @@ ml GCC/6.4.0-2.28  CUDA/9.0.176  OpenMPI/2.1.1
 
 export KERAS_BACKEND="tensorflow"
 
-export command="python -u train.py"
+export command="python -u train.py "
 echo "$command"
 srun $command
 
