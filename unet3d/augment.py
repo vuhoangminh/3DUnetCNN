@@ -5,11 +5,24 @@ import random
 import itertools
 
 
+def get_bounding_box(volume):
+    r = np.any(volume, axis=(1, 2))
+    c = np.any(volume, axis=(0, 2))
+    z = np.any(volume, axis=(0, 1))
+
+    rmin, rmax = np.where(r)[0][[0, -1]]
+    cmin, cmax = np.where(c)[0][[0, -1]]
+    zmin, zmax = np.where(z)[0][[0, -1]]
+
+    return rmin.T, rmax.T, cmin.T, cmax.T, zmin.T, zmax.T
+
+
 def scale_image(image, scale_factor):
     scale_factor = np.asarray(scale_factor)
     new_affine = np.copy(image.affine)
     new_affine[:3, :3] = image.affine[:3, :3] * scale_factor
-    new_affine[:, 3][:3] = image.affine[:, 3][:3] + (image.shape * np.diag(image.affine)[:3] * (1 - scale_factor)) / 2
+    new_affine[:, 3][:3] = image.affine[:, 3][:3] + \
+        (image.shape * np.diag(image.affine)[:3] * (1 - scale_factor)) / 2
     return new_img_like(image, data=image.get_data(), affine=new_affine)
 
 
