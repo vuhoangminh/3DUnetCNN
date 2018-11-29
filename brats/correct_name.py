@@ -6,6 +6,7 @@ from unet3d.utils.print_utils import print_processing, print_section
 from brats.preprocess import get_image
 
 config = dict()
+config["env"] = "SERVER"  # change this to "FULL" if you want to run full
 # config["mode"] = "TEST"  # change this to "FULL" if you want to run full
 config["mode"] = "FULL"  # change this to "FULL" if you want to run full
 config["data_folders"] = ["data_train", "data_valid"]
@@ -23,8 +24,6 @@ else:
 
 
 def find_truth_filename(subject_dir, denoised_folder):
-    # filename_path = os.path.abspath(os.path.join(filename, '..'))
-    # seg_path = filename_path.replace(modality, 'seg')
     seg_path = subject_dir.replace(denoised_folder, 'original_bak')
     file_card = os.path.join(seg_path, "*" + "seg" + ".nii.gz")
     try:
@@ -62,7 +61,11 @@ def rename_file(subject_file, modality):
 def main(mode="TEST"):
     for data_folder in config["data_folders"]:
         for denoised_folder in config["denoised_folders"]:
-            for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), data_folder, denoised_folder, "*", "*")):
+            if config["env"] != "SERVER":
+                subject_dirs = glob.glob(os.path.join(os.path.dirname(__file__), data_folder, denoised_folder, "*", "*"))
+            else:
+                subject_dirs = glob.glob(os.path.join(os.getcwd(), data_folder, denoised_folder, "*", "*"))
+            for subject_dir in subject_dirs:
                 if data_folder != "data_valid":
                     delete_previous_groundtruth(subject_dir)
                     truth_path = find_truth_filename(subject_dir, denoised_folder)
@@ -73,4 +76,7 @@ def main(mode="TEST"):
 
 
 if __name__ == "__main__":
+    print("------------------------------------------------------------------------------------")
+    print(os.path.dirname(__file__))
+    print(os.getcwd())
     main(config["mode"])
