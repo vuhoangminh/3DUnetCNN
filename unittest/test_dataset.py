@@ -1,3 +1,4 @@
+from unet3d.utils.volume import get_bounding_box
 import unittest
 from unittest import TestCase
 import os
@@ -11,7 +12,6 @@ import ntpath
 import sys
 sys.path.append("C://Users//minhm//Documents//GitHub//3DUnetCNN_BRATS")
 
-from unet3d.augment import get_bounding_box
 
 config = dict()
 config["env"] = "SERVER"  # change this to "FULL" if you want to run full
@@ -108,10 +108,6 @@ def test_bounding_box():
     rmin, rmax, cmin, cmax, zmin, zmax = get_bounding_box(volume)
 
     print(rmin, rmax, cmin, cmax, zmin, zmax)
-
-
-
-
 
 
 if __name__ == '__main__':
