@@ -26,7 +26,7 @@ def get_affine(in_file):
 
 def read_image_files(image_files, image_shape=None, crop=None, label_indices=None):
     """
-    
+
     :param image_files: 
     :param image_shape: 
     :param crop: 
@@ -45,9 +45,14 @@ def read_image_files(image_files, image_shape=None, crop=None, label_indices=Non
             interpolation = "nearest"
         else:
             interpolation = "linear"
-        image_list.append(read_image(image_file, image_shape=image_shape, crop=crop, interpolation=interpolation))
+        image_list.append(read_image(
+            image_file, image_shape=image_shape, crop=crop, interpolation=interpolation))
 
     return image_list
+
+
+# crop_path = "C:/Users/minhm/Desktop/crop.nii.gz"
+# resize_path = "C:/Users/minhm/Desktop/resize.nii.gz"
 
 
 def read_image(in_file, image_shape=None, interpolation='linear', crop=None):
@@ -56,7 +61,9 @@ def read_image(in_file, image_shape=None, interpolation='linear', crop=None):
     image = fix_shape(image)
     if crop:
         image = crop_img_to(image, crop, copy=True)
+        # nib.save(image, crop_path)
     if image_shape:
+        # nib.save(resize(image, new_shape=image_shape, interpolation=interpolation), resize_path)
         return resize(image, new_shape=image_shape, interpolation=interpolation)
     else:
         return image
@@ -76,5 +83,6 @@ def resize(image, new_shape, interpolation="linear"):
                                    interpolation=interpolation)
     new_affine = np.copy(image.affine)
     np.fill_diagonal(new_affine, new_spacing.tolist() + [1])
-    new_affine[:3, 3] += calculate_origin_offset(new_spacing, image.header.get_zooms())
+    new_affine[:3,
+               3] += calculate_origin_offset(new_spacing, image.header.get_zooms())
     return new_img_like(image, new_data, affine=new_affine)
