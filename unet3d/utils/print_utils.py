@@ -6,3 +6,7 @@ def print_section(print_string):
 
 def print_processing(print_string):
     print (">> processing", print_string)
+
+def print_separator():
+    print("\n")
+    print("-"*80)        
