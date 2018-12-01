@@ -1,14 +1,14 @@
 import os
 import glob
 
-# import sys
-# sys.path.append("C://Users//minhm//Documents//GitHub//3DUnetCNN")
-# os.chdir("C://Users//minhm//Documents//GitHub//3DUnetCNN//brats")
-
 from unet3d.data import write_data_to_file, open_data_file
 from unet3d.generator import get_training_and_validation_generators
 from unet3d.model import unet_model_3d
 from unet3d.training import load_old_model, train_model
+
+cwd = os.path.realpath(__file__)
+parent_dir = os.path.abspath(os.path.join(cwd, os.pardir))
+os.chdir(parent_dir)
 
 
 config = dict()
@@ -46,17 +46,17 @@ config["validation_patch_overlap"] = 0  # if > 0, during training, validation pa
 config["training_patch_start_offset"] = (16, 16, 16)  # randomly offset the first patch index by up to this offset
 config["skip_blank"] = True  # if True, then patches without any target will be skipped
 
-config["data_file"] = os.path.abspath("brats_data.h5")
-config["model_file"] = os.path.abspath("tumor_segmentation_model.h5")
-config["training_file"] = os.path.abspath("training_ids.pkl")
-config["validation_file"] = os.path.abspath("validation_ids.pkl")
-config["n_steps_file"] = os.path.abspath("n_step.pkl")
+config["data_file"] = os.path.abspath("database/brats_data.h5")
+config["model_file"] = os.path.abspath("database/tumor_segmentation_model.h5")
+config["training_file"] = os.path.abspath("database/training_ids.pkl")
+config["validation_file"] = os.path.abspath("database/validation_ids.pkl")
+config["n_steps_file"] = os.path.abspath("database/n_step.pkl")
 config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
 
 
 def fetch_training_data_files():
     training_data_files = list()
-    for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), "data", "preprocessed", "*", "*")):
+    for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), "data_train", "preprocessed", "*", "*")):
         subject_files = list()
         for modality in config["training_modalities"] + ["truth"]:
             subject_files.append(os.path.join(subject_dir, modality + ".nii.gz"))

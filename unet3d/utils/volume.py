@@ -1,11 +1,12 @@
 import os
 import math
+import ntpath
 import numpy as np
 import nibabel as nib
 from nilearn.image import new_img_like, resample_to_img
 import random
 import itertools
-
+from brats.correct_name import config
 
 def get_shape(volume):
     return volume.shape
@@ -83,3 +84,27 @@ def count_zeros_non_background(volume, truth):
     indice_truth = truth != 0
     indice = np.multiply(indice_volume, indice_truth)
     return np.count_nonzero(indice)
+
+
+def get_filename_with_extenstion(path):
+    head, tail = ntpath.split(path)
+    return tail or ntpath.basename(head)
+
+
+def get_filename_without_extenstion(path):
+    filename = get_filename_with_extenstion(path)
+    return filename.replace(".nii.gz", "")
+
+
+def get_truth_path(volume_path):
+    volume_filename = get_filename_without_extenstion(volume_path)
+    truth_path = volume_path.replace(volume_filename, config["truth"][0])
+    return truth_path
+
+
+def get_volume_paths(truth_path):
+    volume_paths = list()
+    for modality in config["training_modalities"]:
+        volume_path = truth_path.replace(config["truth"][0], modality)
+        volume_paths.append(volume_path)
+    return volume_paths
