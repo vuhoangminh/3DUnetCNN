@@ -52,7 +52,7 @@ def test_one_volume():
 
     # Test truth
     print_separator()
-    print_processing("truth")    
+    print_processing("truth")
     bin_count = count_number_occurrences_label(truth)
     n_unique_label = get_unique_label(truth)
     bounding_box_truth = get_bounding_box(truth)
@@ -65,20 +65,22 @@ def test_one_volume():
 
     # Test image and truth
     print_separator()
-    print_processing("volume and truth")    
+    print_processing("volume and truth")
     n_non_zeros_background = count_non_zeros_background(volume, truth)
     n_zeros_non_background = count_zeros_non_background(volume, truth)
 
     print("number of non zeros but label as background:", n_non_zeros_background)
     print("number of zeros but label as non background:", n_zeros_non_background)
 
+
 def test():
     print(volume_path)
     truth_path_temp = get_truth_path(volume_path)
-    print(truth_path_temp) 
+    print(truth_path_temp)
     volume_paths = get_volume_paths(truth_path)
     for path in volume_paths:
-        print(path)     
+        print(path)
+
 
 if __name__ == '__main__':
     # main()
