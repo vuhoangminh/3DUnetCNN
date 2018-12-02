@@ -26,7 +26,7 @@ truth = nib.load(truth_path)
 truth = truth.get_fdata()
 
 
-def main():
+def test_one_volume():
     # Test image
     print_separator()
     print_processing("volume")
@@ -82,4 +82,5 @@ def test():
 
 if __name__ == '__main__':
     # main()
-    test()
+    test_one_volume()
+#     test()
