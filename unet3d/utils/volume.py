@@ -6,7 +6,7 @@ import nibabel as nib
 from nilearn.image import new_img_like, resample_to_img
 import random
 import itertools
-from brats.correct_name import config
+from brats.config import config
 
 def get_shape(volume):
     return volume.shape
@@ -108,3 +108,10 @@ def get_volume_paths(truth_path):
         volume_path = truth_path.replace(config["truth"][0], modality)
         volume_paths.append(volume_path)
     return volume_paths
+
+
+def is_truth_path(path):
+    if config["truth"][0] in path:
+        return True
+    else:
+        return False                

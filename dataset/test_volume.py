@@ -18,7 +18,11 @@ from unet3d.utils.volume import get_truth_path, get_volume_paths
 from unet3d.utils.print_utils import print_processing, print_section, print_separator
 
 
-volume_path = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/data_train/denoised_preprocessed/HGG/Brats18_2013_2_1/t1.nii.gz"
+# volume_path = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/data_train/denoised_preprocessed/HGG/Brats18_2013_2_1/t1.nii.gz"
+
+volume_path = "c:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/data_train/original/HGG/Brats18_2013_10_1/flair.nii.gz"
+
+
 truth_path = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/data_train/denoised_preprocessed/HGG/Brats18_2013_2_1/truth.nii.gz"
 volume = nib.load(volume_path)
 volume = volume.get_fdata()
