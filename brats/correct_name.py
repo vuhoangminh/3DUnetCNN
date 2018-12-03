@@ -17,9 +17,9 @@ config["truth_old"] = ["seg"]
 config["truth"] = ["truth"]
 config["groundtruth_modalities"] = config["truth_old"] + config["truth"]
 if config["mode"] == "TEST":
-    config["denoised_folders"] = ["test"]
+    config["dataset"] = ["test"]
 else:
-    config["denoised_folders"] = ["original", "preprocessed",
+    config["dataset"] = ["original", "preprocessed",
                                   "denoised_original", "denoised_preprocessed"]
 
 
@@ -60,7 +60,7 @@ def rename_file(subject_file, modality):
 
 def main(mode="TEST"):
     for data_folder in config["data_folders"]:
-        for denoised_folder in config["denoised_folders"]:
+        for denoised_folder in config["dataset"]:
             if config["env"] != "SERVER":
                 subject_dirs = glob.glob(os.path.join(os.path.dirname(__file__), data_folder, denoised_folder, "*", "*"))
             else:

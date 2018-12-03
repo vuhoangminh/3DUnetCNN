@@ -25,9 +25,9 @@ config["truth_old"] = ["seg"]
 config["truth"] = ["truth"]
 config["groundtruth_modalities"] = config["truth_old"] + config["truth"]
 if config["mode"] == "TEST":
-    config["denoised_folders"] = ["test"]
+    config["dataset"] = ["test"]
 else:
-    config["denoised_folders"] = ["original", "preprocessed",
+    config["dataset"] = ["original", "preprocessed",
                                   "denoised_original", "denoised_preprocessed"]
 config["original_folder"] = ["original_bak"]
 
@@ -46,7 +46,7 @@ class TestImageShape(TestCase):
 
     def test_size(self):
         for data_folder in config["data_folders"]:
-            for denoised_folder in config["denoised_folders"]:
+            for denoised_folder in config["dataset"]:
                 parent_dir = os.path.abspath(os.path.join(
                     os.path.join(os.path.dirname(__file__), os.pardir)))
                 brats_dir = os.path.join(parent_dir, "brats")
@@ -66,7 +66,7 @@ class TestImageShape(TestCase):
             original_dir = glob.glob(os.path.join(
                 brats_dir, data_folder, config["original_folder"][0], "*", "*", "*.nii.gz"))
             num_volume_original = len(original_dir)
-            for denoised_folder in config["denoised_folders"]:
+            for denoised_folder in config["dataset"]:
                 subject_dirs = glob.glob(os.path.join(
                     brats_dir, data_folder, denoised_folder, "*", "*", "*.nii.gz"))
                 num_volume = len(subject_dirs)
@@ -82,7 +82,7 @@ class TestImageShape(TestCase):
             parent_dir = os.path.abspath(os.path.join(
                 os.path.join(os.path.dirname(__file__), os.pardir)))
             brats_dir = os.path.join(parent_dir, "brats")
-            for denoised_folder in config["denoised_folders"]:
+            for denoised_folder in config["dataset"]:
                 subject_dirs = glob.glob(os.path.join(
                     brats_dir, data_folder, denoised_folder, "*", "*"))
                 new_words = list()

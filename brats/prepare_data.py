@@ -12,6 +12,12 @@ cwd = os.path.realpath(__file__)
 parent_dir = os.path.abspath(os.path.join(cwd, os.pardir))
 os.chdir(parent_dir)
 
+config = dict()
+config["dataset"] = ["original",
+                     "preprocessed",
+                     "denoised_preprocessed",
+                     "denoised_original"]
+
 
 def fetch_training_data_files(dataset):
     training_data_files = list()
@@ -24,6 +30,21 @@ def fetch_training_data_files(dataset):
     return training_data_files
 
 
+def get_save_to_dir(brats_dir,
+                    is_normalize_mean_std=False,
+                    challenge=2018,
+                    dataset="original"):
+    if is_normalize_mean_std:
+        dataset_fullname = "brats{}_{}_normalize_mean_std".format(
+            challenge, dataset)
+    else:
+        dataset_fullname = "brats{}_{}_normalize_minh".format(
+            challenge, dataset)
+
+    save_to_dir = os.path.join(parent_dir, "database", dataset_fullname)
+    return save_to_dir
+
+
 def main(overwrite=False):
 
     parser = argparse.ArgumentParser(description='Data preparation')
@@ -31,8 +52,7 @@ def main(overwrite=False):
                         choices=[2018], default=2018,
                         help="year of brats challenge")
     parser.add_argument('-d', '--dataset', type=str,
-                        choices=["original", "preprocessed",
-                                 "denoised_preprocessed", "denoised_original"],
+                        choices=config["dataset"],
                         default="original",
                         help="dataset type")
     parser.add_argument('-i', '--inms', type=bool,
@@ -44,12 +64,10 @@ def main(overwrite=False):
     is_normalize_mean_std = args.inms
     challenge = args.challenge
 
-    if is_normalize_mean_std:
-        dataset_fullname = "brats{}_{}_normalize_mean_std".format(challenge, dataset)
-    else:
-        dataset_fullname = "brats{}_{}_normalize_minh".format(challenge, dataset)
-
-    save_to_dir = os.path.join(parent_dir, "database", dataset_fullname)
+    save_to_dir = get_save_to_dir(brats_dir=parent_dir,
+                                  is_normalize_mean_std=is_normalize_mean_std,
+                                  challenge=challenge,
+                                  dataset=dataset)
 
     # make dir
     if not os.path.exists(save_to_dir):
@@ -66,7 +84,9 @@ def main(overwrite=False):
         training_files = fetch_training_data_files(dataset)
         write_data_to_file(training_files, data_file_path,
                            image_shape=(240, 240, 155),
-                           crop=False)
+                           #    crop=False
+                           )
+
 
 if __name__ == "__main__":
     main(False)
