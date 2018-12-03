@@ -6,6 +6,12 @@ import nibabel as nib
 import argparse
 import pandas as pd
 
+cwd = os.getcwd()
+current_dir = os.path.realpath(__file__)
+parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
+brats_dir = os.path.join(os.path.abspath(
+    os.path.join(parent_dir, os.pardir)), "brats")
+
 from brats.prepare_data import get_save_to_dir
 from brats.config import config
 
@@ -22,10 +28,13 @@ from unet3d.utils.volume import get_size
 from unet3d.utils.volume import get_truth_path, get_volume_paths, is_truth_path
 from unet3d.utils.print_utils import print_processing, print_section, print_separator
 
-current_dir = os.path.realpath(__file__)
-parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
-brats_dir = os.path.join(os.path.abspath(
-    os.path.join(parent_dir, os.pardir)), "brats")
+
+
+
+print(cwd)
+print(current_dir)
+print(parent_dir)
+print(brats_dir)
 
 columns = ["dataset",
            "folder",
@@ -87,52 +96,11 @@ def get_data_dir(brats_dir, data_folder="data_train", dataset="tets"):
 
 
 def analyze_one_folder(data_folder, dataset, overwrite=False):
-    data_dir = get_data_dir(brats_dir=brats_dir,
-                            data_folder=data_folder, dataset=dataset)
-    subject_dirs = glob.glob(os.path.join(data_dir, "*", "*", "*.nii.gz"))
-
-    index = range(0, len(subject_dirs)-1, 1)
-    df = pd.DataFrame(index=index, columns=columns)
-
-    for i in range(len(subject_dirs)):
-        subject_dir = subject_dirs[i]
-        print_processing(subject_dir)
-
-        dataset, folder, name, modality = get_header_info(subject_dir)
-
-        volume = nib.load(subject_dir)
-        volume = volume.get_fdata()
-
-        df["dataset"][i] = dataset
-        df["folder"][i] = folder
-        df["name"][i] = name
-        df["modality"][i] = modality
-        df["size"][i] = get_size(subject_dir)
-        df["shape"][i] = get_shape(volume)
-        df["bounding_box"][i] = get_bounding_box(volume)
-        df["size_bounding_box"][i] = get_size_bounding_box(volume)
-        df["n_non_zeros_pixel"][i] = get_non_zeros_pixel(volume)
-        df["n_zeros_pixel"][i] = get_zeros_pixel(volume)
-        df["mean_non_zeros_pixel"][i] = compute_mean_non_zeros_pixel(volume)
-        df["std_non_zeros_pixel"][i] = compute_std_non_zeros_pixel(volume)
-        df["max_intensity"][i], df["min_intensity"][i], df["min_intensity_non_zeros"][i] = get_max_min_intensity(
-            volume)
-
-        if not is_truth_path(subject_dir):
-            truth_path = get_truth_path(subject_dir)
-            truth = nib.load(truth_path)
-            truth = truth.get_fdata()
-            df["n_non_zeros_background"][i] = count_non_zeros_background(
-                volume, truth)
-            df["n_zeros_non_background"][i] = count_zeros_non_background(
-                volume, truth)
-        else:
-            df["n_occurrences_label"][i] = count_number_occurrences_label(
-                volume)
-            df["n_unique_label"][i] = get_unique_label(volume)
 
     save_to_dir = get_save_to_dir_analysis(data_folder)
     save_to_file_path = os.path.join(save_to_dir, dataset + ".xlsx")
+    print("save to dir", save_to_dir)
+    print("save to file", save_to_file_path)
 
     if not os.path.exists(save_to_dir):
         print_separator()
@@ -141,6 +109,52 @@ def analyze_one_folder(data_folder, dataset, overwrite=False):
 
     if overwrite or not os.path.exists(save_to_file_path):
         writer = pd.ExcelWriter(save_to_file_path)
+        
+        data_dir = get_data_dir(brats_dir=brats_dir,
+                                data_folder=data_folder, dataset=dataset)
+        subject_dirs = glob.glob(os.path.join(data_dir, "*", "*", "*.nii.gz"))
+
+        index = range(0, len(subject_dirs)-1, 1)
+        df = pd.DataFrame(index=index, columns=columns)
+
+        for i in range(len(subject_dirs)):
+            subject_dir = subject_dirs[i]
+            print_processing(subject_dir)
+
+            dataset, folder, name, modality = get_header_info(subject_dir)
+
+            volume = nib.load(subject_dir)
+            volume = volume.get_fdata()
+
+            df["dataset"][i] = dataset
+            df["folder"][i] = folder
+            df["name"][i] = name
+            df["modality"][i] = modality
+            df["size"][i] = get_size(subject_dir)
+            df["shape"][i] = get_shape(volume)
+            df["bounding_box"][i] = get_bounding_box(volume)
+            df["size_bounding_box"][i] = get_size_bounding_box(volume)
+            df["n_non_zeros_pixel"][i] = get_non_zeros_pixel(volume)
+            df["n_zeros_pixel"][i] = get_zeros_pixel(volume)
+            df["mean_non_zeros_pixel"][i] = compute_mean_non_zeros_pixel(volume)
+            df["std_non_zeros_pixel"][i] = compute_std_non_zeros_pixel(volume)
+            df["max_intensity"][i], df["min_intensity"][i], df["min_intensity_non_zeros"][i] = get_max_min_intensity(
+                volume)
+
+            if "valid" not in data_folder:
+                if not is_truth_path(subject_dir):
+                    truth_path = get_truth_path(subject_dir)
+                    truth = nib.load(truth_path)
+                    truth = truth.get_fdata()
+                    df["n_non_zeros_background"][i] = count_non_zeros_background(
+                        volume, truth)
+                    df["n_zeros_non_background"][i] = count_zeros_non_background(
+                        volume, truth)
+                else:
+                    df["n_occurrences_label"][i] = count_number_occurrences_label(
+                        volume)
+                    df["n_unique_label"][i] = get_unique_label(volume)
+
         df.to_excel(writer, 'Sheet1')
         writer.save()
 
@@ -163,10 +177,10 @@ def main():
     data_folder = args.data_folder
     overwrite = args.overwrite
 
+    print(args)
+
     analyze_one_folder(data_folder, dataset, overwrite)
 
 
 if __name__ == "__main__":
-    # save_to_dir = get_save_to_dir_analysis("data_train")
-
     main()
