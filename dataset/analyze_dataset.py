@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Dec 03
+Copyright (c) 2018, Vu Hoang Minh. All rights reserved.
+@author:  Vu Hoang Minh
+@email:   minh.vu@umu.se
+@license: BSD 3-clause.
+"""
+
 import os
 import glob
 import shutil
@@ -6,35 +15,27 @@ import nibabel as nib
 import argparse
 import pandas as pd
 
-cwd = os.getcwd()
-current_dir = os.path.realpath(__file__)
-parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
-brats_dir = os.path.join(os.path.abspath(
-    os.path.join(parent_dir, os.pardir)), "brats")
+from unet3d.utils.path_utils import get_project_dir, get_h5_image_path, get_data_dir, get_analysis_dir
+from unet3d.utils.path_utils import split_dos_path_into_components
+from unet3d.utils.print_utils import print_processing, print_section, print_separator
+from unet3d.utils.volume import get_truth_path, get_volume_paths, is_truth_path
+from unet3d.utils.volume import get_size
+from unet3d.utils.volume import count_non_zeros_background, count_zeros_non_background
+from unet3d.utils.volume import get_max_min_intensity
+from unet3d.utils.volume import get_unique_label
+from unet3d.utils.volume import count_number_occurrences_label
+from unet3d.utils.volume import compute_mean_non_zeros_pixel, compute_std_non_zeros_pixel
+from unet3d.utils.volume import get_non_zeros_pixel, get_zeros_pixel
+from unet3d.utils.volume import get_shape
+from unet3d.utils.volume import get_size_bounding_box
+from unet3d.utils.volume import get_bounding_box
 
-from brats.prepare_data import get_save_to_dir
 from brats.config import config
 
-from unet3d.utils.volume import get_bounding_box
-from unet3d.utils.volume import get_size_bounding_box
-from unet3d.utils.volume import get_shape
-from unet3d.utils.volume import get_non_zeros_pixel, get_zeros_pixel
-from unet3d.utils.volume import compute_mean_non_zeros_pixel, compute_std_non_zeros_pixel
-from unet3d.utils.volume import count_number_occurrences_label
-from unet3d.utils.volume import get_unique_label
-from unet3d.utils.volume import get_max_min_intensity
-from unet3d.utils.volume import count_non_zeros_background, count_zeros_non_background
-from unet3d.utils.volume import get_size
-from unet3d.utils.volume import get_truth_path, get_volume_paths, is_truth_path
-from unet3d.utils.print_utils import print_processing, print_section, print_separator
-
-
-
-
-print(cwd)
-print(current_dir)
-print(parent_dir)
-print(brats_dir)
+CURRENT_WORKING_DIR = os.path.realpath(__file__)
+PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
+BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
+DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 columns = ["dataset",
            "folder",
@@ -57,25 +58,6 @@ columns = ["dataset",
            "n_zeros_non_background"
            ]
 
-# volume_path = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/data_train/denoised_preprocessed/HGG/Brats18_2013_2_1/t1.nii.gz"
-
-
-def split_dos_path_into_components(path):
-    folders = []
-    while 1:
-        path, folder = os.path.split(path)
-
-        if folder != "":
-            folders.append(folder)
-        else:
-            if path != "":
-                folders.append(path)
-
-            break
-
-    folders.reverse()
-    return folders
-
 
 def get_header_info(path):
     folders = split_dos_path_into_components(path)
@@ -87,30 +69,25 @@ def get_header_info(path):
     return dataset, folder, name, modality
 
 
-def get_save_to_dir_analysis(data_folder):
-    return os.path.join(parent_dir, "database", data_folder)
 
-
-def get_data_dir(brats_dir, data_folder="data_train", dataset="tets"):
-    return os.path.join(brats_dir, data_folder, dataset)
 
 
 def analyze_one_folder(data_folder, dataset, overwrite=False):
 
-    save_to_dir = get_save_to_dir_analysis(data_folder)
-    save_to_file_path = os.path.join(save_to_dir, dataset + ".xlsx")
-    print("save to dir", save_to_dir)
-    print("save to file", save_to_file_path)
+    analysis_dir = get_analysis_dir(DATASET_DIR, data_folder)
+    analysis_fie_path = os.path.join(analysis_dir, dataset + ".xlsx")
+    print("save to dir", analysis_dir)
+    print("save to file", analysis_fie_path)
 
-    if not os.path.exists(save_to_dir):
+    if not os.path.exists(analysis_dir):
         print_separator()
-        print("making dir", save_to_dir)
-        os.makedirs(save_to_dir)
+        print("making dir", analysis_dir)
+        os.makedirs(analysis_dir)
 
-    if overwrite or not os.path.exists(save_to_file_path):
-        writer = pd.ExcelWriter(save_to_file_path)
-        
-        data_dir = get_data_dir(brats_dir=brats_dir,
+    if overwrite or not os.path.exists(analysis_fie_path):
+        writer = pd.ExcelWriter(analysis_fie_path)
+
+        data_dir = get_data_dir(brats_dir=BRATS_DIR,
                                 data_folder=data_folder, dataset=dataset)
         subject_dirs = glob.glob(os.path.join(data_dir, "*", "*", "*.nii.gz"))
 
@@ -136,7 +113,8 @@ def analyze_one_folder(data_folder, dataset, overwrite=False):
             df["size_bounding_box"][i] = get_size_bounding_box(volume)
             df["n_non_zeros_pixel"][i] = get_non_zeros_pixel(volume)
             df["n_zeros_pixel"][i] = get_zeros_pixel(volume)
-            df["mean_non_zeros_pixel"][i] = compute_mean_non_zeros_pixel(volume)
+            df["mean_non_zeros_pixel"][i] = compute_mean_non_zeros_pixel(
+                volume)
             df["std_non_zeros_pixel"][i] = compute_std_non_zeros_pixel(volume)
             df["max_intensity"][i], df["min_intensity"][i], df["min_intensity_non_zeros"][i] = get_max_min_intensity(
                 volume)
@@ -159,7 +137,7 @@ def analyze_one_folder(data_folder, dataset, overwrite=False):
         writer.save()
 
 
-def main():
+def get_args():
     parser = argparse.ArgumentParser(description='Data preparation')
     parser.add_argument('-d', '--dataset', type=str,
                         choices=config["dataset"],
@@ -170,9 +148,16 @@ def main():
                         default="data_train",
                         help="data folders")
     parser.add_argument('-o', '--overwrite', type=bool,
-                        default=False)
+                        default=True)
 
     args = parser.parse_args()
+    return args
+
+
+
+def main():
+    args = get_args()
+    
     dataset = args.dataset
     data_folder = args.data_folder
     overwrite = args.overwrite

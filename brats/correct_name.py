@@ -4,6 +4,7 @@ import shutil
 import ntpath
 from unet3d.utils.print_utils import print_processing, print_section
 from brats.preprocess import get_image
+from unet3d.utils.path_utils import get_filename
 
 config = dict()
 config["env"] = "SERVER"  # change this to "FULL" if you want to run full
@@ -46,13 +47,8 @@ def copy_groundtruth(subject_dir, truth_path):
     shutil.copy(truth_path, out_file)
 
 
-def path_leaf(path):
-    head, tail = ntpath.split(path)
-    return tail or ntpath.basename(head)
-
-
 def rename_file(subject_file, modality):
-    filename = path_leaf(subject_file)
+    filename = get_filename(subject_file)
     out_file = subject_file.replace(filename, modality) + ".nii.gz"
     print("renaming {} to {}".format(subject_file, out_file))
     os.rename(subject_file, out_file)

@@ -51,10 +51,6 @@ def read_image_files(image_files, image_shape=None, crop=None, label_indices=Non
     return image_list
 
 
-# crop_path = "C:/Users/minhm/Desktop/crop.nii.gz"
-# resize_path = "C:/Users/minhm/Desktop/resize.nii.gz"
-
-
 def read_image(in_file, image_shape=None, interpolation='linear', crop=None):
     print("Reading: {0}".format(in_file))
     image = nib.load(os.path.abspath(in_file))

@@ -3,10 +3,15 @@ import math
 import ntpath
 import numpy as np
 import nibabel as nib
-from nilearn.image import new_img_like, resample_to_img
+import SimpleITK as sitk
 import random
 import itertools
+
+from nilearn.image import new_img_like, resample_to_img
+from nilearn.masking import compute_multi_background_mask
+from unet3d.utils.path_utils import get_modality
 from brats.config import config
+
 
 def get_shape(volume):
     return volume.shape
@@ -110,8 +115,35 @@ def get_volume_paths(truth_path):
     return volume_paths
 
 
+def get_volume_paths_from_one_volume(volume_path):
+    volume_paths = list()
+    volume_modality = get_modality(volume_path)
+    for modality in config["training_modalities"]:
+        temp_path = volume_path.replace(volume_modality, modality)
+        volume_paths.append(temp_path)
+    return volume_paths
+
+
 def is_truth_path(path):
     if config["truth"][0] in path:
         return True
     else:
-        return False                
+        return False     
+
+
+def get_background_mask(volume_path):
+    """
+    This function computes a common background mask for all of the data in a subject folder.
+    :param input_dir: a subject folder from the BRATS dataset.
+    :param out_file: an image containing a mask that is 1 where the image data for that subject contains the background.
+    :param truth_name: how the truth file is labeled int he subject folder
+    :return: the path to the out_file
+    """
+    volume_paths = get_volume_paths_from_one_volume(volume_path)
+    volumes_data = list()
+    for path in volume_paths:
+        volume = nib.load(path)
+        volumes_data.append(volume)
+
+    background_image = compute_multi_background_mask(volumes_data)
+    return background_image
