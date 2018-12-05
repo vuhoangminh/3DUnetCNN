@@ -9,7 +9,7 @@ Copyright (c) 2018, Vu Hoang Minh. All rights reserved.
 
 import os
 import ntpath
-
+from unet3d.utils.print_utils import print_processing, print_section, print_separator
 
 def get_project_dir(path, project_name):
     paths = path.split(project_name)
@@ -48,12 +48,24 @@ def get_h5_image_path(brats_dir,
     return save_to_dir
 
 
-def get_data_dir(brats_dir, data_folder="data_train", dataset="tets"):
+def get_data_dir(brats_dir, data_folder="data_train", dataset="test"):
     return os.path.join(brats_dir, data_folder, dataset)
 
 
 def get_analysis_dir(dataset_dir, data_folder):
     return os.path.join(dataset_dir, "database", data_folder)
+
+
+def get_normalize_minh_dir(brats_dir, data_folder="data_train", dataset="test"):
+    return os.path.join(brats_dir, data_folder, dataset + "_minh_normalize")
+
+
+def get_normalize_minh_file_path(path, dataset="test"):
+    return path.replace(dataset, dataset + "_minh_normalize")
+
+
+def get_parent_dir(path):
+    return os.path.abspath(os.path.join(path, os.pardir))
 
 
 def get_filename(path):
@@ -65,3 +77,18 @@ def get_modality(path, ext=".nii.gz"):
     filename = get_filename(path)
     modality = filename.replace(ext, "")
     return modality
+
+
+def make_dir(dir):
+    if not os.path.exists(dir):
+        print_separator()
+        print("making dir", dir)
+        os.makedirs(dir)
+
+
+def get_template_path(path, brats_dir, dataset="test", template_data_folder="data_train", template_folder="HGG/Brats18_2013_2_1"):
+    filename = get_filename(path)
+    template_path = os.path.join(brats_dir, template_data_folder,
+                                 dataset, template_folder,
+                                 filename)
+    return template_path        

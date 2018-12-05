@@ -12,10 +12,9 @@ import numpy as np
 from skimage import data, img_as_float
 from skimage import exposure
 import numpy as np
-import cv2
 import nibabel as nib
 
-from unet3d.utils.path_utils import get_filename
+from unet3d.utils.path_utils import get_filename, get_template_path
 
 from brats.config import config
 
@@ -47,20 +46,6 @@ def perform_adaptive_histogram_equalization(volume):
     volume_temp = volume.reshape(
         (volume.shape[0], volume.shape[1]*volume.shape[2]))
     volume_adap = exposure.equalize_adapthist(volume_temp, clip_limit=0.01)
-    return volume_adap.reshape((volume.shape[0], volume.shape[1], volume.shape[2]))
-
-
-def perform_adaptive_histogram_equalization_opencv(volume):
-    # volume_temp = volume.flatten()
-    volume_temp = volume.reshape(
-        (volume.shape[0], volume.shape[1]*volume.shape[2]))
-    clahe = cv2.createCLAHE(clipLimit=0.01, tileGridSize=(8, 8))
-
-    h, w = volume_temp.shape
-    vis2 = cv2.CreateMat(h, w, cv2.CV_32FC3)
-    vis0 = cv2.fromarray(vis)
-    cv2.CvtColor(vis0, vis2, cv2.CV_GRAY2BGR)
-    volume_adap = clahe.apply(volume_temp)
     return volume_adap.reshape((volume.shape[0], volume.shape[1], volume.shape[2]))
 
 
@@ -142,24 +127,38 @@ def hist_match(source, template):
     return interp_t_values[bin_idx].reshape(oldshape)
 
 
-def get_template_path(path, dataset, brats_dir):
-    filename = get_filename(path)
-    template_path = os.path.join(brats_dir, config["template_data_folder"],
-                                 dataset, config["template_folder"],
-                                 filename)
-    return template_path
+temp_volume_path = "C:/Users/minhm/Desktop/temp/volume.nii.gz"
+temp_template_path = "C:/Users/minhm/Desktop/temp/template.nii.gz"
+temp_volume_norm_path = "C:/Users/minhm/Desktop/temp/norm.nii.gz"
+temp_diff_path = "C:/Users/minhm/Desktop/temp/diff.nii.gz"
 
+
+def save_nib(volume, path, affine):
+    volume_temp = nib.Nifti1Image(volume, affine=affine)
+    nib.save(volume_temp, path)  
 
 def normalize_data(data, data_paths, brats_dir, dataset="original"):
     for i in range(data.shape[0]):
         volume = data[i, :, :, :]
         data_path = data_paths[i]
         template_path = get_template_path(
-            path=data_path, dataset=dataset, brats_dir=brats_dir)
+            path=data_path, dataset=dataset, brats_dir=brats_dir,
+            template_data_folder=config["template_data_folder"],
+            template_folder=config["template_folder"])
+
         template = nib.load(template_path)
-        template = template.get_fdata()
+
+        affine = template.affine
+
+        template = template.get_data()
         volume_normalized = hist_match_non_zeros(volume, template)
         data[i, :, :, :] = volume_normalized
+
+
+        save_nib(volume, temp_volume_path, affine)
+        save_nib(template, temp_template_path, affine)
+        save_nib(volume_normalized, temp_volume_norm_path, affine)
+        save_nib(volume_normalized-volume, temp_diff_path, affine)
     return data
 
 

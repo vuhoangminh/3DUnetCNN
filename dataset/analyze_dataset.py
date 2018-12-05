@@ -75,17 +75,17 @@ def get_header_info(path):
 def analyze_one_folder(data_folder, dataset, overwrite=False):
 
     analysis_dir = get_analysis_dir(DATASET_DIR, data_folder)
-    analysis_fie_path = os.path.join(analysis_dir, dataset + ".xlsx")
+    analysis_file_path = os.path.join(analysis_dir, dataset + ".xlsx")
     print("save to dir", analysis_dir)
-    print("save to file", analysis_fie_path)
+    print("save to file", analysis_file_path)
 
     if not os.path.exists(analysis_dir):
         print_separator()
         print("making dir", analysis_dir)
         os.makedirs(analysis_dir)
 
-    if overwrite or not os.path.exists(analysis_fie_path):
-        writer = pd.ExcelWriter(analysis_fie_path)
+    if overwrite or not os.path.exists(analysis_file_path):
+        writer = pd.ExcelWriter(analysis_file_path)
 
         data_dir = get_data_dir(brats_dir=BRATS_DIR,
                                 data_folder=data_folder, dataset=dataset)

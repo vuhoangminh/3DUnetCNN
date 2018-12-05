@@ -16,6 +16,9 @@ else:
     config["dataset"] = ["original", "preprocessed",
                          "denoised_original", "denoised_preprocessed",
                          "test"]
+config["full_dataset"] = ["original", "preprocessed",
+                     "denoised_original", "denoised_preprocessed",
+                     "test"]
 config["original_folder"] = ["original_bak"]
 config["project_name"] = "3DUnetCNN_BRATS"
 config["brats_folder"] = "brats"
