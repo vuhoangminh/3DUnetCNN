@@ -36,8 +36,10 @@ def get_args():
                         default="test",
                         help="dataset type")
     parser.add_argument('-i', '--inms', type=bool,
-                        default=True,
+                        default=False,
                         help="is normalize mean, standard deviation")
+    parser.add_argument('-o', '--overwrite', type=bool,
+                        default=True)                        
     args = parser.parse_args()
     return args
 
@@ -47,6 +49,7 @@ def main(overwrite=False):
     dataset = args.dataset
     is_normalize_mean_std = args.inms
     challenge = args.challenge
+    overwrite = args.overwrite
 
     save_to_dir = get_h5_image_path(brats_dir=BRATS_DIR,
                                     is_normalize_mean_std=is_normalize_mean_std,
@@ -68,7 +71,10 @@ def main(overwrite=False):
         training_files = fetch_training_data_files(dataset)
         write_data_to_file(training_files, data_file_path,
                            image_shape=(240, 240, 155),
-                           crop=False
+                           brats_dir=BRATS_DIR,
+                           crop=False,
+                           is_normalize_mean_std=is_normalize_mean_std,
+                           dataset=dataset
                            )
 
 

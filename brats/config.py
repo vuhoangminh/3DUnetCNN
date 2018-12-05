@@ -20,3 +20,5 @@ config["original_folder"] = ["original_bak"]
 config["project_name"] = "3DUnetCNN_BRATS"
 config["brats_folder"] = "brats"
 config["dataset_folder"] = "dataset"
+config["template_data_folder"] = "data_train"
+config["template_folder"] = "HGG/Brats18_2013_2_1"

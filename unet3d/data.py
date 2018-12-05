@@ -4,6 +4,8 @@ import numpy as np
 import tables
 
 from .normalize import normalize_data_storage, reslice_image_set
+from .normalize_minh import normalize_minh_data_storage
+
 
 
 def create_data_file(out_file, n_channels, n_samples, image_shape):
@@ -36,8 +38,8 @@ def add_data_to_storage(data_storage, truth_storage, affine_storage, subject_dat
     affine_storage.append(np.asarray(affine)[np.newaxis])
 
 
-def write_data_to_file(training_data_files, out_file, image_shape, truth_dtype=np.uint8, subject_ids=None,
-                       normalize=True, crop=True):
+def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, truth_dtype=np.uint8, subject_ids=None,
+                       normalize=True, crop=True, is_normalize_mean_std=True, dataset="original"):
     """
     Takes in a set of training images and writes those images to an hdf5 file.
     :param training_data_files: List of tuples containing the training data files. The modalities should be listed in
@@ -67,7 +69,10 @@ def write_data_to_file(training_data_files, out_file, image_shape, truth_dtype=n
     if subject_ids:
         hdf5_file.create_array(hdf5_file.root, 'subject_ids', obj=subject_ids)
     if normalize:
-        normalize_data_storage(data_storage)
+        if is_normalize_mean_std:
+            normalize_data_storage(data_storage)
+        else:
+            normalize_minh_data_storage(data_storage, training_data_files, brats_dir, dataset=dataset)                
     hdf5_file.close()
     return out_file
 
