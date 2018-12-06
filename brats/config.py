@@ -16,9 +16,9 @@ else:
     config["dataset"] = ["original", "preprocessed",
                          "denoised_original", "denoised_preprocessed",
                          "test"]
-config["full_dataset"] = ["original", "preprocessed",
-                     "denoised_original", "denoised_preprocessed",
-                     "test"]
+config["dataset_minh_normalize"] = ["original_minh_normalize", "preprocessed_minh_normalize",
+                     "denoised_original_minh_normalize", "denoised_preprocessed_minh_normalize",
+                     "test_minh_normalize"]
 config["original_folder"] = ["original_bak"]
 config["project_name"] = "3DUnetCNN_BRATS"
 config["brats_folder"] = "brats"

@@ -140,7 +140,7 @@ def analyze_one_folder(data_folder, dataset, overwrite=False):
 def get_args():
     parser = argparse.ArgumentParser(description='Data preparation')
     parser.add_argument('-d', '--dataset', type=str,
-                        choices=config["dataset"],
+                        choices=config["dataset"]+config["dataset_minh_normalize"],
                         default="test",
                         help="dataset type")
     parser.add_argument('-f', '--data_folder', type=str,
