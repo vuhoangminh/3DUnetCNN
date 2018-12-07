@@ -3,8 +3,11 @@ import os
 import numpy as np
 import tables
 
+import unet3d.utils.print_utils as print_utils
+
 from .normalize import normalize_data_storage, reslice_image_set
 from .normalize_minh import normalize_minh_data_storage
+
 
 
 
@@ -22,11 +25,27 @@ def create_data_file(out_file, n_channels, n_samples, image_shape):
     return hdf5_file, data_storage, truth_storage, affine_storage
 
 
+# # crop_path = "/home/minhvu/Desktop/temp/crop.nii.gz"
+# # resize_path = "/home/minhvu/Desktop/temp/resize.nii.gz"
+# template_path = "/home/minhvu/Desktop/temp/template.nii.gz"
+# temp_path = "/home/minhvu/Desktop/temp/temp.nii.gz"
+# temp_image_path = "/home/minhvu/Desktop/temp/temp_image.nii.gz"
+# import nibabel as nib
+
+
 def write_image_data_to_file(image_files, data_storage, truth_storage, image_shape, n_channels, affine_storage,
                              truth_dtype=np.uint8, crop=True):
     for set_of_files in image_files:
-        images = reslice_image_set(set_of_files, image_shape, label_indices=len(set_of_files) - 1, crop=crop)
-        subject_data = [image.get_data() for image in images]
+        images = reslice_image_set(
+            set_of_files, image_shape, label_indices=len(set_of_files) - 1, crop=crop)
+        subject_data = [image.get_fdata() for image in images]
+
+        # data_temp = subject_data[0]
+        # template = nib.load(template_path)
+        # volume_temp = nib.Nifti1Image(data_temp, affine=template.affine)
+        # nib.save(volume_temp, temp_path)
+        # nib.save(images[0], temp_image_path)
+
         add_data_to_storage(data_storage, truth_storage, affine_storage, subject_data, images[0].affine, n_channels,
                             truth_dtype)
     return data_storage, truth_storage
@@ -34,7 +53,8 @@ def write_image_data_to_file(image_files, data_storage, truth_storage, image_sha
 
 def add_data_to_storage(data_storage, truth_storage, affine_storage, subject_data, affine, n_channels, truth_dtype):
     data_storage.append(np.asarray(subject_data[:n_channels])[np.newaxis])
-    truth_storage.append(np.asarray(subject_data[n_channels], dtype=truth_dtype)[np.newaxis][np.newaxis])
+    truth_storage.append(np.asarray(subject_data[n_channels], dtype=truth_dtype)[
+                         np.newaxis][np.newaxis])
     affine_storage.append(np.asarray(affine)[np.newaxis])
 
 
@@ -70,9 +90,14 @@ def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, tr
         hdf5_file.create_array(hdf5_file.root, 'subject_ids', obj=subject_ids)
     if normalize:
         if is_normalize_mean_std:
+            print_utils.print_separator()
+            print_utils.print_processing("normalizing using mean and std")
             normalize_data_storage(data_storage)
         else:
-            normalize_minh_data_storage(data_storage, training_data_files, brats_dir, dataset=dataset)                
+            print_utils.print_separator()
+            print_utils.print_processing("normalizing minh's method")            
+            normalize_minh_data_storage(
+                data_storage, training_data_files, brats_dir, dataset=dataset)
     hdf5_file.close()
     return out_file
 

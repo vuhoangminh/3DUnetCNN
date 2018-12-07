@@ -1,6 +1,7 @@
 import pickle
 import os
 import collections
+import argparse
 
 import nibabel as nib
 import numpy as np
@@ -82,3 +83,12 @@ def resize(image, new_shape, interpolation="linear"):
     new_affine[:3,
                3] += calculate_origin_offset(new_spacing, image.header.get_zooms())
     return new_img_like(image, new_data, affine=new_affine)
+
+
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

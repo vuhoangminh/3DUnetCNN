@@ -127,15 +127,16 @@ def hist_match(source, template):
     return interp_t_values[bin_idx].reshape(oldshape)
 
 
-temp_volume_path = "C:/Users/minhm/Desktop/temp/volume.nii.gz"
-temp_template_path = "C:/Users/minhm/Desktop/temp/template.nii.gz"
-temp_volume_norm_path = "C:/Users/minhm/Desktop/temp/norm.nii.gz"
-temp_diff_path = "C:/Users/minhm/Desktop/temp/diff.nii.gz"
+# temp_volume_path = "/home/minhvu/Desktop/temp/volume.nii.gz"
+# temp_template_path = "/home/minhvu/Desktop/temp/template.nii.gz"
+# temp_volume_norm_path = "/home/minhvu/Desktop/temp/norm.nii.gz"
+# temp_diff_path = "/home/minhvu/Desktop/temp/diff.nii.gz"
 
 
 def save_nib(volume, path, affine):
     volume_temp = nib.Nifti1Image(volume, affine=affine)
-    nib.save(volume_temp, path)  
+    nib.save(volume_temp, path)
+
 
 def normalize_data(data, data_paths, brats_dir, dataset="original"):
     for i in range(data.shape[0]):
@@ -148,17 +149,16 @@ def normalize_data(data, data_paths, brats_dir, dataset="original"):
 
         template = nib.load(template_path)
 
-        affine = template.affine
+        # affine = template.affine
+        # save_nib(volume, temp_volume_path, affine)
 
         template = template.get_data()
         volume_normalized = hist_match_non_zeros(volume, template)
         data[i, :, :, :] = volume_normalized
 
-
-        save_nib(volume, temp_volume_path, affine)
-        save_nib(template, temp_template_path, affine)
-        save_nib(volume_normalized, temp_volume_norm_path, affine)
-        save_nib(volume_normalized-volume, temp_diff_path, affine)
+        # save_nib(template, temp_template_path, affine)
+        # save_nib(volume_normalized, temp_volume_norm_path, affine)
+        # save_nib(volume_normalized-volume, temp_diff_path, affine)
     return data
 
 
@@ -166,7 +166,7 @@ def normalize_minh_data_storage(data_storage, training_data_files, brats_dir, da
     for index in range(data_storage.shape[0]):
         data_paths = training_data_files[index]
         data_storage[index] = normalize_data(data_storage[index],
-                                             data_paths, 
-                                             brats_dir, 
+                                             data_paths,
+                                             brats_dir,
                                              dataset=dataset)
     return data_storage

@@ -8,6 +8,7 @@ from unet3d.utils.print_utils import print_processing, print_section, print_sepa
 
 from brats.config import config
 from unet3d.utils.path_utils import get_project_dir, get_h5_image_path
+from unet3d.utils.utils import str2bool
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
 PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
@@ -35,11 +36,11 @@ def get_args():
                         choices=config["dataset"],
                         default="test",
                         help="dataset type")
-    parser.add_argument('-i', '--inms', type=bool,
-                        default=False,
+    parser.add_argument('-i', '--inms', type=str2bool,
+                        default="False",
                         help="is normalize mean, standard deviation")
-    parser.add_argument('-o', '--overwrite', type=bool,
-                        default=True)                        
+    parser.add_argument('-o', '--overwrite', type=str2bool,
+                        default="True")                        
     args = parser.parse_args()
     return args
 
@@ -80,3 +81,4 @@ def main(overwrite=False):
 
 if __name__ == "__main__":
     main(False)
+    print_separator()
