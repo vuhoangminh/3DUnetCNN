@@ -74,7 +74,7 @@ def normalize_one_folder(data_folder, dataset, overwrite=False):
             if config["truth"][0] in normalize_minh_file_path:
                 print("saving truth to", normalize_minh_file_path)
                 shutil.copy(subject_path, normalize_minh_file_path)
-            elif config["mask"] in normalize_minh_file_path:
+            elif config["mask"][0] in normalize_minh_file_path:
                 print("saving mask to", normalize_minh_file_path)
                 shutil.copy(subject_path, normalize_minh_file_path)
             else:

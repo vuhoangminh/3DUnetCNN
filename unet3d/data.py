@@ -9,20 +9,26 @@ from .normalize import normalize_data_storage, reslice_image_set
 from .normalize_minh import normalize_minh_data_storage
 
 
-
-
-def create_data_file(out_file, n_channels, n_samples, image_shape):
+def create_data_file(out_file, n_channels, n_samples, image_shape, is_create_patch_index_list_original):
     hdf5_file = tables.open_file(out_file, mode='w')
     filters = tables.Filters(complevel=5, complib='blosc')
-    data_shape = tuple([0, n_channels] + list(image_shape))
-    truth_shape = tuple([0, 1] + list(image_shape))
+    if is_create_patch_index_list_original:
+        data_shape = tuple([0, n_channels] + list(image_shape))
+        truth_shape = tuple([0, 1] + list(image_shape))
+        mask_shape = tuple([0, 1] + list(image_shape))
+    else:
+        data_shape = tuple([0, n_channels-1] + list(image_shape))
+        truth_shape = tuple([0, 1] + list(image_shape))
+        mask_shape = tuple([0, 1] + list(image_shape))
     data_storage = hdf5_file.create_earray(hdf5_file.root, 'data', tables.Float32Atom(), shape=data_shape,
                                            filters=filters, expectedrows=n_samples)
     truth_storage = hdf5_file.create_earray(hdf5_file.root, 'truth', tables.UInt8Atom(), shape=truth_shape,
                                             filters=filters, expectedrows=n_samples)
+    mask_storage = hdf5_file.create_earray(hdf5_file.root, 'mask', tables.UInt8Atom(), shape=mask_shape,
+                                           filters=filters, expectedrows=n_samples)
     affine_storage = hdf5_file.create_earray(hdf5_file.root, 'affine', tables.Float32Atom(), shape=(0, 4, 4),
                                              filters=filters, expectedrows=n_samples)
-    return hdf5_file, data_storage, truth_storage, affine_storage
+    return hdf5_file, data_storage, truth_storage, mask_storage, affine_storage
 
 
 # # crop_path = "/home/minhvu/Desktop/temp/crop.nii.gz"
@@ -33,8 +39,8 @@ def create_data_file(out_file, n_channels, n_samples, image_shape):
 # import nibabel as nib
 
 
-def write_image_data_to_file(image_files, data_storage, truth_storage, image_shape, n_channels, affine_storage,
-                             truth_dtype=np.uint8, crop=True):
+def write_image_data_to_file(image_files, data_storage, truth_storage, mask_storage, image_shape, n_channels, affine_storage,
+                             truth_dtype=np.uint8, crop=True, is_create_patch_index_list_original=True):
     for set_of_files in image_files:
         images = reslice_image_set(
             set_of_files, image_shape, label_indices=len(set_of_files) - 1, crop=crop)
@@ -46,20 +52,32 @@ def write_image_data_to_file(image_files, data_storage, truth_storage, image_sha
         # nib.save(volume_temp, temp_path)
         # nib.save(images[0], temp_image_path)
 
-        add_data_to_storage(data_storage, truth_storage, affine_storage, subject_data, images[0].affine, n_channels,
-                            truth_dtype)
-    return data_storage, truth_storage
+        add_data_to_storage(data_storage, truth_storage, mask_storage, affine_storage, subject_data, images[0].affine, n_channels,
+                            truth_dtype, is_create_patch_index_list_original)
+    return data_storage, truth_storage, mask_storage
 
 
-def add_data_to_storage(data_storage, truth_storage, affine_storage, subject_data, affine, n_channels, truth_dtype):
-    data_storage.append(np.asarray(subject_data[:n_channels])[np.newaxis])
-    truth_storage.append(np.asarray(subject_data[n_channels], dtype=truth_dtype)[
-                         np.newaxis][np.newaxis])
-    affine_storage.append(np.asarray(affine)[np.newaxis])
+def add_data_to_storage(data_storage, truth_storage, mask_storage, affine_storage, subject_data,
+                        affine, n_channels, truth_dtype, is_create_patch_index_list_original):
+    if is_create_patch_index_list_original:                        
+        data_storage.append(np.asarray(subject_data[:n_channels])[np.newaxis])
+        truth_storage.append(np.asarray(subject_data[n_channels], dtype=truth_dtype)[
+                            np.newaxis][np.newaxis])
+        mask_storage.append(np.asarray(subject_data[n_channels], dtype=truth_dtype)[
+            np.newaxis][np.newaxis])
+        affine_storage.append(np.asarray(affine)[np.newaxis])
+    else:
+        data_storage.append(np.asarray(subject_data[:n_channels-1])[np.newaxis])
+        truth_storage.append(np.asarray(subject_data[n_channels-1], dtype=truth_dtype)[
+                            np.newaxis][np.newaxis])
+        mask_storage.append(np.asarray(subject_data[n_channels], dtype=truth_dtype)[
+            np.newaxis][np.newaxis])
+        affine_storage.append(np.asarray(affine)[np.newaxis])        
 
 
 def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, truth_dtype=np.uint8, subject_ids=None,
-                       normalize=True, crop=True, is_normalize_mean_std=True, dataset="original"):
+                       normalize=True, crop=True, is_normalize_mean_std=True, dataset="original",
+                       is_create_patch_index_list_original=True):
     """
     Takes in a set of training images and writes those images to an hdf5 file.
     :param training_data_files: List of tuples containing the training data files. The modalities should be listed in
@@ -75,17 +93,19 @@ def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, tr
     n_channels = len(training_data_files[0]) - 1
 
     try:
-        hdf5_file, data_storage, truth_storage, affine_storage = create_data_file(out_file,
-                                                                                  n_channels=n_channels,
-                                                                                  n_samples=n_samples,
-                                                                                  image_shape=image_shape)
+        hdf5_file, data_storage, truth_storage, mask_storage, affine_storage = create_data_file(out_file,
+                                                                                                n_channels=n_channels,
+                                                                                                n_samples=n_samples,
+                                                                                                image_shape=image_shape,
+                                                                                                is_create_patch_index_list_original=is_create_patch_index_list_original)
     except Exception as e:
         # If something goes wrong, delete the incomplete data file
         os.remove(out_file)
         raise e
 
-    write_image_data_to_file(training_data_files, data_storage, truth_storage, image_shape,
-                             truth_dtype=truth_dtype, n_channels=n_channels, affine_storage=affine_storage, crop=crop)
+    write_image_data_to_file(training_data_files, data_storage, truth_storage, mask_storage, image_shape,
+                             truth_dtype=truth_dtype, n_channels=n_channels, affine_storage=affine_storage, crop=crop,
+                             is_create_patch_index_list_original=is_create_patch_index_list_original)
     if subject_ids:
         hdf5_file.create_array(hdf5_file.root, 'subject_ids', obj=subject_ids)
     if normalize:
@@ -95,7 +115,7 @@ def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, tr
             normalize_data_storage(data_storage)
         else:
             print_utils.print_separator()
-            print_utils.print_processing("normalizing minh's method")            
+            print_utils.print_processing("normalizing minh's method")
             normalize_minh_data_storage(
                 data_storage, training_data_files, brats_dir, dataset=dataset)
     hdf5_file.close()

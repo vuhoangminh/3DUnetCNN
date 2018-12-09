@@ -11,6 +11,7 @@ import os
 import ntpath
 from unet3d.utils.print_utils import print_processing, print_section, print_separator
 
+
 def get_project_dir(path, project_name):
     paths = path.split(project_name)
     return paths[0] + project_name
@@ -91,4 +92,36 @@ def get_template_path(path, brats_dir, dataset="test", template_data_folder="dat
     template_path = os.path.join(brats_dir, template_data_folder,
                                  dataset, template_folder,
                                  filename)
-    return template_path        
+    return template_path
+
+
+def get_brats_data_h5_path(competition="brats", year="2018",
+                           input_shape="240-240-155", is_bias_correction="True",
+                           normalization="Z", clahe="False", hist_matching="False"):
+    return "data_{}{}_IS-{}_BC-{}_N-{}_C-{}_HM-{}.h5".format(competition, year, input_shape,
+                                                     is_bias_correction, normalization,
+                                                     clahe, hist_matching)
+
+
+def get_train_ids_path(competition="brats", year="2018",
+                           input_shape="240-240-155", is_bias_correction="True",
+                           normalization="Z", clahe="False", hist_matching="False"):
+    return "train_ids_{}{}_IS-{}_BC-{}_N-{}_C-{}_HM-{}.h5".format(competition, year, input_shape,
+                                                     is_bias_correction, normalization,
+                                                     clahe, hist_matching)
+
+
+def get_valid_ids_path(competition="brats", year="2018",
+                           input_shape="240-240-155", is_bias_correction="True",
+                           normalization="Z", clahe="False", hist_matching="False"):
+    return "valid_ids_{}{}_IS-{}_BC-{}_N-{}_C-{}_HM-{}.h5".format(competition, year, input_shape,
+                                                     is_bias_correction, normalization,
+                                                     clahe, hist_matching)
+
+
+def get_n_step_path(competition="brats", year="2018",
+                           input_shape="240-240-155", is_bias_correction="True",
+                           normalization="Z", clahe="False", hist_matching="False"):
+    return "n_step_{}{}_IS-{}_BC-{}_N-{}_C-{}_HM-{}.h5".format(competition, year, input_shape,
+                                                     is_bias_correction, normalization,
+                                                     clahe, hist_matching)

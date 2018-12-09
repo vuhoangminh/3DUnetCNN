@@ -32,7 +32,7 @@ DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 def get_mask_path(volume_path):
     modality = get_modality(volume_path)
-    return volume_path.replace(modality, config["mask"])
+    return volume_path.replace(modality, config["mask"][0])
 
 
 def get_args():
@@ -69,7 +69,7 @@ def main():
         if subject_dir not in list_processed:
             volume_paths = get_volume_paths_from_one_volume(subject_dir)
             list_processed.extend(volume_paths)
-            if config["mask"] not in subject_dir and config["truth"][0] not in subject_dir:
+            if config["mask"][0] not in subject_dir and config["truth"][0] not in subject_dir:
                 print_processing(subject_dir)
                 mask_path = get_mask_path(subject_dir)
                 if overwrite or not os.path.exists(mask_path):

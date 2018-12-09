@@ -10,6 +10,8 @@ from brats.config import config
 from unet3d.utils.path_utils import get_project_dir, get_h5_image_path
 from unet3d.utils.utils import str2bool
 
+import unet3d.utils.args_utils as get_args
+
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
 PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
 BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
@@ -20,33 +22,15 @@ def fetch_training_data_files(dataset):
     training_data_files = list()
     for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), "data_train", dataset, "*", "*")):
         subject_files = list()
-        for modality in config["training_modalities"] + ["truth"]:
+        for modality in config["training_modalities"] + config["truth"] + config["mask"]:
             subject_files.append(os.path.join(
                 subject_dir, modality + ".nii.gz"))
         training_data_files.append(tuple(subject_files))
     return training_data_files
 
 
-def get_args():
-    parser = argparse.ArgumentParser(description='Data preparation')
-    parser.add_argument('-c', '--challenge', type=str,
-                        choices=[2018], default=2018,
-                        help="year of brats challenge")
-    parser.add_argument('-d', '--dataset', type=str,
-                        choices=config["dataset"],
-                        default="test",
-                        help="dataset type")
-    parser.add_argument('-i', '--inms', type=str2bool,
-                        default="False",
-                        help="is normalize mean, standard deviation")
-    parser.add_argument('-o', '--overwrite', type=str2bool,
-                        default="True")                        
-    args = parser.parse_args()
-    return args
-
-
 def main(overwrite=False):
-    args = get_args()
+    args = get_args.prepare_data()
     dataset = args.dataset
     is_normalize_mean_std = args.inms
     challenge = args.challenge
@@ -75,7 +59,8 @@ def main(overwrite=False):
                            brats_dir=BRATS_DIR,
                            crop=False,
                            is_normalize_mean_std=is_normalize_mean_std,
-                           dataset=dataset
+                           dataset=dataset,
+                           is_create_patch_index_list_original=False
                            )
 
 

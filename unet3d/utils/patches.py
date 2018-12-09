@@ -1,16 +1,25 @@
 import numpy as np
 
 
-def compute_patch_indices(image_shape, patch_size, overlap, start=None):
+def compute_patch_indices(image_shape, patch_size, overlap, start=None, is_extract_patch_agressive=True):
     if isinstance(overlap, int):
         overlap = np.asarray([overlap] * len(image_shape))
     if start is None:
-        n_patches = np.ceil(image_shape / (patch_size - overlap))
-        overflow = (patch_size - overlap) * n_patches - image_shape + overlap
-        start = -np.ceil(overflow/2)
+        if is_extract_patch_agressive:
+            n_patches = np.ceil(image_shape / (patch_size - overlap))
+            overflow = (patch_size - overlap) * n_patches - image_shape + overlap
+            start = -np.ceil(overflow/2)
+        else:
+            n_patches = np.round(image_shape / (patch_size - overlap))
+            n_patches = np.maximum(n_patches, [1, 1, 1])
+            overflow = (patch_size - overlap) * n_patches - image_shape + overlap
+            start = -np.ceil(overflow/2)
     elif isinstance(start, int):
         start = np.asarray([start] * len(image_shape))
-    stop = image_shape + start
+    if is_extract_patch_agressive:
+        stop = image_shape + start  
+    else:
+        stop = image_shape + np.floor(overflow/2) 
     step = patch_size - overlap
     return get_set_of_patch_indices(start, stop, step)
 
