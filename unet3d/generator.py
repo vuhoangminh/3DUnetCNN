@@ -148,14 +148,19 @@ def split_list(input_list, split=0.8, shuffle_list=True):
 
 def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False, augment_flip=True,
                    augment_distortion_factor=0.25, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                   shuffle_index_list=True, skip_blank=True, permute=False):
+                   shuffle_index_list=True, skip_blank=True, permute=False, is_create_patch_index_list_original=True,
+                   augment_elastic=False):
     orig_index_list = index_list
     while True:
         x_list = list()
         y_list = list()
         if patch_shape:
-            index_list = create_patch_index_list(orig_index_list, data_file.root.data.shape[-3:], patch_shape,
-                                                 patch_overlap, patch_start_offset)
+            if is_create_patch_index_list_original:
+                index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
+                                                    patch_start_offset)
+            else:
+                index_list = create_patch_index_list_with_mask(index_list, data_file, patch_shape, patch_overlap,
+                                                            patch_start_offset)            
         else:
             index_list = copy.copy(orig_index_list)
 
@@ -165,7 +170,7 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
             index = index_list.pop()
             add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
                      augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape,
-                     skip_blank=skip_blank, permute=permute)
+                     skip_blank=skip_blank, permute=permute, augment_elastic=augment_elastic)
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
                 yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
@@ -185,8 +190,11 @@ def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap
         for index in index_list:
             x_list = list()
             y_list = list()
-            add_data(x_list, y_list, data_file, index,
-                     skip_blank=skip_blank, patch_shape=patch_shape)
+            # add_data(x_list, y_list, data_file, index,
+            #          skip_blank=skip_blank, patch_shape=patch_shape)
+            add_data(x_list, y_list, data_file, index, augment=True, augment_flip=True,
+                     augment_distortion_factor=0.25, patch_shape=patch_shape,
+                     skip_blank=skip_blank, permute=True, augment_elastic=True)            
             if len(x_list) > 0:
                 count += 1
         return count
@@ -228,7 +236,7 @@ def create_patch_index_list_with_mask(index_list, data_file, patch_shape, patch_
 
 
 def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False, augment_distortion_factor=0.25,
-             patch_shape=False, skip_blank=True, permute=False):
+             patch_shape=False, skip_blank=True, permute=False, augment_elastic=False):
     """
     Adds data from the data file to the given lists of feature and target data
     :param skip_blank: Data will not be added if the truth vector is all zeros (default is True).
