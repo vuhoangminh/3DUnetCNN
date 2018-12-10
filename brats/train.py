@@ -16,10 +16,10 @@ from unet3d.utils.print_utils import print_processing, print_section, print_sepa
 
 from brats.config import config, config_unet
 
-pp = pprint.PrettyPrinter(indent=4)
-# pp.pprint(config)
+# pp = pprint.PrettyPrinter(indent=4)
+# # pp.pprint(config)
 config.update(config_unet)
-pp.pprint(config)
+# pp.pprint(config)
 
 
 # experiment = Experiment(api_key="Nh9odbzbndSjh2N15O2S3d3fP",
@@ -115,7 +115,22 @@ def main(overwrite=False):
     #     nib.save(temp_out, temp_out_path)
 
     # print(n_validation_samples)
-
+    print("-"*60)
+    print("# start training")
+    print("-"*60)
+    # run training
+    train_model(model=model,
+                model_file=config["model_file"],
+                training_generator=train_generator,
+                validation_generator=validation_generator,
+                steps_per_epoch=n_train_steps,
+                validation_steps=n_validation_steps,
+                initial_learning_rate=config["initial_learning_rate"],
+                learning_rate_drop=config["learning_rate_drop"],
+                learning_rate_patience=config["patience"],
+                early_stopping_patience=config["early_stop"],
+                n_epochs=config["n_epochs"])
+    data_file_opened.close()
 
 if __name__ == "__main__":
     main(False)

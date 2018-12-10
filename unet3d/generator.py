@@ -97,19 +97,16 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     # Set the number of training and testing samples per epoch correctly
     if overwrite or not os.path.exists(n_steps_file):
         print(">> compute number of training and validation steps")
-        # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-        #                                                                skip_blank=skip_blank,
-        #                                                                patch_start_offset=training_patch_start_offset,
-        #                                                                patch_overlap=0,
-        #                                                                is_create_patch_index_list_original=is_create_patch_index_list_original),
-        #                                          batch_size)
-        # num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-        #                                                                  skip_blank=skip_blank,
-        #                                                                  patch_overlap=validation_patch_overlap,
-        #                                                                  is_create_patch_index_list_original=is_create_patch_index_list_original),
-        #                                            validation_batch_size)
-
-        num_training_steps, num_validation_steps = 4, 2
+        num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+                                                                       patch_start_offset=training_patch_start_offset,
+                                                                       patch_overlap=0,
+                                                                       is_create_patch_index_list_original=is_create_patch_index_list_original,
+                                                                       n_augment=n_augment),
+                                                 batch_size)
+        num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+                                                                         patch_overlap=validation_patch_overlap,
+                                                                         is_create_patch_index_list_original=is_create_patch_index_list_original),
+                                                   validation_batch_size)
         data = [num_training_steps, num_validation_steps]
         pickle_dump(data, n_steps_file)
     else:
@@ -296,9 +293,7 @@ def generate_index_augmentation_list(index_list, augment=False, n_augment=0):
 
 
 def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                          is_create_patch_index_list_original=True, augment_flipud=False, augment_fliplr=False,
-                          augment_elastic=False, augment_rotation=False, augment_shift=False,
-                          augment_shear=False, augment_zoom=False):
+                          is_create_patch_index_list_original=True, n_augment=0):
     if patch_shape:
         if is_create_patch_index_list_original:
             index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
@@ -306,21 +301,9 @@ def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap
         else:
             index_list = create_patch_index_list_with_mask(index_list, data_file, patch_shape, patch_overlap,
                                                            patch_start_offset)
-        count = 0
-        for index in index_list:
-            x_list = list()
-            y_list = list()
-
-            add_data(x_list, y_list, data_file, index, patch_shape=patch_shape,
-                     augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
-                     augment_elastic=augment_elastic, augment_rotation=augment_rotation,
-                     augment_shift=augment_shift, augment_shear=augment_shear,
-                     augment_zoom=augment_zoom)
-            if len(x_list) > 0:
-                count += 1
-        return count
+        return len(index_list)*(n_augment+1)
     else:
-        return len(index_list)
+        return len(index_list)*(n_augment+1)
 
 
 def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap, patch_start_offset=None):
@@ -379,6 +362,7 @@ def add_data(x_list, y_list, data_file, index, patch_shape=False,
         for i in range(data.shape[0]):
             data[i, :, :, :] = data_list[i]
         truth[:, :, :] = data_list[-1]
+    truth = truth[np.newaxis]
     x_list.append(data)
     y_list.append(truth)
 
