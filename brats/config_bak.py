@@ -61,15 +61,9 @@ config_unet["validation_patch_overlap"] = 0  # if > 0, during training, validati
 config_unet["training_patch_start_offset"] = None # randomly offset the first patch index by up to this offset
 config_unet["skip_blank"] = True  # if True, then patches without any target will be skipped
 
-config_unet["is_create_patch_index_list_original"] = False # if False, extract patches only in bouding box of mask
-
-config["augment_flipud"] = False 
-config["augment_fliplr"] = True
-# config["augment_fliplr"] = False
-config["augment_elastic"] = True
-config["augment_rotation"] = True
-# config["augment_rotation"] = False
-config["augment_shift"] = False
-config["augment_shear"] = False
-config["augment_zoom"] = False
-config["n_augment"] = 3
+config_unet["flip"] = True  # augments the data by randomly flipping an axis during
+config_unet["permute"] = False  # data shape must be a cube. Augments the data by permuting in various directions
+config_unet["distort"] = True  # switch to None if you want no distortion
+config_unet["augment"] = config_unet["flip"] or config_unet["distort"]
+config_unet["augment_elastic"] = True  # augments the data by randomly flipping an axis during
+config_unet["is_create_patch_index_list_original"] = False

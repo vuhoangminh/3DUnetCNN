@@ -1,22 +1,29 @@
 import os
 import copy
+import tensorlayer as tl
+
+import time
+
+import numpy as np
+from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage.interpolation import map_coordinates
+
 from random import shuffle
 import itertools
 
-import numpy as np
 
 from .utils import pickle_dump, pickle_load
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
-from .augment import augment_data, random_permutation_x_y
 from unet3d.utils.volume import get_bounding_box
 
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file, n_steps_file,
-                                           data_split=0.8, overwrite=False, labels=None, augment=False,
-                                           augment_flip=True, augment_distortion_factor=0.25, patch_shape=None,
+                                           data_split=0.8, overwrite=False, labels=None, patch_shape=None,
                                            validation_patch_overlap=0, training_patch_start_offset=None,
-                                           validation_batch_size=None, skip_blank=True, permute=False,
-                                           is_create_patch_index_list_original=True):
+                                           validation_batch_size=None, is_create_patch_index_list_original=True,
+                                           augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+                                           augment_rotation=False, augment_shift=False, augment_shear=False,
+                                           augment_zoom=False, n_augment=0):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -49,6 +56,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     :param permute: will randomly permute the data (data must be 3D cube)
     :return: Training data generator, validation data generator, number of training steps, number of validation steps
     """
+
     if not validation_batch_size:
         validation_batch_size = batch_size
 
@@ -65,15 +73,18 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                         batch_size=batch_size,
                                         n_labels=n_labels,
                                         labels=labels,
-                                        augment=augment,
-                                        augment_flip=augment_flip,
-                                        augment_distortion_factor=augment_distortion_factor,
                                         patch_shape=patch_shape,
                                         patch_overlap=0,
                                         patch_start_offset=training_patch_start_offset,
-                                        skip_blank=skip_blank,
-                                        permute=permute,
-                                        is_create_patch_index_list_original=is_create_patch_index_list_original)
+                                        is_create_patch_index_list_original=is_create_patch_index_list_original,
+                                        augment_flipud=augment_flipud,
+                                        augment_fliplr=augment_fliplr,
+                                        augment_elastic=augment_elastic,
+                                        augment_rotation=augment_rotation,
+                                        augment_shift=augment_shift,
+                                        augment_shear=augment_shear,
+                                        augment_zoom=augment_zoom,
+                                        n_augment=n_augment)
     print(">> valid data generator")
     validation_generator = data_generator(data_file, validation_list,
                                           batch_size=validation_batch_size,
@@ -81,32 +92,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                           labels=labels,
                                           patch_shape=patch_shape,
                                           patch_overlap=validation_patch_overlap,
-                                          skip_blank=skip_blank,
                                           is_create_patch_index_list_original=is_create_patch_index_list_original)
-
-    # print(">> training data generator")
-    # training_generator = data_generator_with_original(data_file, training_list,
-    #                                     batch_size=batch_size,
-    #                                     n_labels=n_labels,
-    #                                     labels=labels,
-    #                                     augment=augment,
-    #                                     augment_flip=augment_flip,
-    #                                     augment_distortion_factor=augment_distortion_factor,
-    #                                     patch_shape=patch_shape,
-    #                                     patch_overlap=0,
-    #                                     patch_start_offset=training_patch_start_offset,
-    #                                     skip_blank=skip_blank,
-    #                                     permute=permute)
-    # print(">> valid data generator")
-    # validation_generator = data_generator_with_original(data_file, validation_list,
-    #                                       batch_size=validation_batch_size,
-    #                                       n_labels=n_labels,
-    #                                       labels=labels,
-    #                                       patch_shape=patch_shape,
-    #                                       patch_overlap=validation_patch_overlap,
-    #                                       skip_blank=skip_blank)
-
-                                              
 
     # Set the number of training and testing samples per epoch correctly
     if overwrite or not os.path.exists(n_steps_file):
@@ -176,10 +162,91 @@ def split_list(input_list, split=0.8, shuffle_list=True):
     return training, testing
 
 
-def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False, augment_flip=True,
-                   augment_distortion_factor=0.25, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                   shuffle_index_list=True, skip_blank=True, permute=False, is_create_patch_index_list_original=True,
-                   augment_elastic=False):
+def elastic_transform_multi(x, alpha, sigma, mode="constant", cval=0, is_random=False):
+    """Elastic transformation for images as described in `[Simard2003] <http://deeplearning.cs.cmu.edu/pdfs/Simard.pdf>`__.
+
+    Parameters
+    -----------
+    x : list of numpy.array
+        List of greyscale images.
+    others : args
+        See ``tl.prepro.elastic_transform``.
+
+    Returns
+    -------
+    numpy.array
+        A list of processed images.
+
+    """
+    if is_random is False:
+        random_state = np.random.RandomState(None)
+    else:
+        random_state = np.random.RandomState(int(time.time()))
+
+    shape = x[0].shape
+    if len(shape) == 4:
+        shape = (shape[0], shape[1], shape[2])
+    new_shape = random_state.rand(*shape)
+
+    results = []
+    for data in x:
+        is_4d = False
+        if len(data.shape) == 4 and data.shape[-1] == 1:
+            data = data[:, :, :, 0]
+            is_4d = True
+        elif len(data.shape) == 4 and data.shape[-1] != 1:
+            raise Exception("Only support greyscale image")
+
+        if len(data.shape) != 3:
+            raise AssertionError("input should be grey-scale image")
+
+        dx = gaussian_filter((new_shape * 2 - 1), sigma,
+                             mode=mode, cval=cval) * alpha
+        dy = gaussian_filter((new_shape * 2 - 1), sigma,
+                             mode=mode, cval=cval) * alpha
+        dz = np.zeros_like(dx)
+
+        x_, y_, z_ = np.meshgrid(
+            np.arange(shape[0]), np.arange(shape[1]), np.arange(shape[2]))
+
+        indices = np.reshape(y_+dy, (-1, 1)), np.reshape(x_+dx, (-1, 1)), np.reshape(z_+dz, (-1, 1))
+
+        # tl.logging.info(data.shape)
+        if is_4d:
+            results.append(map_coordinates(
+                data, indices, order=1).reshape((shape[0], shape[1], 1)))
+        else:
+            results.append(map_coordinates(
+                data, indices, order=1).reshape(shape))
+    return np.asarray(results)
+
+
+def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+                 augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
+    """ data augumentation """
+    if augment_flipud:
+        data = tl.prepro.flip_axis_multi(data, axis=0, is_random=True)  # up down
+    if augment_fliplr:
+        data = tl.prepro.flip_axis_multi(data, axis=1, is_random=True)  # left right
+    if augment_elastic:
+        data = elastic_transform_multi(data, alpha=720, sigma=10, is_random=True)
+    if augment_rotation:
+        data = tl.prepro.rotation_multi(data, rg=20, is_random=True, fill_mode='constant')  # nearest, constant
+    if augment_shift:
+        data = tl.prepro.shift_multi(data, wrg=0.10, hrg=0.10, is_random=True, fill_mode='constant')
+    if augment_shear:
+        data = tl.prepro.shear_multi(data, 0.05, is_random=True, fill_mode='constant')
+    if augment_zoom:
+        data = tl.prepro.zoom_multi(data, zoom_range=[0.9, 1.1], is_random=True, fill_mode='constant')
+    return data
+
+
+def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, patch_shape=None,
+                   patch_overlap=0, patch_start_offset=None, shuffle_index_list=True,
+                   skip_blank=True, is_create_patch_index_list_original=True,
+                   augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+                   augment_rotation=False, augment_shift=False, augment_shear=False,
+                   augment_zoom=False, n_augment=0):
     orig_index_list = index_list
     while True:
         x_list = list()
@@ -194,60 +261,44 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
         else:
             index_list = copy.copy(orig_index_list)
 
+        augment = augment_flipud or augment_fliplr or augment_elastic or augment_rotation or augment_shift or augment_shear or augment_zoom
+        augmentation_list = generate_index_augmentation_list(
+            index_list, augment=augment, n_augment=n_augment)
+
         if shuffle_index_list:
-            shuffle(index_list)
-        while len(index_list) > 0:
-            index = index_list.pop()
-            add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
-                     augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape,
-                     skip_blank=skip_blank, permute=permute, augment_elastic=augment_elastic)
-            if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
-                yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
-                x_list = list()
-                y_list = list()
-
-
-def data_generator_with_original(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False, augment_flip=True,
-                                 augment_distortion_factor=0.25, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                                 shuffle_index_list=True, skip_blank=True, permute=False, is_create_patch_index_list_original=True,
-                                 augment_elastic=False):
-    orig_index_list = index_list
-    while True:
-        x_list = list()
-        y_list = list()
-        if patch_shape:
-            if is_create_patch_index_list_original:
-                index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
-                                                     patch_start_offset)
+            shuffle(augmentation_list)
+        while len(augmentation_list) > 0:
+            augmentation = augmentation_list.pop()
+            mode = augmentation[0]
+            index = augmentation[1]
+            if mode == "none":
+                add_data(x_list, y_list, data_file,
+                         index, patch_shape=patch_shape)
             else:
-                index_list = create_patch_index_list_with_mask(index_list, data_file, patch_shape, patch_overlap,
-                                                               patch_start_offset)
-        else:
-            index_list = copy.copy(orig_index_list)
-
-        if shuffle_index_list:
-            shuffle(index_list)
-        while len(index_list) > 0:
-            index = index_list.pop()
-            if augment or permute:
-                add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False,
-                        patch_shape=patch_shape, skip_blank=skip_blank, 
-                        permute=False, augment_elastic=False)
-                if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
-                    yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
-                    x_list = list()
-                    y_list = list()                                            
-            add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
-                     augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape,
-                     skip_blank=skip_blank, permute=permute, augment_elastic=augment_elastic)
+                add_data(x_list, y_list, data_file, index, patch_shape=patch_shape,
+                         augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
+                         augment_elastic=augment_elastic, augment_rotation=augment_rotation,
+                         augment_shift=augment_shift, augment_shear=augment_shear,
+                         augment_zoom=augment_zoom)
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
                 yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
                 y_list = list()
+
+
+def generate_index_augmentation_list(index_list, augment=False, n_augment=0):
+    list_augmentation = list()
+    list_augmentation.append("none")
+    if augment:
+        for i in range(n_augment):
+            list_augmentation.append("augment")
+    return list(itertools.product(list_augmentation, index_list))
 
 
 def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                          skip_blank=True, is_create_patch_index_list_original=True):
+                          is_create_patch_index_list_original=True, augment_flipud=False, augment_fliplr=False,
+                          augment_elastic=False, augment_rotation=False, augment_shift=False,
+                          augment_shear=False, augment_zoom=False):
     if patch_shape:
         if is_create_patch_index_list_original:
             index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
@@ -259,11 +310,12 @@ def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap
         for index in index_list:
             x_list = list()
             y_list = list()
-            # add_data(x_list, y_list, data_file, index,
-            #          skip_blank=skip_blank, patch_shape=patch_shape)
-            add_data(x_list, y_list, data_file, index, augment=True, augment_flip=True,
-                     augment_distortion_factor=0.25, patch_shape=patch_shape,
-                     skip_blank=skip_blank, permute=True, augment_elastic=True)
+
+            add_data(x_list, y_list, data_file, index, patch_shape=patch_shape,
+                     augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
+                     augment_elastic=augment_elastic, augment_rotation=augment_rotation,
+                     augment_shift=augment_shift, augment_shear=augment_shear,
+                     augment_zoom=augment_zoom)
             if len(x_list) > 0:
                 count += 1
         return count
@@ -304,45 +356,31 @@ def create_patch_index_list_with_mask(index_list, data_file, patch_shape, patch_
     return patch_index
 
 
-def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False, augment_distortion_factor=0.25,
-             patch_shape=False, skip_blank=True, permute=False, augment_elastic=False):
+def add_data(x_list, y_list, data_file, index, patch_shape=False,
+             augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+             augment_rotation=False, augment_shift=False, augment_shear=False,
+             augment_zoom=False):
     """
     Adds data from the data file to the given lists of feature and target data
-    :param skip_blank: Data will not be added if the truth vector is all zeros (default is True).
-    :param patch_shape: Shape of the patch to add to the data lists. If None, the whole image will be added.
-    :param x_list: list of data to which data from the data_file will be appended.
-    :param y_list: list of data to which the target data from the data_file will be appended.
-    :param data_file: hdf5 data file.
-    :param index: index of the data file from which to extract the data.
-    :param augment: if True, data will be augmented according to the other augmentation parameters (augment_flip and
-    augment_distortion_factor)
-    :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
-    :param augment_distortion_factor: if augment is True, this determines the standard deviation from the original
-    that the data will be distorted (in a stretching or shrinking fashion). Set to None, False, or 0 to prevent the
-    augmentation from distorting the data in this way.
-    :param permute: will randomly permute the data (data must be 3D cube)
     :return:
     """
     data, truth = get_data_from_file(data_file, index, patch_shape=patch_shape)
+
+    augment = augment_flipud or augment_fliplr or augment_elastic or augment_rotation or augment_shift or augment_shear or augment_zoom
     if augment:
-        if patch_shape is not None:
-            affine = data_file.root.affine[index[0]]
-        else:
-            affine = data_file.root.affine[index]
-        data, truth = augment_data(
-            data, truth, affine, flip=augment_flip, scale_deviation=augment_distortion_factor)
-
-    if permute:
-        if data.shape[-3] != data.shape[-2] or data.shape[-2] != data.shape[-1]:
-            raise ValueError("To utilize permutations, data array must be in 3D cube shape with all dimensions having "
-                             "the same length.")
-        data, truth = random_permutation_x_y(data, truth[np.newaxis])
-    else:
-        truth = truth[np.newaxis]
-
-    if not skip_blank or np.any(truth != 0):
-        x_list.append(data)
-        y_list.append(truth)
+        data_list = list()
+        for i in range(data.shape[0]):
+            data_list.append(data[i, :, :, :])
+        data_list.append(truth[:, :, :])
+        data_list = augment_data(data=data_list, augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
+                                 augment_elastic=augment_elastic, augment_rotation=augment_rotation,
+                                 augment_shift=augment_shift, augment_shear=augment_shear,
+                                 augment_zoom=augment_zoom)
+        for i in range(data.shape[0]):
+            data[i, :, :, :] = data_list[i]
+        truth[:, :, :] = data_list[-1]
+    x_list.append(data)
+    y_list.append(truth)
 
 
 def get_data_from_file(data_file, index, patch_shape=None):

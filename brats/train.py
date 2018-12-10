@@ -26,11 +26,16 @@ pp.pprint(config)
 #                         project_name="general", workspace="vuhoangminh")
 
 
-config["data_file"] = os.path.abspath("brats/database/brats2018_test_normalize_minh/brats_data.h5")
-config["model_file"] = os.path.abspath("brats/database/brats2018_test_normalize_minh/tumor_segmentation_model.h5")
-config["training_file"] = os.path.abspath("brats/database/brats2018_test_normalize_minh/training_ids.pkl")
-config["validation_file"] = os.path.abspath("brats/database/brats2018_test_normalize_minh/validation_ids.pkl")
-config["n_steps_file"] = os.path.abspath("brats/database/brats2018_test_normalize_minh/n_step.pkl")
+config["data_file"] = os.path.abspath(
+    "brats/database/brats2018_test_normalize_minh/brats_data.h5")
+config["model_file"] = os.path.abspath(
+    "brats/database/brats2018_test_normalize_minh/tumor_segmentation_model.h5")
+config["training_file"] = os.path.abspath(
+    "brats/database/brats2018_test_normalize_minh/training_ids.pkl")
+config["validation_file"] = os.path.abspath(
+    "brats/database/brats2018_test_normalize_minh/validation_ids.pkl")
+config["n_steps_file"] = os.path.abspath(
+    "brats/database/brats2018_test_normalize_minh/n_step.pkl")
 
 
 def main(overwrite=False):
@@ -44,13 +49,10 @@ def main(overwrite=False):
 
     # print(config["data_file"])
 
-
-    
     print_section("Open file")
     data_file_opened = open_data_file(config["data_file"])
 
-
-    print_section("get training and testing generators")    
+    print_section("get training and testing generators")
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators(
         data_file_opened,
         batch_size=config["batch_size"],
@@ -65,59 +67,56 @@ def main(overwrite=False):
         validation_batch_size=config["validation_batch_size"],
         validation_patch_overlap=config["validation_patch_overlap"],
         training_patch_start_offset=config["training_patch_start_offset"],
-        permute=config["permute"],
-        augment=config["augment"],
-        skip_blank=config["skip_blank"],
-        augment_flip=config["flip"],
-        augment_distortion_factor=config["distort"],
-        is_create_patch_index_list_original=config["is_create_patch_index_list_original"])
+        is_create_patch_index_list_original=config["is_create_patch_index_list_original"],
+        augment_flipud=config["augment_flipud"], 
+        augment_fliplr=config["augment_fliplr"], 
+        augment_elastic=config["augment_elastic"],
+        augment_rotation=config["augment_rotation"], 
+        augment_shift=config["augment_shift"], 
+        augment_shear=config["augment_shear"],
+        augment_zoom=config["augment_zoom"], 
+        n_augment=config["n_augment"])
 
+    print("-"*60)
+    print("# Load or init model")
+    print("-"*60)
+    if not overwrite and os.path.exists(config["model_file"]):
+        print("load old model")
+        model = load_old_model(config["model_file"])
+    else:
+        # instantiate new model
+        print("init model model")
+        model = unet_model_3d(input_shape=config["input_shape"],
+                              pool_size=config["pool_size"],
+                              n_labels=config["n_labels"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=config["depth"],
+                              n_base_filters=config["n_base_filters"])
 
+    model.summary()
 
+    # a = 2
 
-    # print("-"*60)
-    # print("# Load or init model")
-    # print("-"*60)
-    # if not overwrite and os.path.exists(config["model_file"]):
-    #     print("load old model")
-    #     model = load_old_model(config["model_file"])
-    # else:
-    #     # instantiate new model
-    #     print("init model model")
-    #     model = unet_model_3d(input_shape=config["input_shape"],
-    #                           pool_size=config["pool_size"],
-    #                           n_labels=config["n_labels"],
-    #                           initial_learning_rate=config["initial_learning_rate"],
-    #                           deconvolution=config["deconvolution"],
-    #                           depth=config["depth"],
-    #                           n_base_filters=config["n_base_filters"])
+    # import nibabel as nib
+    # temp_in_path = "C:/Users/minhm/Desktop/temp/template.nii.gz"
+    # temp_out_path = "C:/Users/minhm/Desktop/temp/out.nii.gz"
 
-    # model.summary()
+    # n_validation_samples = 0
+    # validation_samples = list()
+    # for i in range(10):
+    #     x, y = next(train_generator)
+    #     hash_x = hash(str(x))
+    #     validation_samples.append(hash_x)
+    #     n_validation_samples += x.shape[0]
 
+    #     temp_in = nib.load(temp_in_path)
+    #     temp_out = nib.Nifti1Image(x[0][0], affine=temp_in.affine)
+    #     nib.save(temp_out, temp_out_path)
 
-    a = 2
+    # print(n_validation_samples)
 
-
-    import nibabel as nib
-    temp_in_path = "/home/minhvu/Desktop/temp/template.nii.gz"
-    temp_out_path = "/home/minhvu/Desktop/temp/out.nii.gz"
-
-    n_validation_samples = 0
-    validation_samples = list()
-    for i in range(10):
-        x, y = next(train_generator)
-        hash_x = hash(str(x))
-        validation_samples.append(hash_x)
-        n_validation_samples += x.shape[0]
-
-
-        temp_in = nib.load(temp_in_path)
-        temp_out = nib.Nifti1Image(x[0][0], affine=temp_in.affine)
-        nib.save(temp_out, temp_out_path)
-
-    print(n_validation_samples)
 
 if __name__ == "__main__":
     main(False)
     # print_separator()
-
