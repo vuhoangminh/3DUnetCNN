@@ -105,7 +105,7 @@ def main(overwrite=False):
     # n_validation_samples = 0
     # validation_samples = list()
     # for i in range(10):
-    #     x, y = next(train_generator)
+    #     x, y = next(validation_generator)
     #     hash_x = hash(str(x))
     #     validation_samples.append(hash_x)
     #     n_validation_samples += x.shape[0]
@@ -115,6 +115,9 @@ def main(overwrite=False):
     #     nib.save(temp_out, temp_out_path)
 
     # print(n_validation_samples)
+
+
+
     print("-"*60)
     print("# start training")
     print("-"*60)

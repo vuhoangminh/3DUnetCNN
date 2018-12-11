@@ -92,7 +92,8 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                           labels=labels,
                                           patch_shape=patch_shape,
                                           patch_overlap=validation_patch_overlap,
-                                          is_create_patch_index_list_original=is_create_patch_index_list_original)
+                                        #   is_create_patch_index_list_original=is_create_patch_index_list_original
+                                          )
 
     # Set the number of training and testing samples per epoch correctly
     if overwrite or not os.path.exists(n_steps_file):
