@@ -92,26 +92,26 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                           labels=labels,
                                           patch_shape=patch_shape,
                                           patch_overlap=validation_patch_overlap,
-                                        #   is_create_patch_index_list_original=is_create_patch_index_list_original
+                                          is_create_patch_index_list_original=is_create_patch_index_list_original
                                           )
 
     # Set the number of training and testing samples per epoch correctly
-    if overwrite or not os.path.exists(n_steps_file):
-        print(">> compute number of training and validation steps")
-        num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-                                                                       patch_start_offset=training_patch_start_offset,
-                                                                       patch_overlap=0,
-                                                                       is_create_patch_index_list_original=is_create_patch_index_list_original,
-                                                                       n_augment=n_augment),
-                                                 batch_size)
-        num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                         patch_overlap=validation_patch_overlap,
-                                                                         is_create_patch_index_list_original=is_create_patch_index_list_original),
-                                                   validation_batch_size)
-        data = [num_training_steps, num_validation_steps]
-        pickle_dump(data, n_steps_file)
-    else:
-        num_training_steps, num_validation_steps = pickle_load(n_steps_file)
+    # if overwrite or not os.path.exists(n_steps_file):
+    print(">> compute number of training and validation steps")
+    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+                                                                    patch_start_offset=training_patch_start_offset,
+                                                                    patch_overlap=0,
+                                                                    is_create_patch_index_list_original=is_create_patch_index_list_original,
+                                                                    n_augment=n_augment),
+                                                batch_size)
+    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+                                                                        patch_overlap=validation_patch_overlap,
+                                                                        is_create_patch_index_list_original=is_create_patch_index_list_original),
+                                                validation_batch_size)
+    # data = [num_training_steps, num_validation_steps]
+#     pickle_dump(data, n_steps_file)
+# else:
+#     num_training_steps, num_validation_steps = pickle_load(n_steps_file)
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
 

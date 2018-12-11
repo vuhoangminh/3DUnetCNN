@@ -96,11 +96,10 @@ def main(overwrite=False):
 
     model.summary()
 
-    # a = 2
-
     # import nibabel as nib
     # temp_in_path = "C:/Users/minhm/Desktop/temp/template.nii.gz"
     # temp_out_path = "C:/Users/minhm/Desktop/temp/out.nii.gz"
+    # temp_out_truth_path = "C:/Users/minhm/Desktop/temp/truth.nii.gz"
 
     # n_validation_samples = 0
     # validation_samples = list()
@@ -114,8 +113,10 @@ def main(overwrite=False):
     #     temp_out = nib.Nifti1Image(x[0][0], affine=temp_in.affine)
     #     nib.save(temp_out, temp_out_path)
 
-    # print(n_validation_samples)
+    #     temp_out = nib.Nifti1Image(y[0][0], affine=temp_in.affine)
+    #     nib.save(temp_out, temp_out_truth_path)
 
+    # print(n_validation_samples)
 
 
     print("-"*60)
