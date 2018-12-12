@@ -14,9 +14,75 @@ from skimage import exposure
 import numpy as np
 import nibabel as nib
 
-from unet3d.utils.path_utils import get_filename, get_template_path
+from nilearn.masking import compute_multi_background_mask
+from nilearn.image import new_img_like
+from unet3d.utils.path_utils import get_filename, get_template_path, get_mask_path_from_set_of_files
+from unet3d.utils.utils import resize, read_image_files
+from .utils import crop_img, crop_img_to, read_image
 
+from unet3d.utils.volume import get_background_mask
 from brats.config import config
+
+
+def find_downsized_info(training_data_files, input_shape):
+    foreground = get_complete_foreground(training_data_files)
+    crop_slices = crop_img(foreground, return_slices=True, copy=True)
+    cropped = crop_img_to(foreground, crop_slices, copy=True)
+    final_image = resize(cropped, new_shape=input_shape,
+                         interpolation="nearest")
+    return crop_slices, final_image.affine, final_image.header
+
+
+def get_cropping_parameters_old(in_files):
+    if len(in_files) > 1:
+        foreground = get_complete_foreground(in_files)
+    else:
+        foreground = get_foreground_from_set_of_files(
+            in_files[0], return_image=True)
+    return crop_img(foreground, return_slices=True, copy=True)
+
+
+def get_cropping_parameters(in_files):
+    mask = get_background_mask(in_files[0][0])
+    return crop_img(mask, return_slices=True, copy=True)
+
+
+def reslice_image_set(in_files, image_shape, out_files=None, label_indices=None, crop=False):
+    if crop:
+        crop_slices = get_cropping_parameters([in_files])
+    else:
+        crop_slices = None
+    images = read_image_files(
+        in_files, image_shape=image_shape, crop=crop_slices, label_indices=label_indices)
+    if out_files:
+        for image, out_file in zip(images, out_files):
+            image.to_filename(out_file)
+        return [os.path.abspath(out_file) for out_file in out_files]
+    else:
+        return images
+
+
+def get_complete_foreground(training_data_files):
+    for i, set_of_files in enumerate(training_data_files):
+        subject_foreground = get_foreground_from_set_of_files(set_of_files)
+        if i == 0:
+            foreground = subject_foreground
+        else:
+            foreground[subject_foreground > 0] = 1
+
+    return new_img_like(read_image(training_data_files[0][-1]), foreground)
+
+
+def get_foreground_from_set_of_files(set_of_files, return_image=False):
+    volumes_data = list()
+    for path in set_of_files:
+        volume = read_image(path)
+        volumes_data.append(volume)
+    background_image = compute_multi_background_mask(volumes_data)
+    if return_image:
+        return new_img_like(volume, background_image)
+    else:
+        return background_image
 
 
 def normalize_mean_std(volume):
@@ -60,7 +126,7 @@ def hist_match_non_zeros(source, template):
 
     # reshape to 1d
     source_norm_1d = source_norm.reshape((source_norm.size))
-    template_norm_1d = template_norm.reshape((source_norm.size))
+    template_norm_1d = template_norm.reshape((template_norm.size))
 
     # extract index
     idx_source = np.argwhere(source_norm_1d > 0)

@@ -22,7 +22,7 @@ def fetch_training_data_files(dataset):
     training_data_files = list()
     for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), "data_train", dataset, "*", "*")):
         subject_files = list()
-        for modality in config["training_modalities"] + config["truth"] + config["mask"]:
+        for modality in config["training_modalities"] + config["truth"]:
             subject_files.append(os.path.join(
                 subject_dir, modality + ".nii.gz"))
         training_data_files.append(tuple(subject_files))
@@ -55,12 +55,11 @@ def main(overwrite=False):
     if overwrite or not os.path.exists(data_file_path):
         training_files = fetch_training_data_files(dataset)
         write_data_to_file(training_files, data_file_path,
-                           image_shape=(240, 240, 155),
+                           image_shape=config["image_shape"],
                            brats_dir=BRATS_DIR,
-                           crop=False,
+                           crop=True,
                            is_normalize_mean_std=is_normalize_mean_std,
-                           dataset=dataset,
-                           is_create_patch_index_list_original=False
+                           dataset=dataset
                            )
 
 

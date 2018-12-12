@@ -25,6 +25,9 @@ config["brats_folder"] = "brats"
 config["dataset_folder"] = "dataset"
 config["template_data_folder"] = "data_train"
 config["template_folder"] = "HGG/Brats18_2013_2_1"
+
+# config_unet["image_shape"] = (240, 240, 155)  # This determines what shape the images will be cropped/resampled to.
+config["image_shape"] = (160, 192, 128)  # This determines what shape the images will be cropped/resampled to.
 # config["is_create_patch_index_list_original"] = False
 
 
@@ -36,7 +39,6 @@ config["n_labels"] = len(config["labels"])
 # configs of u-net
 config_unet = dict()
 config_unet["pool_size"] = (2, 2, 2)  # pool size for the max pooling operations
-config_unet["image_shape"] = (240, 240, 155)  # This determines what shape the images will be cropped/resampled to.
 config_unet["patch_shape"] = (128, 128, 128)  # switch to None to train on the whole image
 
 if "patch_shape" in config_unet and config_unet["patch_shape"] is not None:
@@ -59,13 +61,14 @@ config_unet["learning_rate_drop"] = 0.5  # factor by which the learning rate wil
 config_unet["validation_split"] = 0.8  # portion of the data that will be used for training
 config_unet["validation_patch_overlap"] = 0  # if > 0, during training, validation patches will be overlapping
 config_unet["training_patch_start_offset"] = None # randomly offset the first patch index by up to this offset
-config_unet["skip_blank"] = True  # if True, then patches without any target will be skipped
 
-config_unet["is_create_patch_index_list_original"] = False # if False, extract patches only in bouding box of mask
+config["skip_blank"] = True  # if True, then patches without any target will be skipped
+
+config_unet["is_create_patch_index_list_original"] = True # if False, extract patches only in bouding box of mask
 
 config["augment_flipud"] = False 
-config["augment_fliplr"] = True
-# config["augment_fliplr"] = False
+# config["augment_fliplr"] = True
+config["augment_fliplr"] = False
 # config["augment_elastic"] = True
 config["augment_elastic"] = False
 config["augment_rotation"] = False

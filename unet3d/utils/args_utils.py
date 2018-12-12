@@ -1,6 +1,6 @@
 import argparse
 from .utils import str2bool
-from brats.config import config
+
 
 
 def train():
@@ -9,7 +9,7 @@ def train():
                         choices=["brats"], default="brats",
                         help="competition")
     parser.add_argument('-y', '--year', type=str,
-                        choices=[2018], default=2018,
+                        default=2018,
                         help="year of challenge")
     parser.add_argument('-o', '--overwrite', type=str2bool,
                         default="True")
@@ -37,7 +37,6 @@ def prepare_data():
                         choices=[2018], default=2018,
                         help="year of brats challenge")
     parser.add_argument('-d', '--dataset', type=str,
-                        choices=config["dataset"],
                         default="test",
                         help="dataset type")
     parser.add_argument('-i', '--inms', type=str2bool,

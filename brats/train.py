@@ -75,7 +75,8 @@ def main(overwrite=False):
         augment_shift=config["augment_shift"], 
         augment_shear=config["augment_shear"],
         augment_zoom=config["augment_zoom"], 
-        n_augment=config["n_augment"])
+        n_augment=config["n_augment"],
+        skip_blank=config["skip_blank"])
 
     print("-"*60)
     print("# Load or init model")
@@ -94,17 +95,21 @@ def main(overwrite=False):
                               depth=config["depth"],
                               n_base_filters=config["n_base_filters"])
 
-    model.summary()
+    # model.summary()
 
     # import nibabel as nib
-    # temp_in_path = "C:/Users/minhm/Desktop/temp/template.nii.gz"
-    # temp_out_path = "C:/Users/minhm/Desktop/temp/out.nii.gz"
-    # temp_out_truth_path = "C:/Users/minhm/Desktop/temp/truth.nii.gz"
+    # laptop_save_dir = "C:/Users/minhm/Desktop/temp/"
+    # desktop_save_dir = "/home/minhvu/Desktop/temp/"
+    # save_dir = desktop_save_dir
+    # temp_in_path = desktop_save_dir + "template.nii.gz"
+    # temp_out_path = desktop_save_dir + "out.nii.gz"
+    # temp_out_truth_path = desktop_save_dir + "truth.nii.gz"
 
     # n_validation_samples = 0
     # validation_samples = list()
-    # for i in range(10):
-    #     x, y = next(validation_generator)
+    # for i in range(20):
+    #     print(i)
+    #     x, y = next(train_generator)
     #     hash_x = hash(str(x))
     #     validation_samples.append(hash_x)
     #     n_validation_samples += x.shape[0]

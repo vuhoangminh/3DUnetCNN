@@ -125,3 +125,9 @@ def get_n_step_path(competition="brats", year="2018",
     return "n_step_{}{}_IS-{}_BC-{}_N-{}_C-{}_HM-{}.h5".format(competition, year, input_shape,
                                                      is_bias_correction, normalization,
                                                      clahe, hist_matching)
+
+
+def get_mask_path_from_set_of_files(in_files):
+    for file in in_files:
+        if "mask.nii.gz" in file:
+            return file
