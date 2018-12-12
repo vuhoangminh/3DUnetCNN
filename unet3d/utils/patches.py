@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def compute_patch_indices(image_shape, patch_size, overlap, start=None, is_extract_patch_agressive=True):
+def compute_patch_indices(image_shape, patch_size, overlap, start=None, is_extract_patch_agressive=False):
     if isinstance(overlap, int):
         overlap = np.asarray([overlap] * len(image_shape))
     if start is None:

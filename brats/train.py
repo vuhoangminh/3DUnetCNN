@@ -1,9 +1,9 @@
+from comet_ml import Experiment
+
 import os
 import glob
 import pprint
 import numpy as np
-
-from comet_ml import Experiment
 
 from unet3d.data import write_data_to_file, open_data_file
 from unet3d.generator import get_training_and_validation_generators, get_training_and_validation_generators_new
@@ -20,7 +20,6 @@ from brats.config import config, config_unet
 # # pp.pprint(config)
 config.update(config_unet)
 # pp.pprint(config)
-
 
 
 # experiment = Experiment(api_key="Nh9odbzbndSjh2N15O2S3d3fP",
@@ -78,25 +77,6 @@ def main(overwrite=False):
         augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
         skip_blank=config["skip_blank"])
-
-    # train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators(
-    #     data_file_opened,
-    #     batch_size=config["batch_size"],
-    #     data_split=config["validation_split"],
-    #     overwrite=overwrite,
-    #     validation_keys_file=config["validation_file"],
-    #     training_keys_file=config["training_file"],
-    #     n_labels=config["n_labels"],
-    #     labels=config["labels"],
-    #     patch_shape=config["patch_shape"],
-    #     validation_batch_size=config["validation_batch_size"],
-    #     validation_patch_overlap=config["validation_patch_overlap"],
-    #     training_patch_start_offset=config["training_patch_start_offset"],
-    #     permute=config["permute"],
-    #     augment=config["augment"],
-    #     skip_blank=config["skip_blank"],
-    #     augment_flip=config["flip"],
-    #     augment_distortion_factor=config["distort"])
 
     print("-"*60)
     print("# Load or init model")
