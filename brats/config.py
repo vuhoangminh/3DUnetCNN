@@ -31,7 +31,8 @@ config["image_shape"] = (160, 192, 128)  # This determines what shape the images
 # config["is_create_patch_index_list_original"] = False
 
 
-config["labels"] = (1, 2, 4)  # the label numbers on the input image
+# config["labels"] = (1, 2, 4)  # the label numbers on the input image
+config["labels"] = (0, 1, 2, 4)  # the label numbers on the input image
 config["n_labels"] = len(config["labels"])
 
 
@@ -62,18 +63,26 @@ config_unet["validation_split"] = 0.8  # portion of the data that will be used f
 config_unet["validation_patch_overlap"] = 0  # if > 0, during training, validation patches will be overlapping
 config_unet["training_patch_start_offset"] = None # randomly offset the first patch index by up to this offset
 
-config["skip_blank"] = True  # if True, then patches without any target will be skipped
-
 config_unet["is_create_patch_index_list_original"] = True # if False, extract patches only in bouding box of mask
 
+
 config["augment_flipud"] = False 
-# config["augment_fliplr"] = True
-config["augment_fliplr"] = False
+config["augment_fliplr"] = True
+# config["augment_fliplr"] = False
 # config["augment_elastic"] = True
 config["augment_elastic"] = False
-config["augment_rotation"] = False
 # config["augment_rotation"] = False
+config["augment_rotation"] = True
 config["augment_shift"] = False
 config["augment_shear"] = False
 config["augment_zoom"] = False
 config["n_augment"] = 0
+
+
+
+
+config["flip"] = False  # augments the data by randomly flipping an axis during
+config["permute"] = True  # data shape must be a cube. Augments the data by permuting in various directions
+config["distort"] = None  # switch to None if you want no distortion
+config["augment"] = config["flip"] or config["distort"]
+config["skip_blank"] = True  # if True, then patches without any target will be skipped

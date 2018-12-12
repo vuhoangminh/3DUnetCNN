@@ -6,7 +6,7 @@ import numpy as np
 from comet_ml import Experiment
 
 from unet3d.data import write_data_to_file, open_data_file
-from unet3d.generator import get_training_and_validation_generators
+from unet3d.generator import get_training_and_validation_generators, get_training_and_validation_generators_new
 from unet3d.model import unet_model_3d
 from unet3d.training import load_old_model, train_model
 from unet3d.utils.path_utils import get_brats_data_h5_path
@@ -20,6 +20,7 @@ from brats.config import config, config_unet
 # # pp.pprint(config)
 config.update(config_unet)
 # pp.pprint(config)
+
 
 
 # experiment = Experiment(api_key="Nh9odbzbndSjh2N15O2S3d3fP",
@@ -53,7 +54,7 @@ def main(overwrite=False):
     data_file_opened = open_data_file(config["data_file"])
 
     print_section("get training and testing generators")
-    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators(
+    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators_new(
         data_file_opened,
         batch_size=config["batch_size"],
         data_split=config["validation_split"],
@@ -68,15 +69,34 @@ def main(overwrite=False):
         validation_patch_overlap=config["validation_patch_overlap"],
         training_patch_start_offset=config["training_patch_start_offset"],
         is_create_patch_index_list_original=config["is_create_patch_index_list_original"],
-        augment_flipud=config["augment_flipud"], 
-        augment_fliplr=config["augment_fliplr"], 
+        augment_flipud=config["augment_flipud"],
+        augment_fliplr=config["augment_fliplr"],
         augment_elastic=config["augment_elastic"],
-        augment_rotation=config["augment_rotation"], 
-        augment_shift=config["augment_shift"], 
+        augment_rotation=config["augment_rotation"],
+        augment_shift=config["augment_shift"],
         augment_shear=config["augment_shear"],
-        augment_zoom=config["augment_zoom"], 
+        augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
         skip_blank=config["skip_blank"])
+
+    # train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators(
+    #     data_file_opened,
+    #     batch_size=config["batch_size"],
+    #     data_split=config["validation_split"],
+    #     overwrite=overwrite,
+    #     validation_keys_file=config["validation_file"],
+    #     training_keys_file=config["training_file"],
+    #     n_labels=config["n_labels"],
+    #     labels=config["labels"],
+    #     patch_shape=config["patch_shape"],
+    #     validation_batch_size=config["validation_batch_size"],
+    #     validation_patch_overlap=config["validation_patch_overlap"],
+    #     training_patch_start_offset=config["training_patch_start_offset"],
+    #     permute=config["permute"],
+    #     augment=config["augment"],
+    #     skip_blank=config["skip_blank"],
+    #     augment_flip=config["flip"],
+    #     augment_distortion_factor=config["distort"])
 
     print("-"*60)
     print("# Load or init model")
@@ -123,7 +143,6 @@ def main(overwrite=False):
 
     # print(n_validation_samples)
 
-
     print("-"*60)
     print("# start training")
     print("-"*60)
@@ -140,6 +159,7 @@ def main(overwrite=False):
                 early_stopping_patience=config["early_stop"],
                 n_epochs=config["n_epochs"])
     data_file_opened.close()
+
 
 if __name__ == "__main__":
     main(False)
