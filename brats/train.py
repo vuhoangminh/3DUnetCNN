@@ -39,11 +39,11 @@ def make_dir(data_dir):
         os.makedirs(data_dir)
 
 
-def init(overwrite=True, crop=True, challenge="brats", year=2018,
-         image_shape="160-160-128", is_bias_correction="1",
-         is_normalize="z", is_denoise="0", is_test="1",
-         depth_unet=4, n_base_filters_unet=16, model="unet",
-         patch_shape="128-128-128", is_crf="0"):
+def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
+              image_shape="160-160-128", is_bias_correction="1",
+              is_normalize="z", is_denoise="0", is_test="1",
+              depth_unet=4, n_base_filters_unet=16, model="unet",
+              patch_shape="128-128-128", is_crf="0"):
 
     data_dir = get_h5_training_dir(BRATS_DIR, "data")
     make_dir(data_dir)
@@ -87,7 +87,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
           depth_unet=4, n_base_filters_unet=16, model="unet",
           patch_shape="128-128-128", is_crf="0"):
 
-    data_path, trainids_path, validids_path, model_path = init(
+    data_path, trainids_path, validids_path, model_path = init_path(
         overwrite=overwrite, crop=crop, challenge=challenge, year=year,
         image_shape=image_shape, is_bias_correction=is_bias_correction,
         is_normalize=is_normalize, is_denoise=is_denoise, is_test=is_test,
@@ -145,6 +145,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         model = unet_model_3d(input_shape=config["input_shape"],
                               pool_size=config["pool_size"],
                               n_labels=config["n_labels"],
+                              labels=config["labels"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=config["depth"],
@@ -156,7 +157,6 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("# start training")
     print("-"*60)
     # run training
-
 
     experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
                             project_name="unet_test", workspace="vuhoangminh")
@@ -175,7 +175,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                 n_epochs=config["n_epochs"])
 
     experiment.log_parameters(config)
-    # experiment.log_dataset_hash(x_train) #creates and logs a hash of your data                
+    # experiment.log_dataset_hash(x_train) #creates and logs a hash of your data
     data_file_opened.close()
 
 
