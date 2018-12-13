@@ -60,8 +60,7 @@ def add_data_to_storage(data_storage, truth_storage, affine_storage, subject_dat
 
 
 def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, truth_dtype=np.uint8, subject_ids=None,
-                       normalize=True, crop=True, is_normalize_mean_std=True, dataset="original",
-                       is_create_patch_index_list_original=True):
+                       normalize=True, crop=True, is_normalize="z", dataset="test"):
     """
     Takes in a set of training images and writes those images to an hdf5 file.
     :param training_data_files: List of tuples containing the training data files. The modalities should be listed in
@@ -94,11 +93,11 @@ def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, tr
     if subject_ids:
         hdf5_file.create_array(hdf5_file.root, 'subject_ids', obj=subject_ids)
     if normalize:
-        if is_normalize_mean_std:
+        if is_normalize=="z":
             print_utils.print_separator()
             print_utils.print_processing("normalizing using mean and std")
             normalize_data_storage(data_storage)
-        else:
+        elif is_normalize=="minh":
             print_utils.print_separator()
             print_utils.print_processing("normalizing minh's method")
             normalize_minh_data_storage(

@@ -9,8 +9,11 @@ from unet3d.data import write_data_to_file, open_data_file
 from unet3d.generator import get_training_and_validation_generators, get_training_and_validation_generators_new
 from unet3d.model import unet_model_3d
 from unet3d.training import load_old_model, train_model
-from unet3d.utils.path_utils import get_brats_data_h5_path
+from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
+from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
 import unet3d.utils.args_utils as get_args
+
+from brats.prepare_data import prepare_data
 
 from unet3d.utils.print_utils import print_processing, print_section, print_separator
 
@@ -22,32 +25,84 @@ config.update(config_unet)
 # pp.pprint(config)
 
 
-# experiment = Experiment(api_key="Nh9odbzbndSjh2N15O2S3d3fP",
-#                         project_name="general", workspace="vuhoangminh")
+CURRENT_WORKING_DIR = os.path.realpath(__file__)
+PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
+BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
+DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 
-config["data_file"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/brats_data.h5")
-config["model_file"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/tumor_segmentation_model.h5")
-config["training_file"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/training_ids.pkl")
-config["validation_file"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/validation_ids.pkl")
-config["n_steps_file"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/n_step.pkl")
+def make_dir(data_dir):
+    # make dir
+    if not os.path.exists(data_dir):
+        print_separator()
+        print("making dir", data_dir)
+        os.makedirs(data_dir)
 
 
-def main(overwrite=False):
-    args = get_args.train()
-    overwrite = args.overwrite
+def init(overwrite=True, crop=True, challenge="brats", year=2018,
+         image_shape="160-160-128", is_bias_correction="1",
+         is_normalize="z", is_denoise="0", is_test="1",
+         depth_unet=4, n_base_filters_unet=16, model="unet",
+         patch_shape="128-128-128", is_crf="0"):
 
-    # config["data_file"] = get_brats_data_h5_path(args.competition, args.year,
-    #                                              args.inputshape, args.isbiascorrection,
-    #                                              args.normalization, args.clahe,
-    #                                              args.histmatch)
+    data_dir = get_h5_training_dir(BRATS_DIR, "data")
+    make_dir(data_dir)
+    trainids_dir = get_h5_training_dir(BRATS_DIR, "train_ids")
+    make_dir(trainids_dir)
+    validids_dir = get_h5_training_dir(BRATS_DIR, "valid_ids")
+    make_dir(validids_dir)
+    model_dir = get_h5_training_dir(BRATS_DIR, "model")
+    make_dir(model_dir)
 
-    # print(config["data_file"])
+    data_filename = get_training_h5_filename(datatype="data", challenge=challenge,
+                                             image_shape=image_shape, crop=crop,
+                                             is_bias_correction=is_bias_correction,
+                                             is_denoise=is_denoise, is_normalize=is_normalize)
+    trainids_filename = get_training_h5_filename(datatype="train_ids", challenge=challenge,
+                                                 image_shape=image_shape, crop=crop,
+                                                 is_bias_correction=is_bias_correction,
+                                                 is_denoise=is_denoise, is_normalize=is_normalize)
+    validids_filename = get_training_h5_filename(datatype="valid_ids", challenge=challenge,
+                                                 image_shape=image_shape, crop=crop,
+                                                 is_bias_correction=is_bias_correction,
+                                                 is_denoise=is_denoise, is_normalize=is_normalize)
+    model_filename = get_model_h5_filename(datatype="model", challenge=challenge,
+                                           image_shape=image_shape, crop=crop,
+                                           is_bias_correction=is_bias_correction,
+                                           is_denoise=is_denoise, is_normalize=is_normalize,
+                                           depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+                                           model=model, patch_shape=patch_shape, is_crf=is_crf)
+
+    data_path = os.path.join(data_dir, data_filename)
+    trainids_path = os.path.join(trainids_dir, trainids_filename)
+    validids_path = os.path.join(validids_dir, validids_filename)
+    model_path = os.path.join(model_dir, model_filename)
+
+    return data_path, trainids_path, validids_path, model_path
+
+
+def train(overwrite=True, crop=True, challenge="brats", year=2018,
+          image_shape="160-160-128", is_bias_correction="1",
+          is_normalize="z", is_denoise="0", is_test="1",
+          depth_unet=4, n_base_filters_unet=16, model="unet",
+          patch_shape="128-128-128", is_crf="0"):
+
+    data_path, trainids_path, validids_path, model_path = init(
+        overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+        image_shape=image_shape, is_bias_correction=is_bias_correction,
+        is_normalize=is_normalize, is_denoise=is_denoise, is_test=is_test,
+        model=model, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+        patch_shape=patch_shape, is_crf=is_crf)
+
+    config["data_file"] = data_path
+    config["model_file"] = model_path
+    config["training_file"] = trainids_path
+    config["validation_file"] = validids_path
+
+    if overwrite or not os.path.exists(data_path):
+        prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+                     image_shape=image_shape, is_bias_correction=is_bias_correction,
+                     is_normalize=is_normalize, is_denoise=is_denoise, is_test=is_test)
 
     print_section("Open file")
     data_file_opened = open_data_file(config["data_file"])
@@ -60,7 +115,7 @@ def main(overwrite=False):
         overwrite=overwrite,
         validation_keys_file=config["validation_file"],
         training_keys_file=config["training_file"],
-        n_steps_file=config["n_steps_file"],
+        # n_steps_file=config["n_steps_file"],
         n_labels=config["n_labels"],
         labels=config["labels"],
         patch_shape=config["patch_shape"],
@@ -95,39 +150,19 @@ def main(overwrite=False):
                               depth=config["depth"],
                               n_base_filters=config["n_base_filters"])
 
-    # model.summary()
-
-    # import nibabel as nib
-    # laptop_save_dir = "C:/Users/minhm/Desktop/temp/"
-    # desktop_save_dir = "/home/minhvu/Desktop/temp/"
-    # save_dir = desktop_save_dir
-    # temp_in_path = desktop_save_dir + "template.nii.gz"
-    # temp_out_path = desktop_save_dir + "out.nii.gz"
-    # temp_out_truth_path = desktop_save_dir + "truth.nii.gz"
-
-    # n_validation_samples = 0
-    # validation_samples = list()
-    # for i in range(20):
-    #     print(i)
-    #     x, y = next(train_generator)
-    #     hash_x = hash(str(x))
-    #     validation_samples.append(hash_x)
-    #     n_validation_samples += x.shape[0]
-
-    #     temp_in = nib.load(temp_in_path)
-    #     temp_out = nib.Nifti1Image(x[0][0], affine=temp_in.affine)
-    #     nib.save(temp_out, temp_out_path)
-
-    #     temp_out = nib.Nifti1Image(y[0][0], affine=temp_in.affine)
-    #     nib.save(temp_out, temp_out_truth_path)
-
-    # print(n_validation_samples)
+    model.summary()
 
     print("-"*60)
     print("# start training")
     print("-"*60)
     # run training
-    train_model(model=model,
+
+
+    experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
+                            project_name="unet_test", workspace="vuhoangminh")
+
+    train_model(experiment=experiment,
+                model=model,
                 model_file=config["model_file"],
                 training_generator=train_generator,
                 validation_generator=validation_generator,
@@ -138,9 +173,35 @@ def main(overwrite=False):
                 learning_rate_patience=config["patience"],
                 early_stopping_patience=config["early_stop"],
                 n_epochs=config["n_epochs"])
+
+    experiment.log_parameters(config)
+    # experiment.log_dataset_hash(x_train) #creates and logs a hash of your data                
     data_file_opened.close()
 
 
+def main():
+    args = get_args.train()
+    overwrite = args.overwrite
+    crop = args.crop
+    challenge = args.challenge
+    year = args.year
+    image_shape = args.image_shape
+    is_bias_correction = args.is_bias_correction
+    is_normalize = args.is_normalize
+    is_denoise = args.is_denoise
+    is_test = args.is_test
+    model = args.model
+    depth_unet = args.depth_unet
+    n_base_filters_unet = args.n_base_filters_unet
+    patch_shape = args.patch_shape
+    is_crf = args.is_crf
+
+    train(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+          image_shape=image_shape, is_bias_correction=is_bias_correction,
+          is_normalize=is_normalize, is_denoise=is_denoise, is_test=is_test,
+          model=model, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+          patch_shape=patch_shape, is_crf=is_crf)
+
+
 if __name__ == "__main__":
-    main(False)
-    # print_separator()
+    main()

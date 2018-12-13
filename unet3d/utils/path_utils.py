@@ -10,6 +10,8 @@ Copyright (c) 2018, Vu Hoang Minh. All rights reserved.
 import os
 import ntpath
 from unet3d.utils.print_utils import print_processing, print_section, print_separator
+import numpy as np
+from unet3d.utils.utils import str2bool
 
 
 def get_project_dir(path, project_name):
@@ -95,39 +97,79 @@ def get_template_path(path, brats_dir, dataset="test", template_data_folder="dat
     return template_path
 
 
-def get_brats_data_h5_path(competition="brats", year="2018",
-                           input_shape="240-240-155", is_bias_correction="True",
-                           normalization="Z", clahe="False", hist_matching="False"):
-    return "data_{}{}_IS-{}_BC-{}_N-{}_C-{}_HM-{}.h5".format(competition, year, input_shape,
-                                                     is_bias_correction, normalization,
-                                                     clahe, hist_matching)
+# brats_2018_is-160-192-128_bias-1_denoise-0_norm-z_ps-128-128-128_unet_crf-0_d-4_nb-16.h5
+# brats_2018_is-160-192-128_bias-1_denoise-bm4d_norm-minh_data.h5
+# brats_2018_is-160-192-128_bias-1_denoise-bm4d_norm-minh_train_ids.h5
+# brats_2018_is-160-192-128_bias-1_denoise-bm4d_norm-minh_valid_ids.h5
+
+def get_h5_training_dir(brats_dir, datatype="data"):
+    return os.path.join(brats_dir, "database", datatype)
 
 
-def get_train_ids_path(competition="brats", year="2018",
-                           input_shape="240-240-155", is_bias_correction="True",
-                           normalization="Z", clahe="False", hist_matching="False"):
-    return "train_ids_{}{}_IS-{}_BC-{}_N-{}_C-{}_HM-{}.h5".format(competition, year, input_shape,
-                                                     is_bias_correction, normalization,
-                                                     clahe, hist_matching)
+def get_model_h5_filename(datatype, challenge="brats", year="2018",
+                          image_shape="160-192-128", crop="1",
+                          is_bias_correction="1", is_denoise="0", is_normalize="z",
+                          is_test="1", depth_unet=4, n_base_filters_unet=16,
+                          model="unet", patch_shape="128-128-128", is_crf="0"):
+    if model == "unet":
+        if str2bool(is_test):
+            return "test_{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_ps-{}_{}_crf-{}_d-{}_nb-{}_{}.h5".format(
+                challenge, year, image_shape, str(crop), str(
+                    is_bias_correction), str(is_denoise),
+                str(is_normalize), patch_shape, model, str(
+                    is_crf), str(depth_unet), str(n_base_filters_unet),
+                datatype)
+
+        else:
+            return "{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_ps-{}_{}_crf-{}_d-{}_nb-{}_{}.h5".format(
+                challenge, year, image_shape, str(crop), str(
+                    is_bias_correction), str(is_denoise),
+                str(is_normalize), patch_shape, model, str(
+                    is_crf), str(depth_unet), str(n_base_filters_unet),
+                datatype)
+    else:
+        if str2bool(is_test):
+            return "test_{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_ps-{}_{}_crf-{}_{}.h5".format(
+                challenge, year, image_shape, str(crop), str(
+                    is_bias_correction), str(is_denoise),
+                str(is_normalize), patch_shape, model, str(is_crf), datatype)
+
+        else:
+            return "{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_ps-{}_{}_crf-{}_{}.h5".format(
+                challenge, year, image_shape, str(crop), str(
+                    is_bias_correction), str(is_denoise),
+                str(is_normalize), patch_shape, model, str(is_crf), datatype)
 
 
-def get_valid_ids_path(competition="brats", year="2018",
-                           input_shape="240-240-155", is_bias_correction="True",
-                           normalization="Z", clahe="False", hist_matching="False"):
-    return "valid_ids_{}{}_IS-{}_BC-{}_N-{}_C-{}_HM-{}.h5".format(competition, year, input_shape,
-                                                     is_bias_correction, normalization,
-                                                     clahe, hist_matching)
-
-
-def get_n_step_path(competition="brats", year="2018",
-                           input_shape="240-240-155", is_bias_correction="True",
-                           normalization="Z", clahe="False", hist_matching="False"):
-    return "n_step_{}{}_IS-{}_BC-{}_N-{}_C-{}_HM-{}.h5".format(competition, year, input_shape,
-                                                     is_bias_correction, normalization,
-                                                     clahe, hist_matching)
+def get_training_h5_filename(datatype, challenge="brats", year="2018",
+                             image_shape="160-192-128", crop="1",
+                             is_bias_correction="1", is_denoise="0", is_normalize="z",
+                             is_test="1"):
+    if str2bool(is_test):
+        return "test_{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_{}.h5".format(
+            challenge, year, image_shape, str(crop), str(is_bias_correction),
+            str(is_denoise), str(is_normalize), datatype)
+    else:
+        return "{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_{}.h5".format(
+            challenge, year, image_shape, str(crop), str(is_bias_correction),
+            str(is_denoise), str(is_normalize), datatype)
 
 
 def get_mask_path_from_set_of_files(in_files):
     for file in in_files:
         if "mask.nii.gz" in file:
             return file
+
+
+def get_shape_string(image_shape):
+    shape_string = ""
+    for i in range(len(image_shape)-1):
+        shape_string = shape_string + str(image_shape[i]) + "-"
+    shape_string = shape_string + str(image_shape[-1])
+    return shape_string
+
+
+def get_shape_from_string(shape_string):
+    splitted_string = shape_string.split("-")
+    splitted_number = list(map(int, splitted_string))
+    return tuple(splitted_number)

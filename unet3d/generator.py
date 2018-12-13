@@ -15,7 +15,7 @@ from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
 
 
-def get_training_and_validation_generators_new(data_file, batch_size, n_labels, training_keys_file, validation_keys_file, n_steps_file,
+def get_training_and_validation_generators_new(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
                                                data_split=0.8, overwrite=False, labels=None, patch_shape=None,
                                                validation_patch_overlap=0, training_patch_start_offset=None,
                                                validation_batch_size=None, is_create_patch_index_list_original=True,

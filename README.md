@@ -9,7 +9,7 @@ be easily modified to be used in other 3D applications.
 
 ## Tutorial using BRATS Data and Python 3
 ### Training
-1. Download the BRATS 2018 data by following the steps outlined on the [BRATS 2018 competition page](https://www.med.upenn.edu/sbia/brats2018/registration.html). Place the unzipped folders in the 
+1. Download the BRATS 2018 data by following the steps outlined on the [BRATS 2018 challenge page](https://www.med.upenn.edu/sbia/brats2018/registration.html). Place the unzipped folders in the 
 ```brats/data/original``` folder.
 2. Install dependencies: 
 ```
@@ -72,7 +72,7 @@ comparison.
 ](doc/brats_64cubedpatch_validation_scores_boxplot.png)
 
 In the box plot above, the 'whole tumor' area is any labeled area. The 'tumor core' area corresponds to the combination
-of labels 1 and 4. The 'enhancing tumor' area corresponds to the 4 label. This is how the BRATS competition is scored.
+of labels 1 and 4. The 'enhancing tumor' area corresponds to the 4 label. This is how the BRATS challenge is scored.
 The both the loss graph and the box plot were created by running the 
 [evaluate.py](brats/evaluate.py) script in the 'brats' 
 folder after training has been completed.
