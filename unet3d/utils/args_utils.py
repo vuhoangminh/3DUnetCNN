@@ -41,6 +41,9 @@ def train():
     parser.add_argument('-crf', '--is_crf', type=str,
                         default="0", choices=config_dict["is_crf"],
                         help="crf method")
+    parser.add_argument('-ba', '--batch_size', type=int,
+                        default=1,
+                        help="train batch size")                        
     args = parser.parse_args()
     return args   
 

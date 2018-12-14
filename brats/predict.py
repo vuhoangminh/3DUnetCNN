@@ -13,17 +13,15 @@ BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 config["data_file"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/brats_data.h5")
+    "brats/database/data/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-z_data.h5")
 config["model_file"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/tumor_segmentation_model.h5")
+    "brats/database/model/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-z_ps-128-128-128_unet_crf-0_d-4_nb-16_model.h5")
 config["training_file"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/training_ids.pkl")
+    "brats/database/train_ids/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-z_train_ids.h5")
 config["validation_file"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/validation_ids.pkl")
-config["n_steps_file"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/n_step.pkl")
+    "brats/database/valid_ids/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-z_valid_ids.h5")
 config["prediction_folder"] = os.path.abspath(
-    "brats/database/brats2018_test_normalize_minh/prediction")
+    "brats/database/prediction")
 
 def main():
     prediction_dir = os.path.abspath(config["prediction_folder"])

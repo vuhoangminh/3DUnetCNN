@@ -6,7 +6,8 @@ from keras.callbacks import ModelCheckpoint, CSVLogger, LearningRateScheduler, R
 from keras.models import load_model
 
 from unet3d.metrics import (dice_coefficient, dice_coefficient_loss, dice_coef, dice_coef_loss,
-                            weighted_dice_coefficient_loss, weighted_dice_coefficient)
+                            weighted_dice_coefficient_loss, weighted_dice_coefficient, minh_dice_coef_loss,
+                            tversky_loss, focal_loss, ignore_unknown_xentropy, minh_dice_coef_metric)
 
 K.set_image_dim_ordering('th')
 
@@ -20,7 +21,11 @@ def get_callbacks(model_file, initial_learning_rate=0.0001, learning_rate_drop=0
                   learning_rate_patience=50, logging_file="training.log", verbosity=1,
                   early_stopping_patience=None):
     callbacks = list()
-    callbacks.append(ModelCheckpoint(model_file, save_best_only=True))
+    callbacks.append(ModelCheckpoint(model_file,
+                                     save_best_only=True,
+                                     monitor="val_dice_coefficient",
+                                     mode="max", 
+                                     period=1))
     callbacks.append(CSVLogger(logging_file, append=True))
     if learning_rate_epochs:
         callbacks.append(LearningRateScheduler(partial(step_decay, initial_lrate=initial_learning_rate,
@@ -39,7 +44,13 @@ def load_old_model(model_file):
     custom_objects = {'dice_coefficient_loss': dice_coefficient_loss, 'dice_coefficient': dice_coefficient,
                       'dice_coef': dice_coef, 'dice_coef_loss': dice_coef_loss,
                       'weighted_dice_coefficient': weighted_dice_coefficient,
-                      'weighted_dice_coefficient_loss': weighted_dice_coefficient_loss}
+                      'weighted_dice_coefficient_loss': weighted_dice_coefficient_loss,
+                      'minh_dice_coef_loss': minh_dice_coef_loss,
+                      'tversky_loss': tversky_loss,
+                      'focal_loss': focal_loss,
+                      'ignore_unknown_xentropy': ignore_unknown_xentropy,
+                      'minh_dice_coef_metric': minh_dice_coef_metric
+                      }
     try:
         from keras_contrib.layers import InstanceNormalization
         custom_objects["InstanceNormalization"] = InstanceNormalization
@@ -82,6 +93,7 @@ def train_model(experiment, model, model_file, training_generator, validation_ge
                                       epochs=n_epochs,
                                       validation_data=validation_generator,
                                       validation_steps=validation_steps,
+                                      verbose=1,
                                       callbacks=get_callbacks(model_file,
                                                               initial_learning_rate=initial_learning_rate,
                                                               learning_rate_drop=learning_rate_drop,

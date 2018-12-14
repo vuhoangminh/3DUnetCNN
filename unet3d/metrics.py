@@ -1,3 +1,5 @@
+import numpy as np
+
 from functools import partial
 
 from keras import backend as K
@@ -55,6 +57,16 @@ def minh_dice_coef_loss(y_true, y_pred, labels=config["labels"]):
     return distance
 
 
+def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"]):
+    distance = 0
+    for label in labels:
+        if label != 0:
+            dice_coef_class = dice_coef(
+                y_true[:, :, :, :, label], y_pred[:, :, :, :, label])
+            distance = dice_coef_class + distance
+    return distance/(len(labels)-1)
+
+
 # Ref: salehi17, "Twersky loss function for image segmentation using 3D FCDN"
 # -> the score is computed for each class separately and then summed
 # alpha=beta=0.5 : dice coefficient
@@ -89,9 +101,51 @@ def focal_loss(target, output, gamma=2):
     return -K.sum(K.pow(1. - output, gamma) * target * K.log(output),
                   axis=-1)
 
+
 def ignore_unknown_xentropy(ytrue, ypred):
     return (1-ytrue[:, :, :, 0])*categorical_crossentropy(ytrue, ypred)
 
+
+def soft_dice_loss(y_true, y_pred, epsilon=1e-6): 
+    ''' 
+    Soft dice loss calculation for arbitrary batch size, number of classes, and number of spatial dimensions.
+    Assumes the `channels_last` format.
+  
+    # Arguments
+        y_true: b x X x Y( x Z...) x c One hot encoding of ground truth
+        y_pred: b x X x Y( x Z...) x c Network output, must sum to 1 over c channel (such as after softmax) 
+        epsilon: Used for numerical stability to avoid divide by zero errors
+    
+    # References
+        V-Net: Fully Convolutional Neural Networks for Volumetric Medical Image Segmentation 
+        https://arxiv.org/abs/1606.04797
+        More details on Dice loss formulation 
+        https://mediatum.ub.tum.de/doc/1395260/1395260.pdf (page 72)
+        
+        Adapted from https://github.com/Lasagne/Recipes/issues/99#issuecomment-347775022
+    '''
+    
+    # skip the batch and class axis for calculating Dice score
+    axes = tuple(range(1, len(y_pred.shape)-1)) 
+    numerator = 2. * np.sum(y_pred * y_true, axes)
+    denominator = np.sum(np.square(y_pred) + np.square(y_true), axes)
+    
+    return 1 - np.mean(numerator / (denominator + epsilon)) # average over classes and batch
+
+
+def soft_dice_numpy(y_pred, y_true, eps=1e-7):
+    '''
+    c is number of classes
+    :param y_pred: b x c x X x Y( x Z...) network output, must sum to 1 over c channel (such as after softmax)
+    :param y_true: b x c x X x Y( x Z...) one hot encoding of ground truth
+    :param eps: 
+    :return: 
+    '''
+    
+    axes = tuple(range(2, len(y_pred.shape)))
+    intersect = np.sum(y_pred * y_true, axes)
+    denom = np.sum(y_pred + y_true, axes)
+    return - (2. *intersect / (denom + eps)).mean()
 
 dice_coef = dice_coefficient
 dice_coef_loss = dice_coefficient_loss

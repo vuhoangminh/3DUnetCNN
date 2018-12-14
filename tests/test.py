@@ -95,16 +95,32 @@ print(get_shape_string(shape))
 # test_read_h5()
 
 
-from unet3d.utils.path_utils import get_shape_from_string
+# from unet3d.utils.path_utils import get_shape_from_string
 
-print(get_shape_from_string(get_shape_string(shape)))
-
-
-from brats.prepare_data import get_dataset
+# print(get_shape_from_string(get_shape_string(shape)))
 
 
-print(get_dataset(is_test="0", is_bias_correction="1", is_denoise="bm4d"))
+# from brats.prepare_data import get_dataset
 
-print(get_dataset(is_test="0", is_bias_correction="1", is_denoise="abc"))
 
-print(get_dataset(is_test="0", is_bias_correction="0", is_denoise="abc"))
+# print(get_dataset(is_test="0", is_bias_correction="1", is_denoise="bm4d"))
+
+# print(get_dataset(is_test="0", is_bias_correction="1", is_denoise="abc"))
+
+# print(get_dataset(is_test="0", is_bias_correction="0", is_denoise="abc"))
+
+
+
+# from unet3d.model.densenet_fc import DenseNetFCN
+# model = DenseNetFCN((4,128,128,128), nb_dense_block=5, growth_rate=16,
+#                     nb_layers_per_block=4, upsampling_type='upsampling', classes=1, activation='sigmoid')
+# model.summary()
+
+
+
+
+labels = (0, 1, 2, 4)
+print(len(labels))
+
+for label in labels:
+    print(label)

@@ -57,21 +57,25 @@ def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
     data_filename = get_training_h5_filename(datatype="data", challenge=challenge,
                                              image_shape=image_shape, crop=crop,
                                              is_bias_correction=is_bias_correction,
-                                             is_denoise=is_denoise, is_normalize=is_normalize)
+                                             is_denoise=is_denoise, is_normalize=is_normalize,
+                                             is_test=is_test)
     trainids_filename = get_training_h5_filename(datatype="train_ids", challenge=challenge,
                                                  image_shape=image_shape, crop=crop,
                                                  is_bias_correction=is_bias_correction,
-                                                 is_denoise=is_denoise, is_normalize=is_normalize)
+                                                 is_denoise=is_denoise, is_normalize=is_normalize,
+                                                 is_test=is_test)
     validids_filename = get_training_h5_filename(datatype="valid_ids", challenge=challenge,
                                                  image_shape=image_shape, crop=crop,
                                                  is_bias_correction=is_bias_correction,
-                                                 is_denoise=is_denoise, is_normalize=is_normalize)
+                                                 is_denoise=is_denoise, is_normalize=is_normalize,
+                                                 is_test=is_test)
     model_filename = get_model_h5_filename(datatype="model", challenge=challenge,
                                            image_shape=image_shape, crop=crop,
                                            is_bias_correction=is_bias_correction,
                                            is_denoise=is_denoise, is_normalize=is_normalize,
                                            depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-                                           model=model, patch_shape=patch_shape, is_crf=is_crf)
+                                           model=model, patch_shape=patch_shape, is_crf=is_crf,
+                                           is_test=is_test)
 
     data_path = os.path.join(data_dir, data_filename)
     trainids_path = os.path.join(trainids_dir, trainids_filename)
@@ -85,7 +89,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
           image_shape="160-160-128", is_bias_correction="1",
           is_normalize="z", is_denoise="0", is_test="1",
           depth_unet=4, n_base_filters_unet=16, model="unet",
-          patch_shape="128-128-128", is_crf="0"):
+          patch_shape="128-128-128", is_crf="0",
+          batch_size=1):
 
     data_path, trainids_path, validids_path, model_path = init_path(
         overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -110,7 +115,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print_section("get training and testing generators")
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators_new(
         data_file_opened,
-        batch_size=config["batch_size"],
+        batch_size=batch_size,
         data_split=config["validation_split"],
         overwrite=overwrite,
         validation_keys_file=config["validation_file"],
@@ -148,8 +153,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                               labels=config["labels"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
-                              depth=config["depth"],
-                              n_base_filters=config["n_base_filters"])
+                              depth=depth_unet,
+                              n_base_filters=n_base_filters_unet)
 
     model.summary()
 
@@ -195,12 +200,13 @@ def main():
     n_base_filters_unet = args.n_base_filters_unet
     patch_shape = args.patch_shape
     is_crf = args.is_crf
+    batch_size = args.batch_size
 
     train(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
           image_shape=image_shape, is_bias_correction=is_bias_correction,
           is_normalize=is_normalize, is_denoise=is_denoise, is_test=is_test,
           model=model, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-          patch_shape=patch_shape, is_crf=is_crf)
+          patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size)
 
 
 if __name__ == "__main__":
