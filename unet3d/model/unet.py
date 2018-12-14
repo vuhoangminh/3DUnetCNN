@@ -5,9 +5,6 @@ from keras.layers import Conv3D, MaxPooling3D, UpSampling3D, Activation, BatchNo
 from keras.optimizers import Adam
 
 from unet3d.metrics import dice_coefficient_loss, get_label_dice_coefficient_function, dice_coefficient
-from unet3d.metrics import minh_dice_coef_loss, dice_coefficient_loss, minh_dice_coef_metric
-from unet3d.metrics import weighted_dice_coefficient_loss
-from keras.utils import multi_gpu_model
 
 K.set_image_data_format("channels_first")
 
@@ -17,9 +14,9 @@ except ImportError:
     from keras.layers.merge import concatenate
 
 
-def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=True,
+def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
                   depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False, metrics=dice_coefficient,
-                  batch_normalization=True, activation_name="sigmoid", labels=[1], loss=weighted_dice_coefficient_loss):
+                  batch_normalization=False, activation_name="sigmoid"):
     """
     Builds the 3D UNet Keras model.f
     :param metrics: List metrics to be calculated during model training (default is dice coefficient).
@@ -75,27 +72,19 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
         metrics = [metrics]
 
     if include_label_wise_dice_coefficients and n_labels > 1:
-        # label_wise_dice_metrics = [get_label_dice_coefficient_function(index) for index in range(n_labels)]
-        label_wise_dice_metrics = [get_label_dice_coefficient_function(label) for label in labels]
+        label_wise_dice_metrics = [get_label_dice_coefficient_function(index) for index in range(n_labels)]
         if metrics:
             metrics = metrics + label_wise_dice_metrics
         else:
             metrics = label_wise_dice_metrics
 
-    try:
-        model = multi_gpu_model(model, gpus=2)
-        print('!! train on multi gpus')
-    except:
-        print('!! train on single gpu')
-        pass    
-    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=loss, metrics=metrics)
+    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coefficient_loss, metrics=metrics)
     return model
 
 
 def create_convolution_block(input_layer, n_filters, batch_normalization=False, kernel=(3, 3, 3), activation=None,
                              padding='same', strides=(1, 1, 1), instance_normalization=False):
     """
-
     :param strides:
     :param input_layer:
     :param n_filters:

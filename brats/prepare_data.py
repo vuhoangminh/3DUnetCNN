@@ -77,10 +77,9 @@ def prepare_data(overwrite=True, crop=True, challenge="brats", year=2018,
         write_data_to_file(training_files, data_file_path,
                            image_shape=get_shape_from_string(image_shape),
                            brats_dir=BRATS_DIR,
-                           crop=True,
+                           crop=crop,
                            is_normalize=is_normalize,
-                           dataset=dataset
-                           )
+                           dataset=dataset)
 
 
 def main():
