@@ -33,8 +33,8 @@ config["image_shape"] = (160, 192, 128)
 # config["is_create_patch_index_list_original"] = False
 
 
-config["labels"] = (1, 2, 4)  # the label numbers on the input image
-# config["labels"] = (0, 1, 2, 4)  # the label numbers on the input image
+# config["labels"] = (1, 2, 4)  # the label numbers on the input image
+config["labels"] = (0, 1, 2, 4)  # the label numbers on the input image
 config["n_labels"] = len(config["labels"])
 
 
@@ -59,13 +59,13 @@ config_unet["depth"] = 4
 config_unet["n_base_filters"] = 16
 
 config_unet["batch_size"] = 1
-config_unet["validation_batch_size"] = 1
+config_unet["validation_batch_size"] = 2
 config_unet["n_epochs"] = 500  # cutoff the training after this many epochs
 # learning rate will be reduced after this many epochs if the validation loss is not improving
 config_unet["patience"] = 10
 # training will be stopped after this many epochs without the validation loss improving
 config_unet["early_stop"] = 50
-config_unet["initial_learning_rate"] = 0.0001 # factor by which the learning rate will be reduced
+config_unet["initial_learning_rate"] = 5*0.00001 # factor by which the learning rate will be reduced
 config_unet["learning_rate_drop"] = 0.8 # portion of the data that will be used for training
 config_unet["validation_split"] = 0.8 # if > 0, during training, validation patches will be overlapping
 config_unet["validation_patch_overlap"] = 0 # randomly offset the first patch index by up to this offset

@@ -103,6 +103,9 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     config["model_file"] = model_path
     config["training_file"] = trainids_path
     config["validation_file"] = validids_path
+    config["patch_shape"] = get_shape_from_string(patch_shape)
+    config["input_shape"] = tuple(
+        [config["nb_channels"]] + list(config["patch_shape"]))
 
     if overwrite or not os.path.exists(data_path):
         prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -146,11 +149,11 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         model = load_old_model(config["model_file"])
     else:
         # instantiate new model
-        print("init model model")
+        print("init unet model")
         model = unet_model_3d(input_shape=config["input_shape"],
                               pool_size=config["pool_size"],
                               n_labels=config["n_labels"],
-                              labels=config["labels"],
+                            #   labels=config["labels"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=depth_unet,
