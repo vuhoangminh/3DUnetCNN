@@ -164,8 +164,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         else:
             model = isensee2017_model(input_shape=config["input_shape"],
                                       n_labels=config["n_labels"],
-                                      initial_learning_rate=config["initial_learning_rate"],
-                                      n_base_filters=config["n_base_filters"])
+                                      initial_learning_rate=config["initial_learning_rate"])
 
     model.summary()
 
@@ -188,7 +187,9 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                 learning_rate_drop=config["learning_rate_drop"],
                 learning_rate_patience=config["patience"],
                 early_stopping_patience=config["early_stop"],
-                n_epochs=config["n_epochs"])
+                n_epochs=config["n_epochs"],
+                # learning_rate_epochs=config["learning_rate_epochs"]
+                )
 
     experiment.log_parameters(config)
     # experiment.log_dataset_hash(x_train) #creates and logs a hash of your data
