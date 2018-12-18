@@ -5,7 +5,7 @@ import tables
 
 import unet3d.utils.print_utils as print_utils
 
-from .normalize import normalize_data_storage
+from .normalize import normalize_data_storage, normalize_01_data_storage
 from .normalize_minh import normalize_minh_data_storage, reslice_image_set
 
 
@@ -60,7 +60,7 @@ def add_data_to_storage(data_storage, truth_storage, affine_storage, subject_dat
 
 
 def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, truth_dtype=np.uint8, subject_ids=None,
-                       normalize=True, crop=True, is_normalize="z", dataset="test"):
+                       normalize=True, crop=True, is_normalize="z", is_hist_match="0", dataset="test"):
     """
     Takes in a set of training images and writes those images to an hdf5 file.
     :param training_data_files: List of tuples containing the training data files. The modalities should be listed in
@@ -101,6 +101,10 @@ def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, tr
             print_utils.print_processing("normalizing minh's method")
             normalize_minh_data_storage(
                 data_storage, training_data_files, brats_dir, dataset=dataset)
+        elif is_normalize=="01":
+            print_utils.print_separator()
+            print_utils.print_processing("normalizing to 0-1")
+            normalize_01_data_storage(data_storage)                            
     hdf5_file.close()
     return out_file
 

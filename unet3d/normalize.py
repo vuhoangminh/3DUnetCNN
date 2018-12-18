@@ -6,6 +6,8 @@ from nilearn.image import new_img_like
 from unet3d.utils.utils import resize, read_image_files
 from .utils import crop_img, crop_img_to, read_image
 
+from unet3d.normalize_minh import normalize_to_0_1
+
 
 def find_downsized_info(training_data_files, input_shape):
     foreground = get_complete_foreground(training_data_files)
@@ -83,4 +85,12 @@ def normalize_data_storage(data_storage):
     std = np.asarray(stds).mean(axis=0)
     for index in range(data_storage.shape[0]):
         data_storage[index] = normalize_data(data_storage[index], mean, std)
+    return data_storage
+
+
+def normalize_01_data_storage(data_storage):
+    for index in range(data_storage.shape[0]):
+        data = data_storage[index]
+        data_normalized  = normalize_to_0_1(data)
+        data_storage[index] = data_normalized
     return data_storage

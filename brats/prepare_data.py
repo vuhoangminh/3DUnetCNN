@@ -45,7 +45,8 @@ def fetch_training_data_files(dataset):
 
 def prepare_data(overwrite=True, crop=True, challenge="brats", year=2018,
                  image_shape="160-160-128", is_bias_correction="1",
-                 is_normalize="z", is_denoise="0", is_test="1"):
+                 is_normalize="z", is_denoise="0", 
+                 is_hist_match="0", is_test="1"):
 
     data_dir = get_h5_training_dir(BRATS_DIR, "data")
 
@@ -60,7 +61,9 @@ def prepare_data(overwrite=True, crop=True, challenge="brats", year=2018,
     data_filename = get_training_h5_filename(datatype="data", challenge=challenge,
                                              image_shape=image_shape, crop=crop,
                                              is_bias_correction=is_bias_correction,
-                                             is_denoise=is_denoise, is_normalize=is_normalize)
+                                             is_denoise=is_denoise, 
+                                             is_normalize=is_normalize,
+                                             is_hist_match=is_hist_match)
 
     print(data_filename)
 
@@ -79,6 +82,7 @@ def prepare_data(overwrite=True, crop=True, challenge="brats", year=2018,
                            brats_dir=BRATS_DIR,
                            crop=crop,
                            is_normalize=is_normalize,
+                           is_hist_match=is_hist_match,
                            dataset=dataset)
 
 

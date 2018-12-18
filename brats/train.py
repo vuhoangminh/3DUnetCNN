@@ -42,7 +42,8 @@ def make_dir(data_dir):
 
 def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
               image_shape="160-160-128", is_bias_correction="1",
-              is_normalize="z", is_denoise="0", is_test="1",
+              is_normalize="z", is_denoise="0", 
+              is_hist_match="0", is_test="1",
               depth_unet=4, n_base_filters_unet=16, model="unet",
               patch_shape="128-128-128", is_crf="0"):
 
@@ -58,22 +59,30 @@ def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
     data_filename = get_training_h5_filename(datatype="data", challenge=challenge,
                                              image_shape=image_shape, crop=crop,
                                              is_bias_correction=is_bias_correction,
-                                             is_denoise=is_denoise, is_normalize=is_normalize,
+                                             is_denoise=is_denoise, 
+                                             is_normalize=is_normalize,
+                                             is_hist_match=is_hist_match,
                                              is_test=is_test)
     trainids_filename = get_training_h5_filename(datatype="train_ids", challenge=challenge,
                                                  image_shape=image_shape, crop=crop,
                                                  is_bias_correction=is_bias_correction,
-                                                 is_denoise=is_denoise, is_normalize=is_normalize,
+                                                 is_denoise=is_denoise, 
+                                                 is_normalize=is_normalize,
+                                                 is_hist_match=is_hist_match,
                                                  is_test=is_test)
     validids_filename = get_training_h5_filename(datatype="valid_ids", challenge=challenge,
                                                  image_shape=image_shape, crop=crop,
                                                  is_bias_correction=is_bias_correction,
-                                                 is_denoise=is_denoise, is_normalize=is_normalize,
+                                                 is_denoise=is_denoise, 
+                                                 is_normalize=is_normalize,
+                                                 is_hist_match=is_hist_match,
                                                  is_test=is_test)
     model_filename = get_model_h5_filename(datatype="model", challenge=challenge,
                                            image_shape=image_shape, crop=crop,
                                            is_bias_correction=is_bias_correction,
-                                           is_denoise=is_denoise, is_normalize=is_normalize,
+                                           is_denoise=is_denoise, 
+                                           is_normalize=is_normalize,
+                                           is_hist_match=is_hist_match,
                                            depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
                                            model=model, patch_shape=patch_shape, is_crf=is_crf,
                                            is_test=is_test)
@@ -88,7 +97,8 @@ def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
 
 def train(overwrite=True, crop=True, challenge="brats", year=2018,
           image_shape="160-160-128", is_bias_correction="1",
-          is_normalize="z", is_denoise="0", is_test="1",
+          is_normalize="z", is_denoise="0", 
+          is_hist_match="0", is_test="1",
           depth_unet=4, n_base_filters_unet=16, model="unet",
           patch_shape="128-128-128", is_crf="0",
           batch_size=1):
@@ -96,7 +106,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     data_path, trainids_path, validids_path, model_path = init_path(
         overwrite=overwrite, crop=crop, challenge=challenge, year=year,
         image_shape=image_shape, is_bias_correction=is_bias_correction,
-        is_normalize=is_normalize, is_denoise=is_denoise, is_test=is_test,
+        is_normalize=is_normalize, is_denoise=is_denoise, 
+        is_hist_match=is_hist_match, is_test=is_test,
         model=model, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
         patch_shape=patch_shape, is_crf=is_crf)
 
@@ -108,10 +119,13 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
 
+    overwrite=True        
+
     if overwrite or not os.path.exists(data_path):
         prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
                      image_shape=image_shape, is_bias_correction=is_bias_correction,
-                     is_normalize=is_normalize, is_denoise=is_denoise, is_test=is_test)
+                     is_normalize=is_normalize, is_denoise=is_denoise, 
+                     is_hist_match=is_hist_match, is_test=is_test)
 
     print_section("Open file")
     data_file_opened = open_data_file(config["data_file"])
@@ -213,10 +227,12 @@ def main():
     patch_shape = args.patch_shape
     is_crf = args.is_crf
     batch_size = args.batch_size
+    is_hist_match = args.is_hist_match
 
     train(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
           image_shape=image_shape, is_bias_correction=is_bias_correction,
-          is_normalize=is_normalize, is_denoise=is_denoise, is_test=is_test,
+          is_normalize=is_normalize, is_denoise=is_denoise, 
+          is_hist_match=is_hist_match, is_test=is_test,
           model=model, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
           patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size)
 

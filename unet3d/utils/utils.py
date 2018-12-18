@@ -92,3 +92,8 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+def save_nib(volume, path, affine):
+    volume_temp = nib.Nifti1Image(volume, affine=affine)
+    nib.save(volume_temp, path)

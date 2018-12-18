@@ -106,53 +106,64 @@ def get_h5_training_dir(brats_dir, datatype="data"):
     return os.path.join(brats_dir, "database", datatype)
 
 
+def get_core_name(challenge="brats", year="2018",
+                  image_shape="160-192-128", crop="1",
+                  is_bias_correction="1", is_denoise="0", is_normalize="z",
+                  is_hist_match="0"):
+    return "{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_hist-{}".format(
+        challenge, year, image_shape, str(crop), str(
+            is_bias_correction), str(is_denoise),
+        str(is_normalize), str(is_hist_match))
+
+
+def get_model_name(model, patch_shape, is_crf, depth_unet=None, n_base_filters_unet=None):
+    if model == "unet":
+        return "ps-{}_{}_crf-{}_d-{}_nb-{}".format(
+            patch_shape, model, str(is_crf),
+            str(depth_unet), str(n_base_filters_unet))
+    else:
+        return "ps-{}_{}_crf-{}".format(
+            patch_shape, model, str(is_crf))
+
+
 def get_model_h5_filename(datatype, challenge="brats", year="2018",
                           image_shape="160-192-128", crop="1",
                           is_bias_correction="1", is_denoise="0", is_normalize="z",
-                          is_test="1", depth_unet=4, n_base_filters_unet=16,
+                          is_hist_match="0", is_test="1",
+                          depth_unet=4, n_base_filters_unet=16,
                           model="unet", patch_shape="128-128-128", is_crf="0"):
-    if model == "unet":
-        if str2bool(is_test):
-            return "test_{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_ps-{}_{}_crf-{}_d-{}_nb-{}_{}.h5".format(
-                challenge, year, image_shape, str(crop), str(
-                    is_bias_correction), str(is_denoise),
-                str(is_normalize), patch_shape, model, str(
-                    is_crf), str(depth_unet), str(n_base_filters_unet),
-                datatype)
+    core_name = get_core_name(challenge=challenge, year=year,
+                              image_shape=image_shape, crop=crop,
+                              is_bias_correction=is_bias_correction,
+                              is_denoise=is_denoise,
+                              is_normalize=is_normalize,
+                              is_hist_match=is_hist_match)
+    model_name = get_model_name(model, patch_shape, is_crf,
+                                depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet)
 
-        else:
-            return "{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_ps-{}_{}_crf-{}_d-{}_nb-{}_{}.h5".format(
-                challenge, year, image_shape, str(crop), str(
-                    is_bias_correction), str(is_denoise),
-                str(is_normalize), patch_shape, model, str(
-                    is_crf), str(depth_unet), str(n_base_filters_unet),
-                datatype)
+    if str2bool(is_test):
+        return "test_{}_{}_{}.h5".format(
+            core_name, model_name, datatype)
+
     else:
-        if str2bool(is_test):
-            return "test_{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_ps-{}_{}_crf-{}_{}.h5".format(
-                challenge, year, image_shape, str(crop), str(
-                    is_bias_correction), str(is_denoise),
-                str(is_normalize), patch_shape, model, str(is_crf), datatype)
-
-        else:
-            return "{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_ps-{}_{}_crf-{}_{}.h5".format(
-                challenge, year, image_shape, str(crop), str(
-                    is_bias_correction), str(is_denoise),
-                str(is_normalize), patch_shape, model, str(is_crf), datatype)
+        return "{}_{}_{}.h5".format(
+            core_name, model_name, datatype)
 
 
 def get_training_h5_filename(datatype, challenge="brats", year="2018",
                              image_shape="160-192-128", crop="1",
                              is_bias_correction="1", is_denoise="0", is_normalize="z",
-                             is_test="1"):
+                             is_hist_match="0", is_test="1"):
+    core_name = get_core_name(challenge=challenge, year=year,
+                              image_shape=image_shape, crop=crop,
+                              is_bias_correction=is_bias_correction,
+                              is_denoise=is_denoise,
+                              is_normalize=is_normalize,
+                              is_hist_match=is_hist_match)
     if str2bool(is_test):
-        return "test_{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_{}.h5".format(
-            challenge, year, image_shape, str(crop), str(is_bias_correction),
-            str(is_denoise), str(is_normalize), datatype)
+        return "test_{}_{}.h5".format(core_name, datatype)
     else:
-        return "{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_{}.h5".format(
-            challenge, year, image_shape, str(crop), str(is_bias_correction),
-            str(is_denoise), str(is_normalize), datatype)
+        return "{}_{}.h5".format(core_name, datatype)
 
 
 def get_mask_path_from_set_of_files(in_files):

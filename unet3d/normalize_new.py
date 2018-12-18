@@ -1,27 +1,19 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Dec 03
-Copyright (c) 2018, Vu Hoang Minh. All rights reserved.
-@author:  Vu Hoang Minh
-@email:   minh.vu@umu.se
-@license: BSD 3-clause.
-"""
-
 import os
-import numpy as np
-from skimage import data, img_as_float
-from skimage import exposure
+
 import numpy as np
 import nibabel as nib
 
-from nilearn.masking import compute_multi_background_mask
 from nilearn.image import new_img_like
-from unet3d.utils.path_utils import get_filename, get_template_path, get_mask_path_from_set_of_files
-from unet3d.utils.utils import resize, read_image_files
+from skimage import exposure
+
 from .utils import crop_img, crop_img_to, read_image
 
-from unet3d.utils.volume import get_background_mask
+from unet3d.utils.utils import resize, read_image_files
+from unet3d.utils.path_utils import get_filename, get_template_path, get_mask_path_from_set_of_files
+
 from brats.config import config
+
+from unet3d.utils.utils import str2bool
 
 
 def find_downsized_info(training_data_files, input_shape):
@@ -33,18 +25,13 @@ def find_downsized_info(training_data_files, input_shape):
     return crop_slices, final_image.affine, final_image.header
 
 
-def get_cropping_parameters_old(in_files):
+def get_cropping_parameters(in_files):
     if len(in_files) > 1:
         foreground = get_complete_foreground(in_files)
     else:
         foreground = get_foreground_from_set_of_files(
             in_files[0], return_image=True)
     return crop_img(foreground, return_slices=True, copy=True)
-
-
-def get_cropping_parameters(in_files):
-    mask = get_background_mask(in_files[0][0])
-    return crop_img(mask, return_slices=True, copy=True)
 
 
 def reslice_image_set(in_files, image_shape, out_files=None, label_indices=None, crop=False):
@@ -73,81 +60,32 @@ def get_complete_foreground(training_data_files):
     return new_img_like(read_image(training_data_files[0][-1]), foreground)
 
 
-def get_foreground_from_set_of_files(set_of_files, return_image=False):
-    volumes_data = list()
-    for path in set_of_files:
-        volume = read_image(path)
-        volumes_data.append(volume)
-    background_image = compute_multi_background_mask(volumes_data)
+def get_foreground_from_set_of_files(set_of_files, background_value=0, tolerance=0.00001, return_image=False):
+    for i, image_file in enumerate(set_of_files):
+        image = read_image(image_file)
+        is_foreground = np.logical_or(image.get_data() < (background_value - tolerance),
+                                      image.get_data() > (background_value + tolerance))
+        if i == 0:
+            foreground = np.zeros(is_foreground.shape, dtype=np.uint8)
+
+        foreground[is_foreground] = 1
     if return_image:
-        return new_img_like(volume, background_image)
+        return new_img_like(image, foreground)
     else:
-        return background_image
+        return foreground
 
 
-def normalize_mean_std(volume):
-    mean = np.mean(volume)
-    std = np.std(volume)
-    volume_norm = (volume-mean)/std
-    return volume_norm
+def normalize_z(data):
+    data_norm = data - np.mean(data)
+    data_norm = data_norm/np.std(data)
+    return data_norm
 
 
-def normalize_to_0_1(volume):
-    volume_temp = volume
-    volume_temp[volume_temp < 0] = 0
-
-    x_min = np.min(volume_temp)
-    x_max = np.max(volume_temp)
-
-    volume_norm = (volume - x_min)/(x_max-x_min)
-    return volume_norm
-
-
-def perform_histogram_equalization(volume):
-    return exposure.equalize_hist(volume)
-
-
-def perform_adaptive_histogram_equalization(volume):
-    # volume_temp = volume.flatten()
-    volume_temp = volume.reshape(
-        (volume.shape[0], volume.shape[1]*volume.shape[2]))
-    volume_adap = exposure.equalize_adapthist(volume_temp, clip_limit=0.01)
-    return volume_adap.reshape((volume.shape[0], volume.shape[1], volume.shape[2]))
-
-
-def hist_match_non_zeros(source, template):
-    # set negative to 0
-    source[source < 0] = 0
-    template[template < 0] = 0
-
-    # normalize to 0-1
-    source_norm = normalize_to_0_1(source)
-    template_norm = normalize_to_0_1(template)
-
-    # reshape to 1d
-    source_norm_1d = source_norm.reshape((source_norm.size))
-    template_norm_1d = template_norm.reshape((template_norm.size))
-
-    # extract index
-    idx_source = np.argwhere(source_norm_1d > 0)
-    idx_template = np.argwhere(template_norm_1d > 0)
-
-    # get array
-    source_norm_array = np.ndarray.take(source_norm, idx_source)
-    template_norm_array = np.take(template_norm, idx_template)
-
-    # hist matching")
-    source_hist_match_array = hist_match(
-        source_norm_array, template_norm_array)
-
-    # copy data back
-    source_hist_match = np.zeros((source_norm.size, 1))
-    source_hist_match[idx_source.flatten()] = source_hist_match_array
-
-    # reshape to original shape
-    source_hist_match = source_hist_match.reshape(source_norm.shape)
-
-    return source_hist_match
+def normalize_01(data):
+    x_min = np.min(data)
+    x_max = np.max(data)
+    data_norm = (data - x_min)/(x_max-x_min)
+    return data_norm
 
 
 def hist_match(source, template):
@@ -193,18 +131,55 @@ def hist_match(source, template):
     return interp_t_values[bin_idx].reshape(oldshape)
 
 
-# temp_volume_path = "/home/minhvu/Desktop/temp/volume.nii.gz"
-# temp_template_path = "/home/minhvu/Desktop/temp/template.nii.gz"
-# temp_volume_norm_path = "/home/minhvu/Desktop/temp/norm.nii.gz"
-# temp_diff_path = "/home/minhvu/Desktop/temp/diff.nii.gz"
+def normalize_volume(source, template,
+                     is_normalize="z",
+                     is_hist_match="0"):
+    # set negative to 0
+    source[source < 0] = 0
+    template[template < 0] = 0
+
+    # reshape to 1d
+    source_1d = source.reshape((source.size))
+    template_1d = template.reshape((template.size))
+
+    # extract index
+    idx_source = np.argwhere(source_1d > 0)
+    idx_template = np.argwhere(template_1d > 0)
+
+    # get array
+    source_norm_array = np.ndarray.take(source, idx_source)
+    template_norm_array = np.take(template, idx_template)
+
+    # normalize to 0-1
+    if is_normalize == "01":
+        source_norm_array = normalize_01(source_norm_array)
+        template_norm_array = normalize_01(template_norm_array)
+    elif is_normalize == "z":
+        source_norm_array = normalize_z(source_norm_array)
+        template_norm_array = normalize_z(template_norm_array)
+
+    # hist matching")
+    if str2bool(is_hist_match):
+        source_hist_match_array = hist_match(
+            source_norm_array, template_norm_array)
+    else:
+        source_hist_match_array = source_norm_array
+
+    # copy data back
+    source_norm = np.zeros((source.size, 1))
+    source_norm[idx_source.flatten()] = source_hist_match_array
+
+    # reshape to original shape
+    source_norm = source_norm.reshape(source.shape)
+
+    return source_norm
 
 
-def save_nib(volume, path, affine):
-    volume_temp = nib.Nifti1Image(volume, affine=affine)
-    nib.save(volume_temp, path)
+def normalize_data(data, data_paths, brats_dir,
+                   dataset="test",
+                   is_normalize="z",
+                   is_hist_match="0"):
 
-
-def normalize_data(data, data_paths, brats_dir, dataset="original"):
     for i in range(data.shape[0]):
         volume = data[i, :, :, :]
         data_path = data_paths[i]
@@ -219,7 +194,9 @@ def normalize_data(data, data_paths, brats_dir, dataset="original"):
         # save_nib(volume, temp_volume_path, affine)
 
         template = template.get_data()
-        volume_normalized = hist_match_non_zeros(volume, template)
+        volume_normalized = normalize_volume(volume, template,
+                                             is_normalize=is_normalize,
+                                             is_hist_match=is_hist_match)
         data[i, :, :, :] = volume_normalized
 
         # save_nib(template, temp_template_path, affine)
@@ -228,11 +205,14 @@ def normalize_data(data, data_paths, brats_dir, dataset="original"):
     return data
 
 
-def normalize_minh_data_storage(data_storage, training_data_files, brats_dir, dataset="original"):
+def normalize_data_storage(data_storage, training_data_files, brats_dir,
+                           dataset="original", is_normalize="z", is_hist_match="0"):
     for index in range(data_storage.shape[0]):
         data_paths = training_data_files[index]
         data_storage[index] = normalize_data(data_storage[index],
                                              data_paths,
                                              brats_dir,
-                                             dataset=dataset)
+                                             dataset=dataset,
+                                             is_normalize=is_normalize,
+                                             is_hist_match=is_hist_match)
     return data_storage
