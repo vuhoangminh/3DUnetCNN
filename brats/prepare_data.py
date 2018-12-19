@@ -63,7 +63,8 @@ def prepare_data(overwrite=True, crop=True, challenge="brats", year=2018,
                                              is_bias_correction=is_bias_correction,
                                              is_denoise=is_denoise, 
                                              is_normalize=is_normalize,
-                                             is_hist_match=is_hist_match)
+                                             is_hist_match=is_hist_match,
+                                             is_test=is_test)
 
     print(data_filename)
 
@@ -97,10 +98,12 @@ def main():
     is_normalize = args.is_normalize
     is_denoise = args.is_denoise
     is_test = args.is_test
+    is_hist_match = args.is_hist_match
 
     prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
                  image_shape=image_shape, is_bias_correction=is_bias_correction,
-                 is_normalize=is_normalize, is_denoise=is_denoise, is_test=is_test)
+                 is_normalize=is_normalize, is_denoise=is_denoise, 
+                 is_hist_match=is_hist_match, is_test=is_test)
 
 
 if __name__ == "__main__":

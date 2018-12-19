@@ -5,8 +5,9 @@ import tables
 
 import unet3d.utils.print_utils as print_utils
 
-from .normalize import normalize_data_storage, normalize_01_data_storage
-from .normalize_minh import normalize_minh_data_storage, reslice_image_set
+# from .normalize import normalize_data_storage, normalize_01_data_storage
+# from .normalize_minh import normalize_minh_data_storage, reslice_image_set
+from unet3d.normalize_new import normalize_data_storage, reslice_image_set
 
 
 def create_data_file(out_file, n_channels, n_samples, image_shape):
@@ -92,21 +93,31 @@ def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, tr
     if subject_ids:
         hdf5_file.create_array(hdf5_file.root, 'subject_ids', obj=subject_ids)
     if normalize:
-        if is_normalize=="z":
-            print_utils.print_separator()
-            print_utils.print_processing("normalizing using mean and std")
-            normalize_data_storage(data_storage)
-        elif is_normalize=="minh":
-            print_utils.print_separator()
-            print_utils.print_processing("normalizing minh's method")
-            normalize_minh_data_storage(
-                data_storage, training_data_files, brats_dir, dataset=dataset)
-        elif is_normalize=="01":
-            print_utils.print_separator()
-            print_utils.print_processing("normalizing to 0-1")
-            normalize_01_data_storage(data_storage)                            
+        # if is_normalize=="z":
+        #     print_utils.print_separator()
+        #     print_utils.print_processing("normalizing using mean and std")
+        #     normalize_data_storage(data_storage)
+        # elif is_normalize=="minh":
+        #     print_utils.print_separator()
+        #     print_utils.print_processing("normalizing minh's method")
+        #     normalize_minh_data_storage(
+        #         data_storage, training_data_files, brats_dir, dataset=dataset)
+        # elif is_normalize=="01":
+        #     print_utils.print_separator()
+        #     print_utils.print_processing("normalizing to 0-1")
+        #     normalize_01_data_storage(data_storage)
+        print_utils.print_separator()
+        print_utils.print_processing("normalize {} and histogram matching {}".format(
+            is_normalize, is_hist_match))
+        normalize_data_storage(data_storage=data_storage,
+                               training_data_files=training_data_files,
+                               brats_dir=brats_dir,
+                               dataset=dataset,
+                               is_normalize=is_normalize,
+                               is_hist_match=is_hist_match)
     hdf5_file.close()
     return out_file
+
 
 
 def open_data_file(filename, readwrite="r"):

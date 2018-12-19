@@ -3,6 +3,7 @@ import os
 import numpy as np
 import nibabel as nib
 
+from nilearn.masking import compute_multi_background_mask
 from nilearn.image import new_img_like
 from skimage import exposure
 
@@ -11,6 +12,7 @@ from .utils import crop_img, crop_img_to, read_image
 from unet3d.utils.utils import resize, read_image_files
 from unet3d.utils.path_utils import get_filename, get_template_path, get_mask_path_from_set_of_files
 
+from unet3d.utils.volume import get_background_mask
 from brats.config import config
 
 from unet3d.utils.utils import str2bool
@@ -25,13 +27,18 @@ def find_downsized_info(training_data_files, input_shape):
     return crop_slices, final_image.affine, final_image.header
 
 
-def get_cropping_parameters(in_files):
+def get_cropping_parameters_old(in_files):
     if len(in_files) > 1:
         foreground = get_complete_foreground(in_files)
     else:
         foreground = get_foreground_from_set_of_files(
             in_files[0], return_image=True)
     return crop_img(foreground, return_slices=True, copy=True)
+
+
+def get_cropping_parameters(in_files):
+    mask = get_background_mask(in_files[0][0])
+    return crop_img(mask, return_slices=True, copy=True)
 
 
 def reslice_image_set(in_files, image_shape, out_files=None, label_indices=None, crop=False):
@@ -60,19 +67,16 @@ def get_complete_foreground(training_data_files):
     return new_img_like(read_image(training_data_files[0][-1]), foreground)
 
 
-def get_foreground_from_set_of_files(set_of_files, background_value=0, tolerance=0.00001, return_image=False):
-    for i, image_file in enumerate(set_of_files):
-        image = read_image(image_file)
-        is_foreground = np.logical_or(image.get_data() < (background_value - tolerance),
-                                      image.get_data() > (background_value + tolerance))
-        if i == 0:
-            foreground = np.zeros(is_foreground.shape, dtype=np.uint8)
-
-        foreground[is_foreground] = 1
+def get_foreground_from_set_of_files(set_of_files, return_image=False):
+    volumes_data = list()
+    for path in set_of_files:
+        volume = read_image(path)
+        volumes_data.append(volume)
+    background_image = compute_multi_background_mask(volumes_data)
     if return_image:
-        return new_img_like(image, foreground)
+        return new_img_like(volume, background_image)
     else:
-        return foreground
+        return background_image
 
 
 def normalize_z(data):

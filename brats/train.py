@@ -117,9 +117,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     config["validation_file"] = validids_path
     config["patch_shape"] = get_shape_from_string(patch_shape)
     config["input_shape"] = tuple(
-        [config["nb_channels"]] + list(config["patch_shape"]))
-
-    overwrite=True        
+        [config["nb_channels"]] + list(config["patch_shape"]))      
 
     if overwrite or not os.path.exists(data_path):
         prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
