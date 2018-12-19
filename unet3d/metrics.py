@@ -5,8 +5,11 @@ from functools import partial
 from keras import backend as K
 from keras.losses import categorical_crossentropy
 
+from niftynet.layer.loss_segmentation import generalised_dice_loss, generalised_wasserstein_dice_loss
+
 from brats.config import config
 
+from unet3d.utils import metrics_utils as utils
 
 def dice_coefficient(y_true, y_pred, smooth=1.):
     y_true_f = K.flatten(y_true)
@@ -79,25 +82,6 @@ def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"]):
 #     return distance/(len(labels)-1)
 
 
-# def minh_dice_coef_loss(y_true, y_pred, labels=config["labels"]):
-#     distance = 0
-#     for label in range(len(labels)):
-#         dice_coef_class = dice_coef(
-#             y_true[:, :, :, :, label], y_pred[:, :, :, :, label])
-#         distance = 1 - dice_coef_class + distance
-#     return distance
-
-
-# def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"]):
-#     distance = 0
-#     for label in range(len(labels)):
-#         if label != 0:
-#             dice_coef_class = dice_coef(
-#                 y_true[:, :, :, :, label], y_pred[:, :, :, :, label])
-#             distance = dice_coef_class + distance
-#     return distance/(len(labels)-1)
-
-
 # Ref: salehi17, "Twersky loss function for image segmentation using 3D FCDN"
 # -> the score is computed for each class separately and then summed
 # alpha=beta=0.5 : dice coefficient
@@ -157,7 +141,11 @@ def soft_dice_loss(y_true, y_pred, epsilon=1e-6):
     '''
 
     # skip the batch and class axis for calculating Dice score
-    axes = tuple(range(1, len(y_pred.shape)-1))
+    if K.image_data_format() == 'channels_last':
+        axes = tuple(range(1, len(y_pred.shape)-1))
+    else:
+        axes = tuple(range(2, len(y_pred.shape)))
+
     numerator = 2. * np.sum(y_pred * y_true, axes)
     denominator = np.sum(np.square(y_pred) + np.square(y_true), axes)
 
@@ -178,6 +166,49 @@ def soft_dice_numpy(y_pred, y_true, eps=1e-7):
     intersect = np.sum(y_pred * y_true, axes)
     denom = np.sum(y_pred + y_true, axes)
     return - (2. * intersect / (denom + eps)).mean()
+
+
+def tv_ndim_loss(x, beta=2):
+    r"""Implements the N-dim version of function
+    $$TV^{\beta}(x) = \sum_{whc} \left ( \left ( x(h, w+1, c) - x(h, w, c) \right )^{2} +
+    \left ( x(h+1, w, c) - x(h, w, c) \right )^{2} \right )^{\frac{\beta}{2}}$$
+    to return total variation for all images in the batch.
+    """
+    def normalize(input_tensor, output_tensor):
+        """Normalizes the `output_tensor` with respect to `input_tensor` dimensions.
+        This makes regularizer weight factor more or less uniform across various input image dimensions.
+        Args:
+            input_tensor: An tensor of shape: `(samples, channels, image_dims...)` if `image_data_format=
+                    channels_first` or `(samples, image_dims..., channels)` if `image_data_format=channels_last`.
+            output_tensor: The tensor to normalize.
+        Returns:
+            The normalized tensor.
+        """
+        image_dims = utils.get_img_shape(input_tensor)[1:]
+        return output_tensor / np.prod(image_dims)
+
+    image_dims = K.ndim(x) - 2
+
+    # Constructing slice [1:] + [:-1] * (image_dims - 1) and [:-1] * (image_dims)
+    start_slice = [slice(1, None, None)] + [slice(None, -1, None) for _ in range(image_dims - 1)]
+    end_slice = [slice(None, -1, None) for _ in range(image_dims)]
+    samples_channels_slice = [slice(None, None, None), slice(None, None, None)]
+
+    # Compute pixel diffs by rolling slices to the right per image dim.
+    tv = None
+    for i in range(image_dims):
+        ss = tuple(samples_channels_slice + start_slice)
+        es = tuple(samples_channels_slice + end_slice)
+        diff_square = K.square(x[utils.slicer[ss]] - x[utils.slicer[es]])
+        tv = diff_square if tv is None else tv + diff_square
+
+        # Roll over to next image dim
+        start_slice = np.roll(start_slice, 1).tolist()
+        end_slice = np.roll(end_slice, 1).tolist()
+
+    tv = K.sum(K.pow(tv, beta / 2.))
+    return normalize(x, tv)
+
 
 
 dice_coef = dice_coefficient
