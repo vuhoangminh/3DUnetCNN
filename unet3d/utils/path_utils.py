@@ -154,6 +154,7 @@ def get_training_h5_filename(datatype, challenge="brats", year="2018",
                              image_shape="160-192-128", crop="1",
                              is_bias_correction="1", is_denoise="0", is_normalize="z",
                              is_hist_match="0", is_test="1"):
+
     core_name = get_core_name(challenge=challenge, year=year,
                               image_shape=image_shape, crop=crop,
                               is_bias_correction=is_bias_correction,
