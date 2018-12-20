@@ -1,22 +1,18 @@
 import os
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage.filters import gaussian_filter, median_filter
 
 
 def denoise_data(data, is_denoise="gaussian"):
-
     for i in range(data.shape[0]):
         volume = data[i, :, :, :]
         if is_denoise == "gaussian":
             volume_denoise = gaussian_filter(volume, sigma=0.5)
+        elif is_denoise == "median":
+            volume_denoise = median_filter(volume, size=3)
         else:
             raise Exception("{} not support", is_denoise)
-
         data[i, :, :, :] = volume_denoise
-
-        # save_nib(template, temp_template_path, affine)
-        # save_nib(volume_normalized, temp_volume_norm_path, affine)
-        # save_nib(volume_normalized-volume, temp_diff_path, affine)
     return data
 
 

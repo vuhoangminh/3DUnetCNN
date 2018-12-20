@@ -79,12 +79,12 @@ def isensee2017_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5
     activation_block = Activation(activation_name)(output_layer)
 
     model = Model(inputs=inputs, outputs=activation_block)
-    # try:
-    #     model = multi_gpu_model(model, gpus=2)
-    #     print('!! train on multi gpus')
-    # except:
-    #     print('!! train on single gpu')
-    #     pass    
+    try:
+        model = multi_gpu_model(model, gpus=2)
+        print('!! train on multi gpus')
+    except:
+        print('!! train on single gpu')
+        pass    
     model.compile(optimizer=optimizer(lr=initial_learning_rate), loss=loss_function)
     return model
 

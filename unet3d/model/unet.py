@@ -6,7 +6,8 @@ from keras.optimizers import Adam
 
 from unet3d.metrics import dice_coefficient_loss, get_label_dice_coefficient_function, dice_coefficient
 from unet3d.metrics import minh_dice_coef_loss, dice_coefficient_loss, minh_dice_coef_metric
-from unet3d.metrics import weighted_dice_coefficient_loss, soft_dice_loss, soft_dice_numpy
+from unet3d.metrics import weighted_dice_coefficient_loss, soft_dice_loss, soft_dice_numpy, tversky_loss
+
 from keras.utils import multi_gpu_model
 
 K.set_image_data_format("channels_first")
@@ -18,13 +19,13 @@ except ImportError:
 
 
 def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
-                  depth=4, n_base_filters=32, include_label_wise_dice_coefficients=True,
+                  depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
                   batch_normalization=False, activation_name="sigmoid",
-                  metrics=dice_coefficient,
+                #   metrics=dice_coefficient,
                   #   loss=soft_dice_numpy
-                #   metrics=minh_dice_coef_metric,
+                  metrics=minh_dice_coef_metric,
                   #   loss=weighted_dice_coefficient_loss
-                  loss=minh_dice_coef_loss):
+                  loss=tversky_loss):
     """
     Builds the 3D UNet Keras model.f
     :param metrics: List metrics to be calculated during model training (default is dice coefficient).

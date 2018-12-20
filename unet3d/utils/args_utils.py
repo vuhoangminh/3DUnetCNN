@@ -26,7 +26,7 @@ def train():
                         help="what type of normalization")
     parser.add_argument('-de', '--is_denoise', type=str,
                         default="0", choices=config_dict["is_denoise"],
-                        help="what type of normalization")
+                        help="what type of denoising")
     parser.add_argument('-t', '--is_test', type=str,
                         default="1", choices=["0", "1"]) 
     parser.add_argument('-hi', '--is_hist_match', type=str,

@@ -5,17 +5,17 @@ from functools import partial
 from keras import backend as K
 from keras.losses import categorical_crossentropy
 
-from niftynet.layer.loss_segmentation import generalised_dice_loss, generalised_wasserstein_dice_loss
-
 from brats.config import config
 
 from unet3d.utils import metrics_utils as utils
 
-def dice_coefficient(y_true, y_pred, smooth=1.):
+
+def dice_coefficient(y_true, y_pred, smooth=0.00001):
     y_true_f = K.flatten(y_true)
     y_pred_f = K.flatten(y_pred)
     intersection = K.sum(y_true_f * y_pred_f)
-    return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+    # return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+    return (2. * intersection) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
 
 
 def dice_coefficient_loss(y_true, y_pred):
@@ -61,25 +61,6 @@ def minh_dice_coef_loss(y_true, y_pred, labels=config["labels"]):
 
 def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"]):
     return (len(labels)-minh_dice_coef_loss(y_true, y_pred, labels=labels))/len(labels)
-
-
-# def minh_dice_coef_loss(y_true, y_pred, labels=config["labels"]):
-#     distance = 0
-#     for label in labels:
-#         dice_coef_class = dice_coef(
-#             y_true[:, :, :, :, label], y_pred[:, :, :, :, label])
-#         distance = 1 - dice_coef_class + distance
-#     return distance
-
-
-# def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"]):
-#     distance = 0
-#     for label in labels:
-#         if label != 0:
-#             dice_coef_class = dice_coef(
-#                 y_true[:, :, :, :, label], y_pred[:, :, :, :, label])
-#             distance = dice_coef_class + distance
-#     return distance/(len(labels)-1)
 
 
 # Ref: salehi17, "Twersky loss function for image segmentation using 3D FCDN"
@@ -190,7 +171,8 @@ def tv_ndim_loss(x, beta=2):
     image_dims = K.ndim(x) - 2
 
     # Constructing slice [1:] + [:-1] * (image_dims - 1) and [:-1] * (image_dims)
-    start_slice = [slice(1, None, None)] + [slice(None, -1, None) for _ in range(image_dims - 1)]
+    start_slice = [slice(1, None, None)] + [slice(None, -1, None)
+                                            for _ in range(image_dims - 1)]
     end_slice = [slice(None, -1, None) for _ in range(image_dims)]
     samples_channels_slice = [slice(None, None, None), slice(None, None, None)]
 
@@ -208,7 +190,6 @@ def tv_ndim_loss(x, beta=2):
 
     tv = K.sum(K.pow(tv, beta / 2.))
     return normalize(x, tv)
-
 
 
 dice_coef = dice_coefficient

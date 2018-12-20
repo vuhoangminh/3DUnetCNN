@@ -59,15 +59,15 @@ config_unet["deconvolution"] = True
 config_unet["depth"] = 4
 config_unet["n_base_filters"] = 16
 
-config_unet["batch_size"] = 1
+config_unet["batch_size"] = 2
 config_unet["validation_batch_size"] = 2
 config_unet["n_epochs"] = 500  # cutoff the training after this many epochs
 # learning rate will be reduced after this many epochs if the validation loss is not improving
 config_unet["patience"] = 10
 # training will be stopped after this many epochs without the validation loss improving
 config_unet["early_stop"] = 50
-config_unet["initial_learning_rate"] = 0.0001 # factor by which the learning rate will be reduced
-config_unet["learning_rate_drop"] = 0.8 # portion of the data that will be used for training
+config_unet["initial_learning_rate"] = 1e-8 # factor by which the learning rate will be reduced
+config_unet["learning_rate_drop"] = 0.2 # portion of the data that will be used for training
 # config_unet["learning_rate_epochs"] = 1
 config_unet["validation_split"] = 0.8 # if > 0, during training, validation patches will be overlapping
 config_unet["validation_patch_overlap"] = 0 # randomly offset the first patch index by up to this offset
@@ -108,8 +108,8 @@ config_dict["n_base_filters_unet"] = [8, 16, 32]  # number of base filters of un
 config_dict["image_shape"] = ["160-192-128", "144-144-144", "240-240-155"]
 config_dict["patch_shape"] = ["16-16-16", "32-32-32", "64-64-64", "128-128-128", "160-192-128"]
 config_dict["is_bias_correction"] = ["0","1"]
-config_dict["is_denoise"] = ["0", "bm4d", "gaussian", "nonlocal", "bilateral"]
-config_dict["is_normalize"] = ["z", "minh", "01"]
+config_dict["is_denoise"] = ["0", "bm4d", "gaussian", "median"]
+config_dict["is_normalize"] = ["z", "01"]
 config_dict["is_crf"] = ["0", "post", "cnn", "rnn"]
 config_dict["crop"] = ["0", "1"]
 

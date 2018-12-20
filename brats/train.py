@@ -174,6 +174,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                   n_base_filters=n_base_filters_unet)
 
         else:
+            config["initial_learning_rate"]=100*0.000001
             model = isensee2017_model(input_shape=config["input_shape"],
                                       n_labels=config["n_labels"],
                                       initial_learning_rate=config["initial_learning_rate"])
@@ -188,6 +189,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
                             project_name="unet_test", workspace="vuhoangminh")
 
+    print(config["initial_learning_rate"], config["learning_rate_drop"])
     train_model(experiment=experiment,
                 model=model,
                 model_file=config["model_file"],
