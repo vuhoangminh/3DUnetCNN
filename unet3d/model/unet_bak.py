@@ -21,12 +21,11 @@ except ImportError:
 def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
                   depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
                   batch_normalization=False, activation_name="sigmoid",
-                  #   metrics=dice_coefficient,
-                  #   loss=minh_dice_coef_loss,
+                #   metrics=dice_coefficient,
+                  #   loss=soft_dice_numpy
                   metrics=minh_dice_coef_metric,
-                  loss_function="weighted"
-                  #   loss=tversky_loss
-                  ):
+                  #   loss=weighted_dice_coefficient_loss
+                  loss=tversky_loss):
     """
     Builds the 3D UNet Keras model.f
     :param metrics: List metrics to be calculated during model training (default is dice coefficient).
@@ -88,27 +87,14 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
             metrics = metrics + label_wise_dice_metrics
         else:
             metrics = label_wise_dice_metrics
-    try:
-        model = multi_gpu_model(model, gpus=2)
-        print('!! train on multi gpus')
-    except:
-        print('!! train on single gpu')
-        pass
 
-    if loss_function == "tversky":
-        loss = tversky_loss
-    elif loss_function == "minh":
-        loss = minh_dice_coef_loss
-    else:
-        loss = weighted_dice_coefficient_loss
-
-    model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
+    model.compile(optimizer=Adam(lr=initial_learning_rate),
                   loss=loss, metrics=metrics)
     return model
 
 
 def create_convolution_block(input_layer, n_filters, batch_normalization=False, kernel=(3, 3, 3), activation=None,
-                             padding='same', strides=(1, 1, 1), instance_normalization=True):
+                             padding='same', strides=(1, 1, 1), instance_normalization=False):
     """
     :param strides:
     :param input_layer:

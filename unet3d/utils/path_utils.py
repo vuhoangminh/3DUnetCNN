@@ -116,14 +116,15 @@ def get_core_name(challenge="brats", year="2018",
         str(is_normalize), str(is_hist_match))
 
 
-def get_model_name(model, patch_shape, is_crf, depth_unet=None, n_base_filters_unet=None):
+def get_model_name(model, patch_shape, is_crf, depth_unet=None,
+                   n_base_filters_unet=None, loss="weighted"):
     if model == "unet":
-        return "ps-{}_{}_crf-{}_d-{}_nb-{}".format(
+        return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}".format(
             patch_shape, model, str(is_crf),
-            str(depth_unet), str(n_base_filters_unet))
+            str(depth_unet), str(n_base_filters_unet), loss)
     else:
-        return "ps-{}_{}_crf-{}".format(
-            patch_shape, model, str(is_crf))
+        return "ps-{}_{}_crf-{}_loss-{}".format(
+            patch_shape, model, str(is_crf), loss)
 
 
 def get_model_h5_filename(datatype, challenge="brats", year="2018",
@@ -131,7 +132,8 @@ def get_model_h5_filename(datatype, challenge="brats", year="2018",
                           is_bias_correction="1", is_denoise="0", is_normalize="z",
                           is_hist_match="0", is_test="1",
                           depth_unet=4, n_base_filters_unet=16,
-                          model="unet", patch_shape="128-128-128", is_crf="0"):
+                          model="unet", patch_shape="128-128-128", is_crf="0",
+                          loss="weighted"):
     core_name = get_core_name(challenge=challenge, year=year,
                               image_shape=image_shape, crop=crop,
                               is_bias_correction=is_bias_correction,
@@ -139,7 +141,9 @@ def get_model_h5_filename(datatype, challenge="brats", year="2018",
                               is_normalize=is_normalize,
                               is_hist_match=is_hist_match)
     model_name = get_model_name(model, patch_shape, is_crf,
-                                depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet)
+                                depth_unet=depth_unet,
+                                n_base_filters_unet=n_base_filters_unet,
+                                loss=loss)
 
     if str2bool(is_test):
         return "test_{}_{}_{}.h5".format(

@@ -11,7 +11,7 @@ ml GCC/6.4.0-2.28  CUDA/9.0.176  OpenMPI/2.1.1
 
 export KERAS_BACKEND="tensorflow"
 
-export command="python brats/train.py -t "0" -o "0" -n "01" -de "median" -hi "1" -ba 2"
+export command="python brats/train.py -t "0" -o "0" -n "z" -de "median" -hi "1" -ba 2"
 echo "$command"
 srun $command
 

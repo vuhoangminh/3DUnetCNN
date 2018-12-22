@@ -45,7 +45,10 @@ def train():
                         help="crf method")
     parser.add_argument('-ba', '--batch_size', type=int,
                         default=1,
-                        help="train batch size")                        
+                        help="train batch size")  
+    parser.add_argument('-l', '--loss', type=str,
+                        default="weighted",
+                        help="loss function")                                                
     args = parser.parse_args()
     return args   
 

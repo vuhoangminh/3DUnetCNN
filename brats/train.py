@@ -45,7 +45,8 @@ def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
               is_normalize="z", is_denoise="0", 
               is_hist_match="0", is_test="1",
               depth_unet=4, n_base_filters_unet=16, model="unet",
-              patch_shape="128-128-128", is_crf="0"):
+              patch_shape="128-128-128", is_crf="0",
+              loss="weighted"):
 
     data_dir = get_h5_training_dir(BRATS_DIR, "data")
     make_dir(data_dir)
@@ -85,7 +86,7 @@ def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
                                            is_hist_match=is_hist_match,
                                            depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
                                            model=model, patch_shape=patch_shape, is_crf=is_crf,
-                                           is_test=is_test)
+                                           is_test=is_test, loss=loss)
 
     data_path = os.path.join(data_dir, data_filename)
     trainids_path = os.path.join(trainids_dir, trainids_filename)
@@ -101,7 +102,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
           is_hist_match="0", is_test="1",
           depth_unet=4, n_base_filters_unet=16, model="unet",
           patch_shape="128-128-128", is_crf="0",
-          batch_size=1):
+          batch_size=1, loss="weighted"):
 
     data_path, trainids_path, validids_path, model_path = init_path(
         overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -109,7 +110,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         is_normalize=is_normalize, is_denoise=is_denoise, 
         is_hist_match=is_hist_match, is_test=is_test,
         model=model, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape, is_crf=is_crf)
+        patch_shape=patch_shape, is_crf=is_crf, loss=loss)
 
     config["data_file"] = data_path
     config["model_file"] = model_path
@@ -117,7 +118,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     config["validation_file"] = validids_path
     config["patch_shape"] = get_shape_from_string(patch_shape)
     config["input_shape"] = tuple(
-        [config["nb_channels"]] + list(config["patch_shape"]))      
+        [config["nb_channels"]] + list(config["patch_shape"]))            
 
     if overwrite or not os.path.exists(data_path):
         prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -167,17 +168,18 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
             model = unet_model_3d(input_shape=config["input_shape"],
                                   pool_size=config["pool_size"],
                                   n_labels=config["n_labels"],
-                                  #   labels=config["labels"],
                                   initial_learning_rate=config["initial_learning_rate"],
                                   deconvolution=config["deconvolution"],
                                   depth=depth_unet,
-                                  n_base_filters=n_base_filters_unet)
+                                  n_base_filters=n_base_filters_unet,
+                                  loss_function=loss)
 
         else:
-            config["initial_learning_rate"]=100*0.000001
+            # config["initial_learning_rate"]=100*0.000001
             model = isensee2017_model(input_shape=config["input_shape"],
                                       n_labels=config["n_labels"],
-                                      initial_learning_rate=config["initial_learning_rate"])
+                                      initial_learning_rate=config["initial_learning_rate"],
+                                      loss_function=loss)
 
     model.summary()
 
@@ -228,13 +230,15 @@ def main():
     is_crf = args.is_crf
     batch_size = args.batch_size
     is_hist_match = args.is_hist_match
+    loss = args.loss
 
     train(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
           image_shape=image_shape, is_bias_correction=is_bias_correction,
           is_normalize=is_normalize, is_denoise=is_denoise, 
           is_hist_match=is_hist_match, is_test=is_test,
           model=model, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-          patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size)
+          patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
+          loss=loss)
 
 
 if __name__ == "__main__":
