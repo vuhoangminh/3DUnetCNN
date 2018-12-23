@@ -1,0 +1,3 @@
+[submodule "vqa/external/VQA"]
+    path = external/crfasrnn_keras
+    url = https://github.com/sadeepj/crfasrnn_keras.git

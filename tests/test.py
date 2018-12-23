@@ -118,10 +118,16 @@ print(get_shape_string(shape))
 
 
 
-from unet3d.training import load_old_model
-model_path = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/database/model/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-0_ps-128-128-128_isensee_crf-0_model.h5"
+# from unet3d.training import load_old_model
+# model_path = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/database/model/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-0_ps-128-128-128_isensee_crf-0_model.h5"
 
 
-model = load_old_model(model_path)
+# model = load_old_model(model_path)
 
-a=2
+# a=2
+
+
+
+import sys
+sys.path.append('external/crfasrnn_keras/src')
+from crfrnn_model import get_crfrnn_model_def
