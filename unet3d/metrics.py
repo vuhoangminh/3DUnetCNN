@@ -192,5 +192,9 @@ def tv_ndim_loss(x, beta=2):
     return normalize(x, tv)
 
 
+def tv_minh_loss(y_true, y_pred, labels=config["labels"]):
+    return tv_ndim_loss(y_pred) + minh_dice_coef_loss(y_true, y_pred, labels=config["labels"])
+
+
 dice_coef = dice_coefficient
 dice_coef_loss = dice_coefficient_loss

@@ -7,7 +7,8 @@ from keras.models import load_model
 
 from unet3d.metrics import (dice_coefficient, dice_coefficient_loss, dice_coef, dice_coef_loss,
                             weighted_dice_coefficient_loss, weighted_dice_coefficient, minh_dice_coef_loss,
-                            tversky_loss, focal_loss, ignore_unknown_xentropy, minh_dice_coef_metric)
+                            tversky_loss, focal_loss, ignore_unknown_xentropy, minh_dice_coef_metric,
+                            tv_minh_loss)
 
 K.set_image_dim_ordering('th')
 
@@ -53,7 +54,8 @@ def load_old_model(model_file):
                       'tversky_loss': tversky_loss,
                       'focal_loss': focal_loss,
                       'ignore_unknown_xentropy': ignore_unknown_xentropy,
-                      'minh_dice_coef_metric': minh_dice_coef_metric
+                      'minh_dice_coef_metric': minh_dice_coef_metric,
+                      'tv_minh_loss': tv_minh_loss
                       }
     try:
         from keras_contrib.layers import InstanceNormalization

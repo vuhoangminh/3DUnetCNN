@@ -8,6 +8,7 @@ from keras.utils import multi_gpu_model
 from unet3d.metrics import dice_coefficient_loss, get_label_dice_coefficient_function, dice_coefficient
 from unet3d.metrics import minh_dice_coef_loss, dice_coefficient_loss, minh_dice_coef_metric
 from unet3d.metrics import weighted_dice_coefficient_loss, soft_dice_loss, soft_dice_numpy, tversky_loss
+from unet3d.metrics import tv_minh_loss
 
 K.set_image_data_format("channels_first")
 
@@ -98,6 +99,8 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
         loss = tversky_loss
     elif loss_function == "minh":
         loss = minh_dice_coef_loss
+    elif loss == "tv_minh":
+        loss = tv_minh_loss
     else:
         loss = weighted_dice_coefficient_loss
 
