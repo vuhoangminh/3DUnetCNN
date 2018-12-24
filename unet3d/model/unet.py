@@ -99,7 +99,7 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
         loss = tversky_loss
     elif loss_function == "minh":
         loss = minh_dice_coef_loss
-    elif loss == "tv_minh":
+    elif loss_function == "tv_minh":
         loss = tv_minh_loss
     else:
         loss = weighted_dice_coefficient_loss

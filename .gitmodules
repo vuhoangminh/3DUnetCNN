@@ -1,3 +1,6 @@
-[submodule "vqa/external/VQA"]
+[submodule "external/crfasrnn_keras"]
     path = external/crfasrnn_keras
     url = https://github.com/sadeepj/crfasrnn_keras.git
+[submodule "external/Fully-Connected-DenseNets-Semantic-Segmentation"]
+    path = external/Fully-Connected-DenseNets-Semantic-Segmentation
+    url = https://github.com/titu1994/Fully-Connected-DenseNets-Semantic-Segmentation.git

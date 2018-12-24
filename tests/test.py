@@ -127,7 +127,14 @@ print(get_shape_string(shape))
 # a=2
 
 
+import tensorflow as tf
+from niftynet.network.dense_vnet import DenseVNet
 
-import sys
-sys.path.append('external/crfasrnn_keras/src')
-from crfrnn_model import get_crfrnn_model_def
+input_shape = (2, 72, 72, 72, 3)
+
+x = tf.ones(input_shape)
+
+model = DenseVNet(num_classes=2)
+out = model(x, is_training=True)
+
+model.summary()
