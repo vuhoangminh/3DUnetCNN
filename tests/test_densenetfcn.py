@@ -50,10 +50,10 @@ input_shape = (4, 64, 64, 64)
 model = DenseNetFCN_3D(input_shape=input_shape, classes=3)
 plot_model(model, to_file='densenetfcn3d.png', show_shapes=True)
 
-model = unet_model_3d(input_shape=input_shape,
-                      n_labels=3)
-plot_model(model, to_file='unet3d.png', show_shapes=True)
+# model = unet_model_3d(input_shape=input_shape,
+#                       n_labels=3)
+# plot_model(model, to_file='unet3d.png', show_shapes=True)
 
-model = isensee2017_model(input_shape=input_shape,
-                          n_labels=3)
-plot_model(model, to_file='isensee3d.png', show_shapes=True)
+# model = isensee2017_model(input_shape=input_shape,
+#                           n_labels=3)
+# plot_model(model, to_file='isensee3d.png', show_shapes=True)
