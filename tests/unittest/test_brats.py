@@ -62,12 +62,12 @@ class TestPreprocess(TestCase):
                                     directory_name='HGG')
 
     def test_preprocess_pre2018(self):
-        from preprocess import convert_brats_data
+        from brats.preprocess import convert_brats_data
         self.create_replica_dataset_pre2018()
         convert_brats_data(self.temp_brats_dir, self.preprocessed_dir)
 
     def test_preprocess_2018(self):
         self.create_replica_dataset_2018()
-        from preprocess import convert_brats_data
+        from brats.preprocess import convert_brats_data
         convert_brats_data(self.temp_brats_dir, self.preprocessed_dir)
 

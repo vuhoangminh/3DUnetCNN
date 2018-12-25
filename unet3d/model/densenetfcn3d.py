@@ -28,7 +28,15 @@ from keras.applications.imagenet_utils import decode_predictions
 from keras.applications.imagenet_utils import preprocess_input as _preprocess_input
 import keras.backend as K
 
+from keras.optimizers import Adam
+from keras.utils import multi_gpu_model
+
 from keras_contrib.layers.convolutional import SubPixelUpscaling
+
+from unet3d.metrics import dice_coefficient_loss, get_label_dice_coefficient_function, dice_coefficient
+from unet3d.metrics import minh_dice_coef_loss, dice_coefficient_loss, minh_dice_coef_metric
+from unet3d.metrics import weighted_dice_coefficient_loss, soft_dice_loss, soft_dice_numpy, tversky_loss
+from unet3d.metrics import tv_minh_loss
 
 
 def name_or_none(prefix, name):
@@ -39,7 +47,10 @@ def DenseNetFCN_3D(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_
                    reduction=0.0, dropout_rate=0.0, weight_decay=1E-4, init_conv_filters=48,
                    include_top=True, weights=None, input_tensor=None, classes=1, activation='softmax',
                    upsampling_conv=128, upsampling_type='deconv', early_transition=False,
-                   transition_pooling='max', initial_kernel_size=(3, 3, 3)):
+                   transition_pooling='max', initial_kernel_size=(3, 3, 3),
+                   initial_learning_rate=0.00001,
+                   metrics=minh_dice_coef_metric,
+                   loss_function="weighted"):
     '''Instantiate the DenseNet FCN architecture.
         Note that when using TensorFlow,
         for best performance you should set
@@ -165,10 +176,32 @@ def DenseNetFCN_3D(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_
     # Create model.
     model = Model(inputs, x, name='fcn-densenet')
 
+    if not isinstance(metrics, list):
+        metrics = [metrics]
+
+    try:
+        model = multi_gpu_model(model, gpus=2)
+        print('!! train on multi gpus')
+    except:
+        print('!! train on single gpu')
+        pass
+
+    if loss_function == "tversky":
+        loss = tversky_loss
+    elif loss_function == "minh":
+        loss = minh_dice_coef_loss
+    elif loss_function == "tv_minh":
+        loss = tv_minh_loss
+    else:
+        loss = weighted_dice_coefficient_loss
+
+    model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
+                  loss=loss, metrics=metrics)
     return model
 
 
-def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_decay=1e-4, block_prefix=None):
+def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_decay=1e-4,
+                 block_prefix=None, instance_normalization=True):
     '''
     Adds a convolution layer (with batch normalization and relu),
     and optionally a bottleneck layer.
@@ -201,8 +234,17 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
     with K.name_scope('ConvBlock'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        if instance_normalization:
+            try:
+                from keras_contrib.layers.normalization import InstanceNormalization
+            except ImportError:
+                raise ImportError("Install keras_contrib in order to use instance normalization."
+                                  "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+            x = InstanceNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_in'))(ip)
+        else:
+            x = BatchNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
         x = Activation('relu')(x)
 
         if bottleneck:
@@ -210,8 +252,17 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
 
             x = Conv3D(inter_channel, (1, 1, 1), kernel_initializer='he_normal', padding='same', use_bias=False,
                        kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv2D'))(x)
-            x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5,
-                                   name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
+            if instance_normalization:
+                try:
+                    from keras_contrib.layers.normalization import InstanceNormalization
+                except ImportError:
+                    raise ImportError("Install keras_contrib in order to use instance normalization."
+                                      "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+                x = InstanceNormalization(
+                    axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bottleneck_in'))(x)
+            else:
+                x = BatchNormalization(
+                    axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
             x = Activation('relu')(x)
 
         x = Conv3D(nb_filter, (3, 3, 3), kernel_initializer='he_normal', padding='same', use_bias=False,
@@ -272,7 +323,8 @@ def __dense_block(x, nb_layers, nb_filter, growth_rate, bottleneck=False, dropou
             return x, nb_filter
 
 
-def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_prefix=None, transition_pooling='max'):
+def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_prefix=None,
+                       transition_pooling='max', instance_normalization=True):
     '''
     Adds a pointwise convolution layer (with batch normalization and relu),
     and an average pooling layer. The number of output convolution filters
@@ -307,8 +359,17 @@ def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_
     with K.name_scope('Transition'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        if instance_normalization:
+            try:
+                from keras_contrib.layers.normalization import InstanceNormalization
+            except ImportError:
+                raise ImportError("Install keras_contrib in order to use instance normalization."
+                                  "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+            x = InstanceNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_in'))(ip)
+        else:
+            x = BatchNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
         x = Activation('relu')(x)
         x = Conv3D(int(nb_filter * compression), (1, 1, 1), kernel_initializer='he_normal', padding='same',
                    use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv2D'))(x)
@@ -368,7 +429,8 @@ def __transition_up_block(ip, nb_filters, type='deconv', weight_decay=1E-4, bloc
 
 def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_block=3, growth_rate=12, nb_filter=-1,
                        nb_layers_per_block=-1, bottleneck=False, reduction=0.0, dropout_rate=None, weight_decay=1e-4,
-                       subsample_initial_block=False, pooling=None, activation='softmax', transition_pooling='avg'):
+                       subsample_initial_block=False, pooling=None, activation='softmax', transition_pooling='avg',
+                       instance_normalization=True):
     ''' Build the DenseNet model
 
     # Arguments
@@ -471,8 +533,17 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
                    strides=initial_strides, use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
 
         if subsample_initial_block:
-            x = BatchNormalization(
-                axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+            if instance_normalization:
+                try:
+                    from keras_contrib.layers.normalization import InstanceNormalization
+                except ImportError:
+                    raise ImportError("Install keras_contrib in order to use instance normalization."
+                                    "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+                x = InstanceNormalization(
+                    axis=concat_axis, epsilon=1.1e-5, name='initial_in')(x)
+            else:
+                x = BatchNormalization(
+                    axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
             x = Activation('relu')(x)
             x = MaxPooling3D((3, 3, 3), strides=(2, 2, 2), padding='same')(x)
 
@@ -490,9 +561,17 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
         x, nb_filter = __dense_block(x, final_nb_layer, nb_filter, growth_rate, bottleneck=bottleneck,
                                      dropout_rate=dropout_rate, weight_decay=weight_decay,
                                      block_prefix='dense_%i' % (nb_dense_block - 1))
-
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name='final_bn')(x)
+        if instance_normalization:
+            try:
+                from keras_contrib.layers.normalization import InstanceNormalization
+            except ImportError:
+                raise ImportError("Install keras_contrib in order to use instance normalization."
+                                "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+            x = InstanceNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name='final_in')(x)
+        else:
+            x = BatchNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name='final_bn')(x)
         x = Activation('relu')(x)
 
         if include_top:
@@ -514,7 +593,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
                            reduction=0.0, dropout_rate=None, weight_decay=1e-4,
                            nb_layers_per_block=4, nb_upsampling_conv=128, upsampling_type='deconv',
                            init_conv_filters=48, input_shape=None, activation='softmax',
-                           early_transition=False, transition_pooling='max', initial_kernel_size=(3, 3, 3)):
+                           early_transition=False, transition_pooling='max', initial_kernel_size=(3, 3, 3),
+                           instance_normalization=True):
     ''' Build the DenseNet-FCN model
 
     # Arguments
@@ -592,8 +672,17 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         # Initial convolution
         x = Conv3D(init_conv_filters, initial_kernel_size, kernel_initializer='he_normal', padding='same', name='initial_conv2D',
                    use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+        if instance_normalization:
+            try:
+                from keras_contrib.layers.normalization import InstanceNormalization
+            except ImportError:
+                raise ImportError("Install keras_contrib in order to use instance normalization."
+                                  "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+            x = InstanceNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name='initial_in')(x)
+        else:
+            x = BatchNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
         x = Activation('relu')(x)
 
         nb_filter = init_conv_filters
@@ -658,13 +747,15 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
                        padding='same', use_bias=False)(x_up)
 
             if K.image_data_format() == 'channels_first':
-                channel, row, col, height = input_shape
+                _, row, col, height = input_shape
+                x = Reshape((nb_classes, row * col * height))(x)
+                x = Activation(activation)(x)
+                x = Reshape((nb_classes, row, col, height))(x)
             else:
-                row, col, height, channel = input_shape
-
-            x = Reshape((row * col * height, nb_classes))(x)
-            x = Activation(activation)(x)
-            x = Reshape((row, col, height, nb_classes))(x)
+                row, col, height, _ = input_shape
+                x = Reshape((row * col * height, nb_classes))(x)
+                x = Activation(activation)(x)
+                x = Reshape((row, col, height, nb_classes))(x)
         else:
             x = x_up
 

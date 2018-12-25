@@ -1,7 +1,7 @@
 name: py36
 channels:
-  - simpleitk
   - conda-forge
+  - simpleitk
   - anaconda
   - defaults
 dependencies:
@@ -23,8 +23,6 @@ dependencies:
   - grpcio=1.14.1=py36h9ba97e2_0
   - html5lib=0.9999999=py36_0
   - keras-applications=1.0.6=py36_0
-  - keras-base=2.2.4=py36_0
-  - keras-gpu=2.1.3=py36_0
   - keras-preprocessing=1.0.5=py36_0
   - libcurl=7.61.0=h1ad7b7a_0
   - libgcc-ng=8.2.0=hdf63c60_1
@@ -35,10 +33,8 @@ dependencies:
   - protobuf=3.6.1=py36he6710b0_0
   - pytables=3.4.4=py36ha205bf6_0
   - rhash=1.3.6=hb7f436b_0
+  - scikit-image=0.14.0=py36hf484d3e_1
   - tensorboard=1.12.0=py36hf484d3e_0
-  - tensorflow-gpu=1.5.0=0
-  - tensorflow-gpu-base=1.5.0=py36h8a131e3_0
-  - tensorflow-tensorboard=1.5.1=py36hf484d3e_1
   - termcolor=1.1.0=py36_1
   - apipkg=1.5=py_0
   - execnet=1.5.0=py_0
@@ -46,6 +42,8 @@ dependencies:
   - future=0.17.0=py36_1000
   - isodate=0.6.0=py_1
   - keepalive=0.5=py_1
+  - libgpuarray=0.7.6=h470a237_3
+  - mako=1.0.7=py_1
   - mock=2.0.0=py36_1000
   - nibabel=2.3.1=pyh24bf2e0_0
   - nilearn=0.5.0=pyh24bf2e0_0
@@ -54,11 +52,16 @@ dependencies:
   - prov=1.5.0=py36_0
   - pydicom=1.2.0=py_0
   - pydotplus=2.0.2=py_1
+  - pygpu=0.7.6=py36h7eb728f_0
   - pytest-forked=0.2=py_0
   - pytest-xdist=1.24.1=py_0
   - rdflib=4.2.2=py36_1000
   - simplejson=3.16.1=py36h470a237_0
   - sparqlwrapper=1.8.2=py36_1000
+  - theano=1.0.3=py36hfc679d8_1
+  - toolchain=2.3.0=0
+  - toolchain_c_linux-64=2.3.0=0
+  - toolchain_cxx_linux-64=2.3.0=0
   - traits=4.6.0=py36h470a237_2
   - xvfbwrapper=0.2.9=py36_1000
   - alabaster=0.7.10=py36h306e16b_0
@@ -146,6 +149,8 @@ dependencies:
   - jupyter_core=4.4.0=py36h7c827e3_0
   - jupyterlab=0.32.1=py36_0
   - jupyterlab_launcher=0.10.5=py36_0
+  - keras-base=2.2.4=py36_0
+  - keras-gpu=2.2.4=0
   - kiwisolver=1.0.1=py36h764f252_0
   - lazy-object-proxy=1.3.1=py36h10fcdad_0
   - libedit=3.1.20170329=h6b74fdf_2
@@ -250,7 +255,6 @@ dependencies:
   - requests=2.18.4=py36he2e5f8d_1
   - rope=0.10.7=py36h147e2ec_0
   - ruamel_yaml=0.15.35=py36h14c3975_1
-  - scikit-image=0.13.1=py36h14c3975_1
   - scikit-learn=0.19.1=py36h7aa7ec6_0
   - scipy=1.1.0=py36hfc37229_0
   - seaborn=0.8.1=py36hfad7ec4_0
@@ -273,6 +277,9 @@ dependencies:
   - statsmodels=0.9.0=py36h3010b51_0
   - sympy=1.1.1=py36hc6d1c1c_0
   - tblib=1.3.2=py36h34cf8b6_0
+  - tensorflow=1.12.0=gpu_py36he68c306_0
+  - tensorflow-base=1.12.0=gpu_py36h8e0ae2d_0
+  - tensorflow-gpu=1.12.0=h0d30ee6_0
   - terminado=0.8.1=py36_1
   - testpath=0.3.1=py36h8cadb63_0
   - tk=8.6.7=hc745277_3
@@ -301,11 +308,24 @@ dependencies:
   - pip:
     - antspy==0.1.4
     - blessings==1.7
+    - blinker==1.4
+    - comet-git-pure==0.19.9
+    - comet-ml==1.0.40
+    - configobj==5.0.6
+    - configparser==3.5.0
+    - everett==0.9
     - gpustat==0.5.0
     - keras==2.2.4
     - keras-contrib==2.0.8
+    - netifaces==0.10.7
     - nvidia-ml-py3==7.352.0
+    - opencv-python==3.4.4.19
+    - progressbar2==3.38.0
+    - python-utils==2.3.0
     - tables==3.4.4
-    - tensorflow==1.5.0
+    - tensorlayer==1.11.1
+    - tqdm==4.28.1
+    - websocket-client==0.54.0
+    - wurlitzer==1.0.2
 prefix: /home/m/minhvu/pfs/anaconda3/envs/py36
 

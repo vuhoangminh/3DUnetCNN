@@ -9,6 +9,7 @@ from unet3d.data import write_data_to_file, open_data_file
 from unet3d.generator import get_training_and_validation_generators, get_training_and_validation_generators_new
 from unet3d.model import unet_model_3d
 from unet3d.model import isensee2017_model
+from unet3d.model import DenseNetFCN_3D
 from unet3d.training import load_old_model, train_model
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
@@ -42,7 +43,7 @@ def make_dir(data_dir):
 
 def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
               image_shape="160-160-128", is_bias_correction="1",
-              is_normalize="z", is_denoise="0", 
+              is_normalize="z", is_denoise="0",
               is_hist_match="0", is_test="1",
               depth_unet=4, n_base_filters_unet=16, model="unet",
               patch_shape="128-128-128", is_crf="0",
@@ -60,28 +61,28 @@ def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
     data_filename = get_training_h5_filename(datatype="data", challenge=challenge,
                                              image_shape=image_shape, crop=crop,
                                              is_bias_correction=is_bias_correction,
-                                             is_denoise=is_denoise, 
+                                             is_denoise=is_denoise,
                                              is_normalize=is_normalize,
                                              is_hist_match=is_hist_match,
                                              is_test=is_test)
     trainids_filename = get_training_h5_filename(datatype="train_ids", challenge=challenge,
                                                  image_shape=image_shape, crop=crop,
                                                  is_bias_correction=is_bias_correction,
-                                                 is_denoise=is_denoise, 
+                                                 is_denoise=is_denoise,
                                                  is_normalize=is_normalize,
                                                  is_hist_match=is_hist_match,
                                                  is_test=is_test)
     validids_filename = get_training_h5_filename(datatype="valid_ids", challenge=challenge,
                                                  image_shape=image_shape, crop=crop,
                                                  is_bias_correction=is_bias_correction,
-                                                 is_denoise=is_denoise, 
+                                                 is_denoise=is_denoise,
                                                  is_normalize=is_normalize,
                                                  is_hist_match=is_hist_match,
                                                  is_test=is_test)
     model_filename = get_model_h5_filename(datatype="model", challenge=challenge,
                                            image_shape=image_shape, crop=crop,
                                            is_bias_correction=is_bias_correction,
-                                           is_denoise=is_denoise, 
+                                           is_denoise=is_denoise,
                                            is_normalize=is_normalize,
                                            is_hist_match=is_hist_match,
                                            depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
@@ -98,7 +99,7 @@ def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
 
 def train(overwrite=True, crop=True, challenge="brats", year=2018,
           image_shape="160-160-128", is_bias_correction="1",
-          is_normalize="z", is_denoise="0", 
+          is_normalize="z", is_denoise="0",
           is_hist_match="0", is_test="1",
           depth_unet=4, n_base_filters_unet=16, model="unet",
           patch_shape="128-128-128", is_crf="0",
@@ -107,7 +108,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     data_path, trainids_path, validids_path, model_path = init_path(
         overwrite=overwrite, crop=crop, challenge=challenge, year=year,
         image_shape=image_shape, is_bias_correction=is_bias_correction,
-        is_normalize=is_normalize, is_denoise=is_denoise, 
+        is_normalize=is_normalize, is_denoise=is_denoise,
         is_hist_match=is_hist_match, is_test=is_test,
         model=model, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
         patch_shape=patch_shape, is_crf=is_crf, loss=loss)
@@ -118,12 +119,12 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     config["validation_file"] = validids_path
     config["patch_shape"] = get_shape_from_string(patch_shape)
     config["input_shape"] = tuple(
-        [config["nb_channels"]] + list(config["patch_shape"]))            
+        [config["nb_channels"]] + list(config["patch_shape"]))
 
     if overwrite or not os.path.exists(data_path):
         prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
                      image_shape=image_shape, is_bias_correction=is_bias_correction,
-                     is_normalize=is_normalize, is_denoise=is_denoise, 
+                     is_normalize=is_normalize, is_denoise=is_denoise,
                      is_hist_match=is_hist_match, is_test=is_test)
 
     print_section("Open file")
@@ -174,8 +175,17 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                   n_base_filters=n_base_filters_unet,
                                   loss_function=loss)
 
+        elif model == "densenfcn":
+            print("init densenet model")
+            model = DenseNetFCN_3D(input_shape=config["input_shape"],
+                                   classes=config["n_labels"],
+                                   initial_learning_rate=config["initial_learning_rate"],
+                                   nb_dense_block=5,
+                                   nb_layers_per_block=4,
+                                   loss_function=loss)
+
         else:
-            # config["initial_learning_rate"]=100*0.000001
+            print("init isensee model")
             model = isensee2017_model(input_shape=config["input_shape"],
                                       n_labels=config["n_labels"],
                                       initial_learning_rate=config["initial_learning_rate"],
@@ -188,8 +198,11 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("-"*60)
     # run training
 
-    experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
-                            project_name="unet_test", workspace="vuhoangminh")
+    if is_test=="0":
+        experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
+                                project_name="unet_test", workspace="vuhoangminh")
+    else:
+        experiment = None
 
     print(config["initial_learning_rate"], config["learning_rate_drop"])
     train_model(experiment=experiment,
@@ -203,12 +216,12 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                 learning_rate_drop=config["learning_rate_drop"],
                 learning_rate_patience=config["patience"],
                 early_stopping_patience=config["early_stop"],
-                n_epochs=config["n_epochs"],
-                # learning_rate_epochs=config["learning_rate_epochs"]
+                n_epochs=config["n_epochs"]
                 )
 
-    experiment.log_parameters(config)
-    # experiment.log_dataset_hash(x_train) #creates and logs a hash of your data
+    if is_test=="0":
+        experiment.log_parameters(config)
+        
     data_file_opened.close()
 
 
@@ -234,7 +247,7 @@ def main():
 
     train(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
           image_shape=image_shape, is_bias_correction=is_bias_correction,
-          is_normalize=is_normalize, is_denoise=is_denoise, 
+          is_normalize=is_normalize, is_denoise=is_denoise,
           is_hist_match=is_hist_match, is_test=is_test,
           model=model, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
           patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,

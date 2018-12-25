@@ -93,16 +93,30 @@ def train_model(experiment, model, model_file, training_generator, validation_ge
     :param n_epochs: Total number of epochs to train the model.
     :return: 
     """
-    with experiment.train():
+    if experiment==None:
         history = model.fit_generator(generator=training_generator,
-                                      steps_per_epoch=steps_per_epoch,
-                                      epochs=n_epochs,
-                                      validation_data=validation_generator,
-                                      validation_steps=validation_steps,
-                                      verbose=1,
-                                      callbacks=get_callbacks(model_file,
-                                                              initial_learning_rate=initial_learning_rate,
-                                                              learning_rate_drop=learning_rate_drop,
-                                                              learning_rate_epochs=learning_rate_epochs,
-                                                              learning_rate_patience=learning_rate_patience,
-                                                              early_stopping_patience=early_stopping_patience))
+                                steps_per_epoch=steps_per_epoch,
+                                epochs=n_epochs,
+                                validation_data=validation_generator,
+                                validation_steps=validation_steps,
+                                verbose=1,
+                                callbacks=get_callbacks(model_file,
+                                                        initial_learning_rate=initial_learning_rate,
+                                                        learning_rate_drop=learning_rate_drop,
+                                                        learning_rate_epochs=learning_rate_epochs,
+                                                        learning_rate_patience=learning_rate_patience,
+                                                        early_stopping_patience=early_stopping_patience))
+    else:                                                        
+        with experiment.train():
+            history = model.fit_generator(generator=training_generator,
+                                            steps_per_epoch=steps_per_epoch,
+                                            epochs=n_epochs,
+                                            validation_data=validation_generator,
+                                            validation_steps=validation_steps,
+                                            verbose=1,
+                                            callbacks=get_callbacks(model_file,
+                                                                    initial_learning_rate=initial_learning_rate,
+                                                                    learning_rate_drop=learning_rate_drop,
+                                                                    learning_rate_epochs=learning_rate_epochs,
+                                                                    learning_rate_patience=learning_rate_patience,
+                                                                    early_stopping_patience=early_stopping_patience))
