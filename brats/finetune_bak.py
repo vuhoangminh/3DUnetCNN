@@ -6,7 +6,9 @@ import pprint
 import numpy as np
 
 from unet3d.data import write_data_to_file, open_data_file
-from unet3d.generator import get_training_and_validation_generators, get_training_and_validation_generators_new
+from unet3d.generator import get_training_and_validation_generators
+from unet3d.generator import get_training_and_validation_generators_new
+from unet3d.generator import get_training_and_validation_and_testing_generators
 from unet3d.model import unet_model_3d
 from unet3d.model import isensee2017_model
 from unet3d.model import densefcn_model_3d
@@ -15,11 +17,12 @@ from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_mo
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
 import unet3d.utils.args_utils as get_args
 
+from unet3d.utils.path_utils import get_filename
 from brats.prepare_data import prepare_data
 
 from unet3d.utils.print_utils import print_processing, print_section, print_separator
 
-from brats.config import config, config_unet
+from brats.config import config, config_unet, config_finetune
 
 # pp = pprint.PrettyPrinter(indent=4)
 # # pp.pprint(config)
@@ -45,9 +48,9 @@ def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
               image_shape="160-160-128", is_bias_correction="1",
               is_normalize="z", is_denoise="0",
               is_hist_match="0", is_test="1",
-              depth_unet=4, n_base_filters_unet=16, model_name="isensee",
+              depth_unet=4, n_base_filters_unet=16, model_name="unet",
               patch_shape="128-128-128", is_crf="0",
-              loss="weighted", is_finetune=False):
+              loss="weighted", dir_read_write="base"):
 
     data_dir = get_h5_training_dir(BRATS_DIR, "data")
     make_dir(data_dir)
@@ -93,19 +96,38 @@ def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
     trainids_path = os.path.join(trainids_dir, trainids_filename)
     validids_path = os.path.join(validids_dir, validids_filename)
 
-    if is_finetune:
-        model_path = os.path.join(model_dir, "base", model_filename)    
-    else:
-        model_path = os.path.join(model_dir, model_filename)
+    model_path = os.path.join(model_dir, dir_read_write, model_filename)
 
     return data_path, trainids_path, validids_path, model_path
+
+
+def update_train_valid_test_config(config, is_test="1"):
+    config["training_file"] = config["training_file"].replace(
+        "train_ids", "train_val_test_ids")
+    config["validation_file"] = config["validation_file"].replace(
+        "valid_ids", "train_val_test_ids")
+
+    if is_test=="1":
+        config["training_file"] = config["training_file"].replace(
+            get_filename(config["training_file"]), "test_train_ids.h5")
+        config["validation_file"] = config["validation_file"].replace(
+            get_filename(config["validation_file"]), "test_valid_ids.h5")
+        config["testing_file"] = config["validation_file"].replace(
+            "test_valid_ids.h5", "test_test_ids.h5")
+    else:
+        config["training_file"] = config["training_file"].replace(
+            get_filename(config["training_file"]), "train_ids.h5")
+        config["validation_file"] = config["validation_file"].replace(
+            get_filename(config["validation_file"]), "valid_ids.h5")
+        config["testing_file"] = config["validation_file"].replace(
+            "valid_ids.h5", "test_ids.h5")                
 
 
 def train(overwrite=True, crop=True, challenge="brats", year=2018,
           image_shape="160-160-128", is_bias_correction="1",
           is_normalize="z", is_denoise="0",
           is_hist_match="0", is_test="1",
-          depth_unet=4, n_base_filters_unet=16, model_name="unet",
+          depth_unet=4, n_base_filters_unet=16, model_name="isensee",
           patch_shape="128-128-128", is_crf="0",
           batch_size=1, loss="weighted"):
 
@@ -117,6 +139,57 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
         patch_shape=patch_shape, is_crf=is_crf, loss=loss)
 
+    config["model_file"] = model_path
+
+    print("-"*60)
+    print("# Load or init model")
+    print("-"*60)
+    if not os.path.exists(config["model_file"]):
+        raise Exception("{} model file not found. Please try again".format(config["model_file"]))
+    else:        
+        print(">> load old model")
+        model = load_old_model(config["model_file"])
+        model.summary()
+        print(">> save weights")
+        model.save_weights('my_model_weights.h5')
+
+        model_json = model.to_json()
+        with open("model.json", "w") as json_file:
+            json_file.write(model_json)
+
+    if model_name == "unet":
+        print(">> init unet model")
+        model = unet_model_3d(input_shape=config["input_shape"],
+                              pool_size=config["pool_size"],
+                              n_labels=config["n_labels"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=depth_unet,
+                              n_base_filters=n_base_filters_unet,
+                              loss_function=loss)
+
+    elif model_name == "densefcn":
+        print(">> init densenet model")
+        model = densefcn_model_3d(input_shape=config["input_shape"],
+                                  classes=config["n_labels"],
+                                  initial_learning_rate=config["initial_learning_rate"],
+                                  nb_dense_block=5,
+                                  nb_layers_per_block=4,
+                                  loss_function=loss)
+
+    else:
+        print(">> init isensee model")
+        model = isensee2017_model(input_shape=config["input_shape"],
+                                  n_labels=config["n_labels"],
+                                  initial_learning_rate=config["initial_learning_rate"],
+                                  loss_function=loss)
+    print(">> load weights")
+    model.load_weights("my_model_weights.h5")
+    print(">> remove weights")
+    os.remove("my_model_weights.h5")
+    model.summary()
+
+
     config["data_file"] = data_path
     config["model_file"] = model_path
     config["training_file"] = trainids_path
@@ -124,6 +197,10 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     config["patch_shape"] = get_shape_from_string(patch_shape)
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
+
+
+    update_train_valid_test_config(config, is_test=is_test)
+
 
     if overwrite or not os.path.exists(data_path):
         prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -135,14 +212,14 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     data_file_opened = open_data_file(config["data_file"])
 
     print_section("get training and testing generators")
-    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators_new(
+    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators(
         data_file_opened,
         batch_size=batch_size,
         data_split=config["validation_split"],
         overwrite=overwrite,
         validation_keys_file=config["validation_file"],
         training_keys_file=config["training_file"],
-        # n_steps_file=config["n_steps_file"],
+        testing_keys_file=config["testing_file"],
         n_labels=config["n_labels"],
         labels=config["labels"],
         patch_shape=config["patch_shape"],
@@ -160,53 +237,28 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         n_augment=config["n_augment"],
         skip_blank=config["skip_blank"])
 
-    print("-"*60)
-    print("# Load or init model")
-    print("-"*60)
-    if not overwrite and os.path.exists(config["model_file"]):
-        print("load old model")
-        model = load_old_model(config["model_file"])
-    else:
-        # instantiate new model
-        if model_name == "unet":
-            print("init unet model")
-            model = unet_model_3d(input_shape=config["input_shape"],
-                                  pool_size=config["pool_size"],
-                                  n_labels=config["n_labels"],
-                                  initial_learning_rate=config["initial_learning_rate"],
-                                  deconvolution=config["deconvolution"],
-                                  depth=depth_unet,
-                                  n_base_filters=n_base_filters_unet,
-                                  loss_function=loss)
-
-        elif model_name == "densenfcn":
-            print("init densenet model")
-            model = densefcn_model_3d(input_shape=config["input_shape"],
-                                   classes=config["n_labels"],
-                                   initial_learning_rate=config["initial_learning_rate"],
-                                   nb_dense_block=5,
-                                   nb_layers_per_block=4,
-                                   loss_function=loss)
-
-        else:
-            print("init isensee model")
-            model = isensee2017_model(input_shape=config["input_shape"],
-                                      n_labels=config["n_labels"],
-                                      initial_learning_rate=config["initial_learning_rate"],
-                                      loss_function=loss)
-
-    model.summary()
-
-    print("-"*60)
-    print("# start training")
-    print("-"*60)
     # run training
+    print("-"*60)
+    print("# start finetuning")
+    print("-"*60)
 
-    if is_test=="0":
+    config.update(config_finetune)
+    if is_test == "0":
         experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
                                 project_name="unet_test", workspace="vuhoangminh")
     else:
         experiment = None
+
+    data_path, trainids_path, validids_path, model_path = init_path(
+        overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+        image_shape=image_shape, is_bias_correction=is_bias_correction,
+        is_normalize=is_normalize, is_denoise=is_denoise,
+        is_hist_match=is_hist_match, is_test=is_test,
+        model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+        patch_shape=patch_shape, is_crf=is_crf, loss=loss,
+        dir_read_write="finetune")
+
+    config["model_file"] = model_path
 
     print(config["initial_learning_rate"], config["learning_rate_drop"])
     train_model(experiment=experiment,
@@ -223,14 +275,14 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                 n_epochs=config["n_epochs"]
                 )
 
-    if is_test=="0":
+    if is_test == "0":
         experiment.log_parameters(config)
-        
+
     data_file_opened.close()
 
 
 def main():
-    args = get_args.train()
+    args = get_args.finetune()
     overwrite = args.overwrite
     crop = args.crop
     challenge = args.challenge
