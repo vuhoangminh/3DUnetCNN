@@ -11,7 +11,7 @@ ml GCC/6.4.0-2.28  CUDA/9.0.176  OpenMPI/2.1.1
 
 export KERAS_BACKEND="tensorflow"
 
-export command="python brats/train.py -t "0" -o "0" -n "01" -de "bm4d" -hi "1" -ba 4 -m "densenfcn" -ps "64-64-64" -l "tv_minh""
+export command="python brats/train.py -t "0" -o "0" -n "01" -de "bm4d" -hi "1" -ba 4 -m "densefcn" -ps "64-64-64""
 echo "$command"
 srun $command
 

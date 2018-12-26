@@ -39,12 +39,15 @@ from unet3d.metrics import minh_dice_coef_loss, dice_coefficient_loss, minh_dice
 from unet3d.metrics import weighted_dice_coefficient_loss, soft_dice_loss, soft_dice_numpy, tversky_loss
 from unet3d.metrics import tv_minh_loss
 
+# # monkey patch Keras gradients to point to our custom version, with automatic checkpoint selection
+# from external.gradient_checkpointing import memory_saving_gradients
+# K.__dict__["gradients"] = memory_saving_gradients.gradients_memory
 
 def name_or_none(prefix, name):
     return prefix + name if (prefix is not None and name is not None) else None
 
 
-def DenseNetFCN_3D(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_block=4,
+def densefcn_model_3d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_block=4,
                    reduction=0.0, dropout_rate=0.0, weight_decay=1E-4, init_conv_filters=48,
                    include_top=True, weights=None, input_tensor=None, classes=1, activation='softmax',
                    upsampling_conv=128, upsampling_type='deconv', early_transition=False,

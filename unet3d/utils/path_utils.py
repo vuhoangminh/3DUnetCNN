@@ -132,7 +132,7 @@ def get_model_h5_filename(datatype, challenge="brats", year="2018",
                           is_bias_correction="1", is_denoise="0", is_normalize="z",
                           is_hist_match="0", is_test="1",
                           depth_unet=4, n_base_filters_unet=16,
-                          model="unet", patch_shape="128-128-128", is_crf="0",
+                          model_name="unet", patch_shape="128-128-128", is_crf="0",
                           loss="weighted"):
     core_name = get_core_name(challenge=challenge, year=year,
                               image_shape=image_shape, crop=crop,
@@ -140,18 +140,18 @@ def get_model_h5_filename(datatype, challenge="brats", year="2018",
                               is_denoise=is_denoise,
                               is_normalize=is_normalize,
                               is_hist_match=is_hist_match)
-    model_name = get_model_name(model, patch_shape, is_crf,
-                                depth_unet=depth_unet,
-                                n_base_filters_unet=n_base_filters_unet,
-                                loss=loss)
+    model_full_name = get_model_name(model_name, patch_shape, is_crf,
+                                     depth_unet=depth_unet,
+                                     n_base_filters_unet=n_base_filters_unet,
+                                     loss=loss)
 
     if str2bool(is_test):
         return "test_{}_{}_{}.h5".format(
-            core_name, model_name, datatype)
+            core_name, model_full_name, datatype)
 
     else:
         return "{}_{}_{}.h5".format(
-            core_name, model_name, datatype)
+            core_name, model_full_name, datatype)
 
 
 def get_training_h5_filename(datatype, challenge="brats", year="2018",

@@ -86,7 +86,7 @@ def prepare_data(overwrite=True, crop=True, challenge="brats", year=2018,
                            is_normalize=is_normalize,
                            is_hist_match=is_hist_match,
                            dataset=dataset,
-                           is_denoise=is_denoise)
+                           is_denoise=is_denoise)                       
 
 
 def main():

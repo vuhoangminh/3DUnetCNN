@@ -15,6 +15,118 @@ from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
 
 
+def get_training_and_validation_and_testing_generators(data_file, batch_size, n_labels, training_keys_file,
+                                                       validation_keys_file, testing_keys_file,
+                                                       data_split=0.8, overwrite=False, labels=None, patch_shape=None,
+                                                       validation_patch_overlap=0, training_patch_start_offset=None,
+                                                       validation_batch_size=None, is_create_patch_index_list_original=True,
+                                                       augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+                                                       augment_rotation=False, augment_shift=False, augment_shear=False,
+                                                       augment_zoom=False, n_augment=0, skip_blank=False,):
+    """
+    Creates the training and validation generators that can be used when training the model.
+    :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
+    :param validation_batch_size: Batch size for the validation data.
+    :param training_patch_start_offset: Tuple of length 3 containing integer values. Training data will randomly be
+    offset by a number of pixels between (0, 0, 0) and the given tuple. (default is None)
+    :param validation_patch_overlap: Number of pixels/voxels that will be overlapped in the validation data. (requires
+    patch_shape to not be None)
+    :param patch_shape: Shape of the data to return with the generator. If None, the whole image will be returned.
+    (default is None)
+    :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
+    :param augment_distortion_factor: if augment is True, this determines the standard deviation from the original
+    that the data will be distorted (in a stretching or shrinking fashion). Set to None, False, or 0 to prevent the
+    augmentation from distorting the data in this way.
+    :param augment: If True, training data will be distorted on the fly so as to avoid over-fitting.
+    :param labels: List or tuple containing the ordered label values in the image files. The length of the list or tuple
+    should be equal to the n_labels value.
+    Example: (10, 25, 50)
+    The data generator would then return binary truth arrays representing the labels 10, 25, and 30 in that order.
+    :param data_file: hdf5 file to load the data from.
+    :param batch_size: Size of the batches that the training generator will provide.
+    :param n_labels: Number of binary labels.
+    :param training_keys_file: Pickle file where the index locations of the training data will be stored.
+    :param validation_keys_file: Pickle file where the index locations of the validation data will be stored.
+    :param data_split: How the training and validation data will be split. 0 means all the data will be used for
+    validation and none of it will be used for training. 1 means that all the data will be used for training and none
+    will be used for validation. Default is 0.8 or 80%.
+    :param overwrite: If set to True, previous files will be overwritten. The default mode is false, so that the
+    training and validation splits won't be overwritten when rerunning model training.
+    :param permute: will randomly permute the data (data must be 3D cube)
+    :return: Training data generator, validation data generator, number of training steps, number of validation steps
+    """
+
+    if not validation_batch_size:
+        validation_batch_size = batch_size
+
+    training_list, validation_list, testing_list = get_train_valid_test_split(
+        data_file, training_file=training_keys_file,
+        validation_file=validation_keys_file,
+        testing_file=testing_keys_file,
+        data_split=0.8, overwrite=False)
+
+    print("training_list:", training_list)
+
+    print(">> training data generator")
+    training_generator = data_generator_new(data_file, training_list,
+                                            batch_size=batch_size,
+                                            n_labels=n_labels,
+                                            labels=labels,
+                                            patch_shape=patch_shape,
+                                            patch_overlap=0,
+                                            patch_start_offset=training_patch_start_offset,
+                                            is_create_patch_index_list_original=is_create_patch_index_list_original,
+                                            augment_flipud=augment_flipud,
+                                            augment_fliplr=augment_fliplr,
+                                            augment_elastic=augment_elastic,
+                                            augment_rotation=augment_rotation,
+                                            augment_shift=augment_shift,
+                                            augment_shear=augment_shear,
+                                            augment_zoom=augment_zoom,
+                                            n_augment=n_augment,
+                                            skip_blank=skip_blank)
+    print(">> valid data generator")
+    validation_generator = data_generator_new(data_file, validation_list,
+                                              batch_size=validation_batch_size,
+                                              n_labels=n_labels,
+                                              labels=labels,
+                                              patch_shape=patch_shape,
+                                              patch_overlap=validation_patch_overlap,
+                                              is_create_patch_index_list_original=is_create_patch_index_list_original,
+                                              skip_blank=skip_blank
+                                              )
+
+    # Set the number of training and testing samples per epoch correctly
+    # if overwrite or not os.path.exists(n_steps_file):
+    print(">> compute number of training and validation steps")
+    num_training_steps = get_number_of_steps(get_number_of_patches_new(data_file, training_list, patch_shape,
+                                                                       patch_start_offset=training_patch_start_offset,
+                                                                       patch_overlap=0, skip_blank=skip_blank,
+                                                                       augment_flipud=augment_flipud,
+                                                                       augment_fliplr=augment_fliplr,
+                                                                       augment_elastic=augment_elastic,
+                                                                       augment_rotation=augment_rotation,
+                                                                       augment_shift=augment_shift,
+                                                                       augment_shear=augment_shear,
+                                                                       augment_zoom=augment_zoom,),
+                                             batch_size)
+    num_validation_steps = get_number_of_steps(get_number_of_patches_new(data_file, validation_list, patch_shape,
+                                                                         patch_overlap=validation_patch_overlap, skip_blank=skip_blank,
+                                                                         augment_flipud=augment_flipud,
+                                                                         augment_fliplr=augment_fliplr,
+                                                                         augment_elastic=augment_elastic,
+                                                                         augment_rotation=augment_rotation,
+                                                                         augment_shift=augment_shift,
+                                                                         augment_shear=augment_shear,
+                                                                         augment_zoom=augment_zoom,),
+                                               validation_batch_size)
+
+    print("Number of training steps: ", num_training_steps)
+    print("Number of validation steps: ", num_validation_steps)
+
+    return training_generator, validation_generator, num_training_steps, num_validation_steps
+
+
 def get_training_and_validation_generators_new(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
                                                data_split=0.8, overwrite=False, labels=None, patch_shape=None,
                                                validation_patch_overlap=0, training_patch_start_offset=None,
@@ -215,6 +327,37 @@ def get_number_of_steps(n_samples, batch_size):
         return n_samples//batch_size
     else:
         return n_samples//batch_size + 1
+
+
+def get_train_valid_test_split(data_file, training_file, validation_file,
+                               testing_file, data_split=0.8, overwrite=False):
+    """
+    Splits the data into the training and validation indices list.
+    :param data_file: pytables hdf5 data file
+    :param training_file:
+    :param validation_file:
+    :param data_split:
+    :param overwrite:
+    :return:
+    """
+    if overwrite or not os.path.exists(training_file):
+        print("Creating validation split...")
+        nb_samples = data_file.root.data.shape[0]
+        sample_list = list(range(nb_samples))
+        training_list, testing_list = split_list(
+            sample_list, split=data_split)
+
+        training_list, validation_list = split_list(
+            training_list, split=data_split)
+
+        pickle_dump(training_list, training_file)
+        pickle_dump(validation_list, validation_file)
+        pickle_dump(testing_list, testing_file)
+
+        return training_list, validation_list, testing_list
+    else:
+        print("Loading previous validation split...")
+        return pickle_load(training_file), pickle_load(validation_file), pickle_load(testing_file)
 
 
 def get_validation_split(data_file, training_file, validation_file, data_split=0.8, overwrite=False):

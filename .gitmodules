@@ -4,3 +4,6 @@
 # [submodule "external/Fully-Connected-DenseNets-Semantic-Segmentation"]
 #     path = external/Fully-Connected-DenseNets-Semantic-Segmentation
 #     url = https://github.com/titu1994/Fully-Connected-DenseNets-Semantic-Segmentation.git
+[submodule "external/gradient_checkpointing"]
+    path = external/gradient_checkpointing
+    url = https://github.com/openai/gradient-checkpointing.git

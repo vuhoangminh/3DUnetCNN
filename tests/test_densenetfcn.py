@@ -1,8 +1,8 @@
-from unet3d.model import DenseNetFCN_3D
+from unet3d.model import densefcn_model_3d
 from unet3d.model import isensee2017_model
 from unet3d.model import unet_model_3d
 from keras.utils import plot_model
-from unet3d.model.densenetfcn3d import DenseNetFCN_3D
+from unet3d.model.densenetfcn3d import densefcn_model_3d
 from unet3d.model.densenetfcn2d import DenseNetFCN
 from keras_applications.imagenet_utils import _obtain_input_shape
 from keras_contrib.applications import densenet
@@ -47,7 +47,7 @@ K.set_image_data_format('channels_first')
 
 
 input_shape = (4, 64, 64, 64)
-model = DenseNetFCN_3D(input_shape=input_shape, classes=3)
+model = densefcn_model_3d(input_shape=input_shape, classes=3)
 plot_model(model, to_file='densenetfcn3d.png', show_shapes=True)
 
 # model = unet_model_3d(input_shape=input_shape,

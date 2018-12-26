@@ -102,7 +102,7 @@ config["skip_blank"] = True
 config_dict = dict()
 config_dict["challenge"] = ["brats"]
 config_dict["year"] = [2018, 2019]
-config_dict["model"] = ["unet", "isensee", "densenfcn"]
+config_dict["model"] = ["unet", "isensee", "densefcn"]
 # "deepmedic", "maskrcnn", "cascaded", "proposed"]
 config_dict["depth_unet"] = [3, 4, 5]  # depth of unet
 config_dict["n_base_filters_unet"] = [8, 16, 32]  # number of base filters of unet
@@ -122,9 +122,11 @@ config_convert_name = {
     "denoised_preprocessed": "bias-1_denoise-bm4d",    
 }
 
-
-# brats_2018_crop-1_is-160-192-128_bias-1_denoise-bm4d_norm-minh_ps-128-128-128_unet_crf-post_d-4_nb-16.h5
-# brats_2018_crop-1_is-160-192-128_bias-1_denoise-0_norm-z_ps-128-128-128_unet_crf-0_d-4_nb-16.h5
-# brats_2018_crop-1_is-160-192-128_bias-1_denoise-bm4d_norm-minh_data.h5
-# brats_2018_crop-1_is-160-192-128_bias-1_denoise-bm4d_norm-minh_train_ids.h5
-# brats_2018_crop-1_is-160-192-128_bias-1_denoise-bm4d_norm-minh_valid_ids.h5
+config_finetune = dict()
+config_finetune["n_epochs"] = 100  # cutoff the training after this many epochs
+# learning rate will be reduced after this many epochs if the validation loss is not improving
+config_finetune["patience"] = 5
+# training will be stopped after this many epochs without the validation loss improving
+config_finetune["early_stop"] = 20
+config_finetune["initial_learning_rate"] = 4e-5 # factor by which the learning rate will be reduced
+config_finetune["learning_rate_drop"] = 0.2 # portion of the data that will be used for training
