@@ -24,16 +24,26 @@ DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 #     "brats/database/prediction/brats_2018_is-160-192-128_crop-1_bias-1_denoise-bm4d_norm-01_hist-1_ps-128-128-128_unet_crf-0_d-4_nb-16_model")
 
 
+core_name = "brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-1"
+core_name = "brats_2018_is-160-192-128_crop-1_bias-1_denoise-bm4d_norm-01_hist-1"
+model_name = "ps-128-128-128_unet_crf-0_d-4_nb-16_loss-weighted_model"
+model_name = "ps-128-128-128_isensee_crf-0_loss-weighted_model"
+model_name = "ps-64-64-64_densefcn_crf-0_loss-weighted_model"
+
 config["data_file"] = os.path.abspath(
-    "brats/database/data/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-0_data.h5")
+    "brats/database/data/{}_data.h5".format(core_name))
+
 config["model_file"] = os.path.abspath(
-    "brats/database/model/done/weighted_loss/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-0_ps-128-128-128_isensee_crf-0_model.h5")
+    "/home/minhvu/github/3DUnetCNN_BRATS/brats/database/model/base/{}_{}.h5".format(core_name, model_name))
+config["model_file"] = os.path.abspath(
+    "/home/minhvu/github/3DUnetCNN_BRATS/brats/database/model/{}_{}.h5".format(core_name, model_name))
+
 config["training_file"] = os.path.abspath(
-    "brats/database/train_ids/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-0_train_ids.h5")
+    "brats/database/train_ids/{}_train_ids.h5".format(core_name))
 config["validation_file"] = os.path.abspath(
-    "brats/database/valid_ids/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-0_valid_ids.h5")
+    "brats/database/valid_ids/{}_valid_ids.h5".format(core_name))
 config["prediction_folder"] = os.path.abspath(
-    "brats/database/prediction/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-0_ps-128-128-128_isensee_crf-0_model")
+    "brats/database/prediction/{}_{}".format(core_name, model_name))
 
 
 def main():

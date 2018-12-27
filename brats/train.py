@@ -165,7 +165,9 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("-"*60)
     if not overwrite and os.path.exists(config["model_file"]):
         print("load old model")
-        model = load_old_model(config["model_file"])
+        from unet3d.utils.model_utils import load_model_multi_gpu, generate_model
+        model = generate_model(config["model_file"])
+        # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
         if model_name == "unet":
