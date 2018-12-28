@@ -165,7 +165,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("-"*60)
     if not overwrite and os.path.exists(config["model_file"]):
         print("load old model")
-        from unet3d.utils.model_utils import load_model_multi_gpu, generate_model
+        from unet3d.utils.model_utils import generate_model
         model = generate_model(config["model_file"])
         # model = load_old_model(config["model_file"])
     else:
@@ -181,8 +181,9 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                   n_base_filters=n_base_filters_unet,
                                   loss_function=loss)
 
-        elif model_name == "densenfcn":
+        elif model_name == "densefcn":
             print("init densenet model")
+            # config["initial_learning_rate"] = 1e-5
             model = densefcn_model_3d(input_shape=config["input_shape"],
                                    classes=config["n_labels"],
                                    initial_learning_rate=config["initial_learning_rate"],
@@ -206,7 +207,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
 
     if is_test=="0":
         experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
-                                project_name="unet_test", workspace="vuhoangminh")
+                                project_name="train", 
+                                workspace="vuhoangminh")
     else:
         experiment = None
 

@@ -51,7 +51,7 @@ def load_model_multi_gpu(model_file):
 
     for i_layer in range(len(loaded_model.layers)):
         layer_name = loaded_model.layers[i_layer].name
-        if "model" in layer_name:
+        if type(loaded_model.layers[i_layer]) is Model:
             model = loaded_model.layers[i_layer]
 
     print(">> remove temp weights")

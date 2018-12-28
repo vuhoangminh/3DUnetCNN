@@ -132,13 +132,13 @@ def update_train_valid_test_config(config, is_test="1"):
             "valid_ids.h5", "test_ids.h5")
 
 
-def train(overwrite=True, crop=True, challenge="brats", year=2018,
-          image_shape="160-160-128", is_bias_correction="1",
-          is_normalize="z", is_denoise="0",
-          is_hist_match="0", is_test="1",
-          depth_unet=4, n_base_filters_unet=16, model_name="isensee",
-          patch_shape="128-128-128", is_crf="0",
-          batch_size=1, loss="weighted"):
+def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
+             image_shape="160-160-128", is_bias_correction="1",
+             is_normalize="z", is_denoise="0",
+             is_hist_match="0", is_test="1",
+             depth_unet=4, n_base_filters_unet=16, model_name="isensee",
+             patch_shape="128-128-128", is_crf="0",
+             batch_size=1, loss="weighted"):
 
     data_path, trainids_path, validids_path, testids_path, model_path = init_path(
         overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -146,7 +146,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         is_normalize=is_normalize, is_denoise=is_denoise,
         is_hist_match=is_hist_match, is_test=is_test,
         model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape, is_crf=is_crf, loss=loss)
+        patch_shape=patch_shape, is_crf=is_crf)
 
     config["data_file"] = data_path
     config["model_file"] = model_path
@@ -208,7 +208,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         from unet3d.utils.model_utils import generate_model
         print(">> load old and generate model")
         model = generate_model(config["model_file"],
-                               initial_learning_rate=config["initial_learning_rate"])
+                               initial_learning_rate=config["initial_learning_rate"],
+                               loss_function=loss)
         model.summary()
 
     # run training
@@ -275,13 +276,13 @@ def main():
     is_hist_match = args.is_hist_match
     loss = args.loss
 
-    train(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-          image_shape=image_shape, is_bias_correction=is_bias_correction,
-          is_normalize=is_normalize, is_denoise=is_denoise,
-          is_hist_match=is_hist_match, is_test=is_test,
-          model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-          patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
-          loss=loss)
+    finetune(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+             image_shape=image_shape, is_bias_correction=is_bias_correction,
+             is_normalize=is_normalize, is_denoise=is_denoise,
+             is_hist_match=is_hist_match, is_test=is_test,
+             model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+             patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
+             loss=loss)
 
 
 if __name__ == "__main__":
