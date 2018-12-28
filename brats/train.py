@@ -190,7 +190,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                       nb_dense_block=5,
                                       nb_layers_per_block=4,
                                       early_transition=True,
-                                      dropout_rate=0.5,
+                                      dropout_rate=0.2,
                                       loss_function=loss)
 
         else:

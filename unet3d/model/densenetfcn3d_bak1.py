@@ -9,16 +9,17 @@ from keras.layers import Dense
 from keras.layers import Dropout
 from keras.layers import Activation
 from keras.layers import Reshape
-from keras.layers import Conv3D
-from keras.layers import Conv3DTranspose
-from keras.layers import UpSampling3D
-from keras.layers import MaxPooling3D
-from keras.layers import AveragePooling3D
-from keras.layers import GlobalMaxPooling3D
-from keras.layers import GlobalAveragePooling3D
+from keras.layers import Conv2D, Conv3D
+from keras.layers import Conv2DTranspose, Conv3DTranspose
+from keras.layers import UpSampling2D, UpSampling3D
+from keras.layers import MaxPooling2D, MaxPooling3D
+from keras.layers import AveragePooling2D, AveragePooling3D
+from keras.layers import GlobalMaxPooling2D, GlobalMaxPooling3D
+from keras.layers import GlobalAveragePooling2D, GlobalAveragePooling3D
 from keras.layers import Input
 from keras.layers import concatenate
 from keras.layers import BatchNormalization
+from keras.layers import LeakyReLU
 from keras.regularizers import l2
 from keras.utils.layer_utils import convert_all_kernels_in_model
 from keras.utils.data_utils import get_file
@@ -28,14 +29,20 @@ from keras.applications.imagenet_utils import decode_predictions
 from keras.applications.imagenet_utils import preprocess_input as _preprocess_input
 import keras.backend as K
 
-from keras_contrib.layers.convolutional import SubPixelUpscaling
-
 from keras.optimizers import Adam
 from keras.utils import multi_gpu_model
+
+from keras_contrib.layers.convolutional import SubPixelUpscaling
+
 from unet3d.metrics import dice_coefficient_loss, get_label_dice_coefficient_function, dice_coefficient
 from unet3d.metrics import minh_dice_coef_loss, dice_coefficient_loss, minh_dice_coef_metric
 from unet3d.metrics import weighted_dice_coefficient_loss, soft_dice_loss, soft_dice_numpy, tversky_loss
 from unet3d.metrics import tv_minh_loss
+
+# # monkey patch Keras gradients to point to our custom version, with automatic checkpoint selection
+# from external.gradient_checkpointing import memory_saving_gradients
+# K.__dict__["gradients"] = memory_saving_gradients.gradients_memory
+
 
 def name_or_none(prefix, name):
     return prefix + name if (prefix is not None and name is not None) else None
@@ -133,21 +140,23 @@ def densefcn_model_3d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_p
     if K.image_data_format() == 'channels_first':
         if input_shape is not None:
             if ((input_shape[1] is not None and input_shape[1] < min_size) or
+                    (input_shape[2] is not None and input_shape[2] < min_size) or
+                    (input_shape[3] is not None and input_shape[3] < min_size)):
+                raise ValueError('Input size must be at least ' +
+                                 str(min_size) + 'x' + str(min_size) + ', got '
+                                                                       '`input_shape=' + str(input_shape) + '`')
+        else:
+            input_shape = (classes, None, None, None)
+    else:
+        if input_shape is not None:
+            if ((input_shape[0] is not None and input_shape[0] < min_size) or
+                    (input_shape[1] is not None and input_shape[1] < min_size) or
                     (input_shape[2] is not None and input_shape[2] < min_size)):
                 raise ValueError('Input size must be at least ' +
                                  str(min_size) + 'x' + str(min_size) + ', got '
                                                                        '`input_shape=' + str(input_shape) + '`')
         else:
-            input_shape = (classes, None, None)
-    else:
-        if input_shape is not None:
-            if ((input_shape[0] is not None and input_shape[0] < min_size) or
-                    (input_shape[1] is not None and input_shape[1] < min_size)):
-                raise ValueError('Input size must be at least ' +
-                                 str(min_size) + 'x' + str(min_size) + ', got '
-                                                                       '`input_shape=' + str(input_shape) + '`')
-        else:
-            input_shape = (None, None, classes)
+            input_shape = (None, None, None, classes)
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)
@@ -161,7 +170,8 @@ def densefcn_model_3d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_p
                                reduction, dropout_rate, weight_decay,
                                nb_layers_per_block, upsampling_conv, upsampling_type,
                                init_conv_filters, input_shape, activation,
-                               early_transition, transition_pooling, initial_kernel_size)
+                               early_transition, transition_pooling, initial_kernel_size,
+                               instance_normalization=False, activation_x=None)
 
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
@@ -193,11 +203,11 @@ def densefcn_model_3d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_p
 
     model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
                   loss=loss, metrics=metrics)
-    
     return model
 
 
-def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_decay=1e-4, block_prefix=None):
+def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_decay=1e-4,
+                 block_prefix=None, instance_normalization=True, activation=LeakyReLU):
     '''
     Adds a convolution layer (with batch normalization and relu),
     and optionally a bottleneck layer.
@@ -230,21 +240,45 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
     with K.name_scope('ConvBlock'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
-        x = Activation('relu')(x)
+        if instance_normalization:
+            try:
+                from keras_contrib.layers.normalization import InstanceNormalization
+            except ImportError:
+                raise ImportError("Install keras_contrib in order to use instance normalization."
+                                  "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+            x = InstanceNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_in'))(ip)
+        else:
+            x = BatchNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        if activation is None:
+            x = Activation('relu')(x)
+        else:
+            x = activation()(x)
 
         if bottleneck:
             inter_channel = nb_filter * 4
 
             x = Conv3D(inter_channel, (1, 1, 1), kernel_initializer='he_normal', padding='same', use_bias=False,
-                       kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv2D'))(x)
-            x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5,
-                                   name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
-            x = Activation('relu')(x)
+                       kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv3D'))(x)
+            if instance_normalization:
+                try:
+                    from keras_contrib.layers.normalization import InstanceNormalization
+                except ImportError:
+                    raise ImportError("Install keras_contrib in order to use instance normalization."
+                                      "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+                x = InstanceNormalization(
+                    axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bottleneck_in'))(x)
+            else:
+                x = BatchNormalization(
+                    axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
+            if activation is None:
+                x = Activation('relu')(x)
+            else:
+                x = activation()(x)
 
         x = Conv3D(nb_filter, (3, 3, 3), kernel_initializer='he_normal', padding='same', use_bias=False,
-                   name=name_or_none(block_prefix, '_conv2D'))(x)
+                   name=name_or_none(block_prefix, '_conv3D'))(x)
         if dropout_rate:
             x = Dropout(dropout_rate)(x)
 
@@ -252,7 +286,8 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
 
 
 def __dense_block(x, nb_layers, nb_filter, growth_rate, bottleneck=False, dropout_rate=None,
-                  weight_decay=1e-4, grow_nb_filters=True, return_concat_list=False, block_prefix=None):
+                  weight_decay=1e-4, grow_nb_filters=True, return_concat_list=False,
+                  block_prefix=None):
     '''
     Build a dense_block where the output of each conv_block is fed
     to subsequent ones
@@ -301,7 +336,9 @@ def __dense_block(x, nb_layers, nb_filter, growth_rate, bottleneck=False, dropou
             return x, nb_filter
 
 
-def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_prefix=None, transition_pooling='max'):
+def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_prefix=None,
+                       transition_pooling='max', instance_normalization=True,
+                       activation=LeakyReLU):
     '''
     Adds a pointwise convolution layer (with batch normalization and relu),
     and an average pooling layer. The number of output convolution filters
@@ -336,11 +373,23 @@ def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_
     with K.name_scope('Transition'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
-        x = Activation('relu')(x)
+        if instance_normalization:
+            try:
+                from keras_contrib.layers.normalization import InstanceNormalization
+            except ImportError:
+                raise ImportError("Install keras_contrib in order to use instance normalization."
+                                  "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+            x = InstanceNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_in'))(ip)
+        else:
+            x = BatchNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        if activation is None:
+            x = Activation('relu')(x)
+        else:
+            x = activation()(x)
         x = Conv3D(int(nb_filter * compression), (1, 1, 1), kernel_initializer='he_normal', padding='same',
-                   use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv2D'))(x)
+                   use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv3D'))(x)
         if transition_pooling == 'avg':
             x = AveragePooling3D((2, 2, 2), strides=(2, 2, 2))(x)
         elif transition_pooling == 'max':
@@ -383,159 +432,15 @@ def __transition_up_block(ip, nb_filters, type='deconv', weight_decay=1E-4, bloc
                 block_prefix, '_upsampling'))(ip)
         elif type == 'subpixel':
             x = Conv3D(nb_filters, (3, 3, 3), activation='relu', padding='same', kernel_regularizer=l2(weight_decay),
-                       use_bias=False, kernel_initializer='he_normal', name=name_or_none(block_prefix, '_conv2D'))(ip)
+                       use_bias=False, kernel_initializer='he_normal', name=name_or_none(block_prefix, '_conv3D'))(ip)
             x = SubPixelUpscaling(scale_factor=2, name=name_or_none(
                 block_prefix, '_subpixel'))(x)
             x = Conv3D(nb_filters, (3, 3, 3), activation='relu', padding='same', kernel_regularizer=l2(weight_decay),
-                       use_bias=False, kernel_initializer='he_normal', name=name_or_none(block_prefix, '_conv2D'))(x)
+                       use_bias=False, kernel_initializer='he_normal', name=name_or_none(block_prefix, '_conv3D'))(x)
         else:
             x = Conv3DTranspose(nb_filters, (3, 3, 3), activation='relu', padding='same', strides=(2, 2, 2),
                                 kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay),
-                                name=name_or_none(block_prefix, '_conv2DT'))(ip)
-        return x
-
-
-def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_block=3, growth_rate=12, nb_filter=-1,
-                       nb_layers_per_block=-1, bottleneck=False, reduction=0.0, dropout_rate=None, weight_decay=1e-4,
-                       subsample_initial_block=False, pooling=None, activation='softmax', transition_pooling='avg'):
-    ''' Build the DenseNet model
-
-    # Arguments
-        nb_classes: number of classes
-        img_input: tuple of shape (channels, rows, columns) or (rows, columns, channels)
-        include_top: flag to include the final Dense layer
-        depth: number or layers
-        nb_dense_block: number of dense blocks to add to end (generally = 3)
-        growth_rate: number of filters to add per dense block
-        nb_filter: initial number of filters. Default -1 indicates initial number of filters is 2 * growth_rate
-        nb_layers_per_block: number of layers in each dense block.
-                Can be a -1, positive integer or a list.
-                If -1, calculates nb_layer_per_block from the depth of the network.
-                If positive integer, a set number of layers per dense block.
-                If list, nb_layer is used as provided. Note that list size must
-                be (nb_dense_block + 1)
-        bottleneck: add bottleneck blocks
-        reduction: reduction factor of transition blocks. Note : reduction value is inverted to compute compression
-        dropout_rate: dropout rate
-        weight_decay: weight decay rate
-        subsample_initial_block: Changes model type to suit different datasets.
-            Should be set to True for ImageNet, and False for CIFAR datasets.
-            When set to True, the initial convolution will be strided and
-            adds a MaxPooling3D before the initial dense block.
-        pooling: Optional pooling mode for feature extraction
-            when `include_top` is `False`.
-            - `None` means that the output of the model
-                will be the 4D tensor output of the
-                last convolutional layer.
-            - `avg` means that global average pooling
-                will be applied to the output of the
-                last convolutional layer, and thus
-                the output of the model will be a
-                2D tensor.
-            - `max` means that global max pooling will
-                be applied.
-        activation: Type of activation at the top layer. Can be one of 'softmax' or 'sigmoid'.
-                Note that if sigmoid is used, classes must be 1.
-        transition_pooling: `avg` for avg pooling (default), `max` for max pooling,
-            None for no pooling during scale transition blocks. Please note that this
-            default differs from the DenseNetFCN paper in accordance with the DenseNet
-            paper.
-
-    # Returns
-        a keras tensor
-
-    # Raises
-        ValueError: in case of invalid argument for `reduction`
-            or `nb_dense_block`
-    '''
-    with K.name_scope('DenseNet'):
-        concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
-
-        if reduction != 0.0:
-            if not (reduction <= 1.0 and reduction > 0.0):
-                raise ValueError(
-                    '`reduction` value must lie between 0.0 and 1.0')
-
-        # layers in each dense block
-        if type(nb_layers_per_block) is list or type(nb_layers_per_block) is tuple:
-            nb_layers = list(nb_layers_per_block)  # Convert tuple to list
-
-            if len(nb_layers) != (nb_dense_block):
-                raise ValueError('If `nb_dense_block` is a list, its length must match '
-                                 'the number of layers provided by `nb_layers`.')
-
-            final_nb_layer = nb_layers[-1]
-            nb_layers = nb_layers[:-1]
-        else:
-            if nb_layers_per_block == -1:
-                assert (
-                    depth - 4) % 3 == 0, 'Depth must be 3 N + 4 if nb_layers_per_block == -1'
-                count = int((depth - 4) / 3)
-
-                if bottleneck:
-                    count = count // 2
-
-                nb_layers = [count for _ in range(nb_dense_block)]
-                final_nb_layer = count
-            else:
-                final_nb_layer = nb_layers_per_block
-                nb_layers = [nb_layers_per_block] * nb_dense_block
-
-        # compute initial nb_filter if -1, else accept users initial nb_filter
-        if nb_filter <= 0:
-            nb_filter = 2 * growth_rate
-
-        # compute compression factor
-        compression = 1.0 - reduction
-
-        # Initial convolution
-        if subsample_initial_block:
-            initial_kernel = (7, 7, 7)
-            initial_strides = (2, 2, 2)
-        else:
-            initial_kernel = (3, 3, 3)
-            initial_strides = (1, 1, 1)
-
-        x = Conv3D(nb_filter, initial_kernel, kernel_initializer='he_normal', padding='same', name='initial_conv2D',
-                   strides=initial_strides, use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
-
-        if subsample_initial_block:
-            x = BatchNormalization(
-                axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
-            x = Activation('relu')(x)
-            x = MaxPooling3D((3, 3, 3), strides=(2, 2, 2), padding='same')(x)
-
-        # Add dense blocks
-        for block_idx in range(nb_dense_block - 1):
-            x, nb_filter = __dense_block(x, nb_layers[block_idx], nb_filter, growth_rate, bottleneck=bottleneck,
-                                         dropout_rate=dropout_rate, weight_decay=weight_decay,
-                                         block_prefix='dense_%i' % block_idx)
-            # add transition_block
-            x = __transition_block(x, nb_filter, compression=compression, weight_decay=weight_decay,
-                                   block_prefix='tr_%i' % block_idx, transition_pooling=transition_pooling)
-            nb_filter = int(nb_filter * compression)
-
-        # The last dense_block does not have a transition_block
-        x, nb_filter = __dense_block(x, final_nb_layer, nb_filter, growth_rate, bottleneck=bottleneck,
-                                     dropout_rate=dropout_rate, weight_decay=weight_decay,
-                                     block_prefix='dense_%i' % (nb_dense_block - 1))
-
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name='final_bn')(x)
-        x = Activation('relu')(x)
-
-        if include_top:
-            if pooling == 'avg':
-                x = GlobalAveragePooling3D()(x)
-            elif pooling == 'max':
-                x = GlobalMaxPooling3D()(x)
-            x = Dense(nb_classes, activation=activation)(x)
-        else:
-            if pooling == 'avg':
-                x = GlobalAveragePooling3D()(x)
-            elif pooling == 'max':
-                x = GlobalMaxPooling3D()(x)
-
+                                name=name_or_none(block_prefix, '_conv3DT'))(ip)
         return x
 
 
@@ -543,7 +448,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
                            reduction=0.0, dropout_rate=None, weight_decay=1e-4,
                            nb_layers_per_block=4, nb_upsampling_conv=128, upsampling_type='deconv',
                            init_conv_filters=48, input_shape=None, activation='softmax',
-                           early_transition=False, transition_pooling='max', initial_kernel_size=(3, 3, 3)):
+                           early_transition=False, transition_pooling='max', initial_kernel_size=(3, 3, 3),
+                           instance_normalization=True, activation_x=LeakyReLU):
     ''' Build the DenseNet-FCN model
 
     # Arguments
@@ -585,9 +491,9 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
         if concat_axis == 1:  # channels_first dim ordering
-            _, rows, cols, deps = input_shape
+            _, rows, cols, heights = input_shape
         else:
-            rows, cols, deps, _ = input_shape
+            rows, cols, heights, _ = input_shape
 
         if reduction != 0.0:
             if not (reduction <= 1.0 and reduction > 0.0):
@@ -619,11 +525,23 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         compression = 1.0 - reduction
 
         # Initial convolution
-        x = Conv3D(init_conv_filters, initial_kernel_size, kernel_initializer='he_normal', padding='same', name='initial_conv2D',
+        x = Conv3D(init_conv_filters, initial_kernel_size, kernel_initializer='he_normal', padding='same', name='initial_conv3D',
                    use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
-        x = Activation('relu')(x)
+        if instance_normalization:
+            try:
+                from keras_contrib.layers.normalization import InstanceNormalization
+            except ImportError:
+                raise ImportError("Install keras_contrib in order to use instance normalization."
+                                  "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+            x = InstanceNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name='initial_in')(x)
+        else:
+            x = BatchNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+        if activation_x is None:
+            x = Activation('relu')(x)
+        else:
+            x = activation_x()(x)
 
         nb_filter = init_conv_filters
 
@@ -685,20 +603,20 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         if include_top:
             x = Conv3D(nb_classes, (1, 1, 1), activation='linear',
                        padding='same', use_bias=False)(x_up)
+
             x = Activation("sigmoid")(x)
 
-
             # if K.image_data_format() == 'channels_first':
-            #     channel, row, col, dep = input_shape
-            #     x = Reshape((nb_classes, row * col * dep))(x)
+            #     _, row, col, height = input_shape
+            #     x = Reshape((nb_classes, row * col * height))(x)
             #     x = Activation(activation)(x)
-            #     x = Reshape((nb_classes, row, col, dep))(x)
+            #     x = Reshape((nb_classes, row, col, height))(x)
             # else:
-            #     row, col, dep, channel = input_shape
-            #     x = Reshape((row * col * dep, nb_classes))(x)
+            #     row, col, height, _ = input_shape
+            #     x = Reshape((row * col * height, nb_classes))(x)
             #     x = Activation(activation)(x)
-            #     x = Reshape((row, col, dep, nb_classes))(x)
+            #     x = Reshape((row, col, height, nb_classes))(x)
         else:
             x = x_up
-            
+
         return x
