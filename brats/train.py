@@ -187,8 +187,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
             model = densefcn_model_3d(input_shape=config["input_shape"],
                                    classes=config["n_labels"],
                                    initial_learning_rate=config["initial_learning_rate"],
-                                   nb_dense_block=5,
-                                   nb_layers_per_block=4,
+                                   nb_dense_block=4,
+                                   nb_layers_per_block=3,
                                    loss_function=loss)
 
         else:

@@ -601,18 +601,19 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         if include_top:
             x = Conv3D(nb_classes, (1, 1, 1), activation='linear',
                        padding='same', use_bias=False)(x_up)
-            x = Activation(activation)(x)
 
-            # if K.image_data_format() == 'channels_first':
-            #     _, row, col, height = input_shape
-            #     x = Reshape((nb_classes, row * col * height))(x)
-            #     x = Activation(activation)(x)
-            #     x = Reshape((nb_classes, row, col, height))(x)
-            # else:
-            #     row, col, height, _ = input_shape
-            #     x = Reshape((row * col * height, nb_classes))(x)
-            #     x = Activation(activation)(x)
-            #     x = Reshape((row, col, height, nb_classes))(x)
+            # x = Activation(activation)(x)
+
+            if K.image_data_format() == 'channels_first':
+                _, row, col, height = input_shape
+                x = Reshape((nb_classes, row * col * height))(x)
+                x = Activation(activation)(x)
+                x = Reshape((nb_classes, row, col, height))(x)
+            else:
+                row, col, height, _ = input_shape
+                x = Reshape((row * col * height, nb_classes))(x)
+                x = Activation(activation)(x)
+                x = Reshape((row, col, height, nb_classes))(x)
         else:
             x = x_up
 
