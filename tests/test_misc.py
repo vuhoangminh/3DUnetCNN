@@ -1,3 +1,4 @@
+from unet3d.utils.patches import compute_patch_indices
 import itertools
 from itertools import permutations, repeat
 import nibabel as nib
@@ -83,58 +84,43 @@ def test_read_h5():
 
 shape = (128, 128, 128)
 
+
 def get_shape_string(input_shape):
     shape_string = ""
     for i in range(len(input_shape)-1):
         shape_string = shape_string + str(input_shape[i]) + "-"
-    shape_string = shape_string + str(input_shape[-1])            
+    shape_string = shape_string + str(input_shape[-1])
 
     return shape_string
 
-print(get_shape_string(shape))
-# test_read_h5()
+
+indices = compute_patch_indices((160, 192, 128), (128, 128, 128),
+                                overlap=0, start=None, is_extract_patch_agressive=False)
+
+print(indices) 
+
+i_list = indices.tolist()
+print(i_list)
+
+new_list = [[-48,32,0], [80,32,0]]
+
+i_list.extend(new_list)
+
+print(i_list)
 
 
-# from unet3d.utils.path_utils import get_shape_from_string
-
-# print(get_shape_from_string(get_shape_string(shape)))
-
-
-# from brats.prepare_data import get_dataset
+final_list = np.asarray(i_list)
+print(final_list)
 
 
-# print(get_dataset(is_test="0", is_bias_correction="1", is_denoise="bm4d"))
-
-# print(get_dataset(is_test="0", is_bias_correction="1", is_denoise="abc"))
-
-# print(get_dataset(is_test="0", is_bias_correction="0", is_denoise="abc"))
-
-
-
-# from unet3d.model.densenet_fc import DenseNetFCN
-# model = DenseNetFCN((4,128,128,128), nb_dense_block=5, growth_rate=16,
-#                     nb_layers_per_block=4, upsampling_type='upsampling', classes=1, activation='sigmoid')
-# model.summary()
+a = (128,128,128)
+print(type(a))
 
 
 
-# from unet3d.training import load_old_model
-# model_path = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/database/model/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-0_ps-128-128-128_isensee_crf-0_model.h5"
+indices = compute_patch_indices((160, 192, 128), (128, 128, 128),
+                                overlap=0, start=None, 
+                                is_extract_patch_agressive=False,
+                                is_predict=True)
 
-
-# model = load_old_model(model_path)
-
-# a=2
-
-
-import tensorflow as tf
-from niftynet.network.dense_vnet import DenseVNet
-
-input_shape = (2, 72, 72, 72, 3)
-
-x = tf.ones(input_shape)
-
-model = DenseVNet(num_classes=2)
-out = model(x, is_training=True)
-
-model.summary()
+print(indices)                                

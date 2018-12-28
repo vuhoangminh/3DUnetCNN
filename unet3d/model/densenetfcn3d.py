@@ -258,7 +258,7 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
             inter_channel = nb_filter * 4
 
             x = Conv3D(inter_channel, (1, 1, 1), kernel_initializer='he_normal', padding='same', use_bias=False,
-                       kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv2D'))(x)
+                       kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv3D'))(x)
             if instance_normalization:
                 try:
                     from keras_contrib.layers.normalization import InstanceNormalization
@@ -276,7 +276,7 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
                 x = activation()(x)
 
         x = Conv3D(nb_filter, (3, 3, 3), kernel_initializer='he_normal', padding='same', use_bias=False,
-                   name=name_or_none(block_prefix, '_conv2D'))(x)
+                   name=name_or_none(block_prefix, '_conv3D'))(x)
         if dropout_rate:
             x = Dropout(dropout_rate)(x)
 
@@ -387,7 +387,7 @@ def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_
         else:
             x = activation()(x)
         x = Conv3D(int(nb_filter * compression), (1, 1, 1), kernel_initializer='he_normal', padding='same',
-                   use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv2D'))(x)
+                   use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv3D'))(x)
         if transition_pooling == 'avg':
             x = AveragePooling3D((2, 2, 2), strides=(2, 2, 2))(x)
         elif transition_pooling == 'max':
@@ -430,15 +430,15 @@ def __transition_up_block(ip, nb_filters, type='deconv', weight_decay=1E-4, bloc
                 block_prefix, '_upsampling'))(ip)
         elif type == 'subpixel':
             x = Conv3D(nb_filters, (3, 3, 3), activation='relu', padding='same', kernel_regularizer=l2(weight_decay),
-                       use_bias=False, kernel_initializer='he_normal', name=name_or_none(block_prefix, '_conv2D'))(ip)
+                       use_bias=False, kernel_initializer='he_normal', name=name_or_none(block_prefix, '_conv3D'))(ip)
             x = SubPixelUpscaling(scale_factor=2, name=name_or_none(
                 block_prefix, '_subpixel'))(x)
             x = Conv3D(nb_filters, (3, 3, 3), activation='relu', padding='same', kernel_regularizer=l2(weight_decay),
-                       use_bias=False, kernel_initializer='he_normal', name=name_or_none(block_prefix, '_conv2D'))(x)
+                       use_bias=False, kernel_initializer='he_normal', name=name_or_none(block_prefix, '_conv3D'))(x)
         else:
             x = Conv3DTranspose(nb_filters, (3, 3, 3), activation='relu', padding='same', strides=(2, 2, 2),
                                 kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay),
-                                name=name_or_none(block_prefix, '_conv2DT'))(ip)
+                                name=name_or_none(block_prefix, '_conv3DT'))(ip)
         return x
 
 
@@ -523,7 +523,7 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         compression = 1.0 - reduction
 
         # Initial convolution
-        x = Conv3D(init_conv_filters, initial_kernel_size, kernel_initializer='he_normal', padding='same', name='initial_conv2D',
+        x = Conv3D(init_conv_filters, initial_kernel_size, kernel_initializer='he_normal', padding='same', name='initial_conv3D',
                    use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
         if instance_normalization:
             try:
