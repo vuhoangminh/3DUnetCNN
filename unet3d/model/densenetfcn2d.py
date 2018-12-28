@@ -35,11 +35,11 @@ def name_or_none(prefix, name):
     return prefix + name if (prefix is not None and name is not None) else None
 
 
-def DenseNetFCN(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_block=4,
-                reduction=0.0, dropout_rate=0.0, weight_decay=1E-4, init_conv_filters=48,
-                include_top=True, weights=None, input_tensor=None, classes=1, activation='softmax',
-                upsampling_conv=128, upsampling_type='deconv', early_transition=False,
-                transition_pooling='max', initial_kernel_size=(3, 3)):
+def densefcn_model_2d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_block=4,
+                      reduction=0.0, dropout_rate=0.0, weight_decay=1E-4, init_conv_filters=48,
+                      include_top=True, weights=None, input_tensor=None, classes=1, activation='softmax',
+                      upsampling_conv=128, upsampling_type='deconv', early_transition=False,
+                      transition_pooling='max', initial_kernel_size=(3, 3)):
     '''Instantiate the DenseNet FCN architecture.
         Note that when using TensorFlow,
         for best performance you should set
@@ -104,7 +104,8 @@ def DenseNetFCN(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_blo
                          '"deconv" or "subpixel".')
 
     if input_shape is None:
-        raise ValueError('For fully convolutional models, input shape must be supplied.')
+        raise ValueError(
+            'For fully convolutional models, input shape must be supplied.')
 
     if type(nb_layers_per_block) is not list and nb_dense_block < 1:
         raise ValueError('Number of dense layers per block must be greater than 1. Argument '
@@ -114,7 +115,8 @@ def DenseNetFCN(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_blo
         raise ValueError('activation must be one of "softmax" or "sigmoid"')
 
     if activation == 'sigmoid' and classes != 1:
-        raise ValueError('sigmoid activation can only be used when classes = 1')
+        raise ValueError(
+            'sigmoid activation can only be used when classes = 1')
 
     # Determine proper input shape
     min_size = 2 ** nb_dense_block
@@ -197,7 +199,8 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
     with K.name_scope('ConvBlock'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        x = BatchNormalization(
+            axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
         x = Activation('relu')(x)
 
         if bottleneck:
@@ -302,7 +305,8 @@ def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_
     with K.name_scope('Transition'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        x = BatchNormalization(
+            axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
         x = Activation('relu')(x)
         x = Conv2D(int(nb_filter * compression), (1, 1), kernel_initializer='he_normal', padding='same',
                    use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv2D'))(x)
@@ -344,11 +348,13 @@ def __transition_up_block(ip, nb_filters, type='deconv', weight_decay=1E-4, bloc
     with K.name_scope('TransitionUp'):
 
         if type == 'upsampling':
-            x = UpSampling2D(name=name_or_none(block_prefix, '_upsampling'))(ip)
+            x = UpSampling2D(name=name_or_none(
+                block_prefix, '_upsampling'))(ip)
         elif type == 'subpixel':
             x = Conv2D(nb_filters, (3, 3), activation='relu', padding='same', kernel_regularizer=l2(weight_decay),
                        use_bias=False, kernel_initializer='he_normal', name=name_or_none(block_prefix, '_conv2D'))(ip)
-            x = SubPixelUpscaling(scale_factor=2, name=name_or_none(block_prefix, '_subpixel'))(x)
+            x = SubPixelUpscaling(scale_factor=2, name=name_or_none(
+                block_prefix, '_subpixel'))(x)
             x = Conv2D(nb_filters, (3, 3), activation='relu', padding='same', kernel_regularizer=l2(weight_decay),
                        use_bias=False, kernel_initializer='he_normal', name=name_or_none(block_prefix, '_conv2D'))(x)
         else:
@@ -416,7 +422,8 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
 
         if reduction != 0.0:
             if not (reduction <= 1.0 and reduction > 0.0):
-                raise ValueError('`reduction` value must lie between 0.0 and 1.0')
+                raise ValueError(
+                    '`reduction` value must lie between 0.0 and 1.0')
 
         # layers in each dense block
         if type(nb_layers_per_block) is list or type(nb_layers_per_block) is tuple:
@@ -430,7 +437,8 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
             nb_layers = nb_layers[:-1]
         else:
             if nb_layers_per_block == -1:
-                assert (depth - 4) % 3 == 0, 'Depth must be 3 N + 4 if nb_layers_per_block == -1'
+                assert (
+                    depth - 4) % 3 == 0, 'Depth must be 3 N + 4 if nb_layers_per_block == -1'
                 count = int((depth - 4) / 3)
 
                 if bottleneck:
@@ -461,7 +469,8 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
                    strides=initial_strides, use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
 
         if subsample_initial_block:
-            x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+            x = BatchNormalization(
+                axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
             x = Activation('relu')(x)
             x = MaxPooling2D((3, 3), strides=(2, 2), padding='same')(x)
 
@@ -480,7 +489,8 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
                                      dropout_rate=dropout_rate, weight_decay=weight_decay,
                                      block_prefix='dense_%i' % (nb_dense_block - 1))
 
-        x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5, name='final_bn')(x)
+        x = BatchNormalization(
+            axis=concat_axis, epsilon=1.1e-5, name='final_bn')(x)
         x = Activation('relu')(x)
 
         if include_top:
@@ -550,7 +560,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
 
         if reduction != 0.0:
             if not (reduction <= 1.0 and reduction > 0.0):
-                raise ValueError('`reduction` value must lie between 0.0 and 1.0')
+                raise ValueError(
+                    '`reduction` value must lie between 0.0 and 1.0')
 
         # check if upsampling_conv has minimum number of filters
         # minimum is set to 12, as at least 3 color channels are needed for correct upsampling
@@ -579,7 +590,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         # Initial convolution
         x = Conv2D(init_conv_filters, initial_kernel_size, kernel_initializer='he_normal', padding='same', name='initial_conv2D',
                    use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
-        x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+        x = BatchNormalization(
+            axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
         x = Activation('relu')(x)
 
         nb_filter = init_conv_filters
@@ -602,7 +614,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
             x = __transition_block(x, nb_filter, compression=compression, weight_decay=weight_decay,
                                    block_prefix='tr_%i' % block_idx, transition_pooling=transition_pooling)
 
-            nb_filter = int(nb_filter * compression)  # this is calculated inside transition_down_block
+            # this is calculated inside transition_down_block
+            nb_filter = int(nb_filter * compression)
 
         # The last dense_block does not have a transition_down_block
         # return the concatenated feature maps without the concatenation of the input
@@ -615,7 +628,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
 
         # Add dense blocks and transition up block
         for block_idx in range(nb_dense_block):
-            n_filters_keep = growth_rate * nb_layers[nb_dense_block + block_idx]
+            n_filters_keep = growth_rate * \
+                nb_layers[nb_dense_block + block_idx]
 
             # upsampling block must upsample only the feature maps (concat_list[1:]),
             # not the concatenation of the input with the feature maps (concat_list[0].
@@ -638,7 +652,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
             x_up = __transition_up_block(x_up, nb_filters=nb_filter, type=upsampling_type, weight_decay=weight_decay,
                                          block_prefix='tr_up_early')
         if include_top:
-            x = Conv2D(nb_classes, (1, 1), activation='linear', padding='same', use_bias=False)(x_up)
+            x = Conv2D(nb_classes, (1, 1), activation='linear',
+                       padding='same', use_bias=False)(x_up)
 
             if K.image_data_format() == 'channels_first':
                 channel, row, col = input_shape

@@ -94,7 +94,7 @@ def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
     validids_path = os.path.join(validids_dir, validids_filename)
 
     if is_finetune:
-        model_path = os.path.join(model_dir, "base", model_filename)    
+        model_path = os.path.join(model_dir, "base", model_filename)
     else:
         model_path = os.path.join(model_dir, model_filename)
 
@@ -185,11 +185,13 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
             print("init densenet model")
             # config["initial_learning_rate"] = 1e-5
             model = densefcn_model_3d(input_shape=config["input_shape"],
-                                   classes=config["n_labels"],
-                                   initial_learning_rate=config["initial_learning_rate"],
-                                   nb_dense_block=4,
-                                   nb_layers_per_block=3,
-                                   loss_function=loss)
+                                      classes=config["n_labels"],
+                                      initial_learning_rate=config["initial_learning_rate"],
+                                      nb_dense_block=5,
+                                      nb_layers_per_block=4,
+                                      early_transition=True,
+                                      dropout_rate=0.5,
+                                      loss_function=loss)
 
         else:
             print("init isensee model")
@@ -205,9 +207,9 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("-"*60)
     # run training
 
-    if is_test=="0":
+    if is_test == "0":
         experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
-                                project_name="train", 
+                                project_name="train",
                                 workspace="vuhoangminh")
     else:
         experiment = None
@@ -227,9 +229,9 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                 n_epochs=config["n_epochs"]
                 )
 
-    if is_test=="0":
+    if is_test == "0":
         experiment.log_parameters(config)
-        
+
     data_file_opened.close()
 
 

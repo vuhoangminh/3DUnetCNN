@@ -43,18 +43,19 @@ from unet3d.metrics import tv_minh_loss
 # from external.gradient_checkpointing import memory_saving_gradients
 # K.__dict__["gradients"] = memory_saving_gradients.gradients_memory
 
+
 def name_or_none(prefix, name):
     return prefix + name if (prefix is not None and name is not None) else None
 
 
 def densefcn_model_3d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_block=4,
-                   reduction=0.0, dropout_rate=0.0, weight_decay=1E-4, init_conv_filters=48,
-                   include_top=True, weights=None, input_tensor=None, classes=1, activation='softmax',
-                   upsampling_conv=128, upsampling_type='deconv', early_transition=False,
-                   transition_pooling='max', initial_kernel_size=(3, 3, 3),
-                   initial_learning_rate=0.00001,
-                   metrics=minh_dice_coef_metric,
-                   loss_function="weighted"):
+                      reduction=0.0, dropout_rate=0.0, weight_decay=1E-4, init_conv_filters=48,
+                      include_top=True, weights=None, input_tensor=None, classes=1, activation='softmax',
+                      upsampling_conv=128, upsampling_type='deconv', early_transition=False,
+                      transition_pooling='max', initial_kernel_size=(3, 3, 3),
+                      initial_learning_rate=0.00001,
+                      metrics=minh_dice_coef_metric,
+                      loss_function="weighted"):
     '''Instantiate the DenseNet FCN architecture.
         Note that when using TensorFlow,
         for best performance you should set
@@ -140,7 +141,7 @@ def densefcn_model_3d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_p
         if input_shape is not None:
             if ((input_shape[1] is not None and input_shape[1] < min_size) or
                     (input_shape[2] is not None and input_shape[2] < min_size) or
-                    (input_shape[3] is not None and input_shape[2] < min_size)):
+                    (input_shape[3] is not None and input_shape[3] < min_size)):
                 raise ValueError('Input size must be at least ' +
                                  str(min_size) + 'x' + str(min_size) + ', got '
                                                                        '`input_shape=' + str(input_shape) + '`')
@@ -169,7 +170,8 @@ def densefcn_model_3d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_p
                                reduction, dropout_rate, weight_decay,
                                nb_layers_per_block, upsampling_conv, upsampling_type,
                                init_conv_filters, input_shape, activation,
-                               early_transition, transition_pooling, initial_kernel_size)
+                               early_transition, transition_pooling, initial_kernel_size,
+                               instance_normalization=False, activation_x=None)
 
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
@@ -284,7 +286,7 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
 
 
 def __dense_block(x, nb_layers, nb_filter, growth_rate, bottleneck=False, dropout_rate=None,
-                  weight_decay=1e-4, grow_nb_filters=True, return_concat_list=False, 
+                  weight_decay=1e-4, grow_nb_filters=True, return_concat_list=False,
                   block_prefix=None):
     '''
     Build a dense_block where the output of each conv_block is fed
@@ -335,7 +337,7 @@ def __dense_block(x, nb_layers, nb_filter, growth_rate, bottleneck=False, dropou
 
 
 def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_prefix=None,
-                       transition_pooling='max', instance_normalization=True, 
+                       transition_pooling='max', instance_normalization=True,
                        activation=LeakyReLU):
     '''
     Adds a pointwise convolution layer (with batch normalization and relu),
