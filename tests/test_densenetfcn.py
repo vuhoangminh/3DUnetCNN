@@ -51,7 +51,7 @@ model = densefcn_model_3d(input_shape=input_shape,
                           nb_dense_block=5,
                           nb_layers_per_block=4,
                           early_transition=True,
-                          dropout_rate=0.5)
+                          dropout_rate=0.2)
 model.summary()                          
 plot_model(model, to_file='densenetfcn3d.png', show_shapes=True)
 
