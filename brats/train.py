@@ -10,6 +10,7 @@ from unet3d.generator import get_training_and_validation_generators, get_trainin
 from unet3d.model import unet_model_3d
 from unet3d.model import isensee2017_model
 from unet3d.model import densefcn_model_3d
+from unet3d.model import dense_unet_3d, res_unet_3d
 from unet3d.training import load_old_model, train_model
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
@@ -192,6 +193,26 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                       early_transition=True,
                                       dropout_rate=0.2,
                                       loss_function=loss)
+
+        elif model_name == "denseunet":
+            model = dense_unet_3d(input_shape=config["input_shape"],
+                                  pool_size=config["pool_size"],
+                                  n_labels=config["n_labels"],
+                                  initial_learning_rate=config["initial_learning_rate"],
+                                  deconvolution=config["deconvolution"],
+                                  depth=depth_unet,
+                                  n_base_filters=n_base_filters_unet,
+                                  loss_function=loss)
+
+        elif model_name == "resunet":
+            model = res_unet_3d(input_shape=config["input_shape"],
+                                pool_size=config["pool_size"],
+                                n_labels=config["n_labels"],
+                                initial_learning_rate=config["initial_learning_rate"],
+                                deconvolution=config["deconvolution"],
+                                depth=depth_unet,
+                                n_base_filters=n_base_filters_unet,
+                                loss_function=loss)
 
         else:
             print("init isensee model")
