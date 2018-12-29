@@ -76,7 +76,7 @@ def compile_model(model, loss_function="weighted",
                   metrics=minh_dice_coef_metric,
                   initial_learning_rate=0.001):
     try:
-        model = multi_gpu_model(model, gpus=2)
+        model = multi_gpu_model(model, gpus=4)
         print('!! train on multi gpus')
     except:
         print('!! train on single gpu')

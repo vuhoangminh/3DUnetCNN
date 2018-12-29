@@ -69,44 +69,105 @@ def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"]):
     return (len(labels)-minh_dice_coef_loss(y_true, y_pred, labels=labels))/len(labels)
 
 
-# Ref: salehi17, "Twersky loss function for image segmentation using 3D FCDN"
-# -> the score is computed for each class separately and then summed
-# alpha=beta=0.5 : dice coefficient
-# alpha=beta=1   : tanimoto coefficient (also known as jaccard)
-# alpha+beta=1   : produces set of F*-scores
-# implemented by E. Moebel, 06/04/18
+# # Ref: salehi17, "Twersky loss function for image segmentation using 3D FCDN"
+# # -> the score is computed for each class separately and then summed
+# # alpha=beta=0.5 : dice coefficient
+# # alpha=beta=1   : tanimoto coefficient (also known as jaccard)
+# # alpha+beta=1   : produces set of F*-scores
+# # implemented by E. Moebel, 06/04/18
+# def tversky_loss(y_true, y_pred):
+#     alpha = 0.5
+#     beta = 0.5
+
+#     if K.image_data_format() == 'channels_last':
+#         compute_axis = tuple(range(1, len(y_pred.shape)-1))
+#     else:
+#         compute_axis = tuple(range(2, len(y_pred.shape)))
+
+#     ones = K.ones(K.shape(y_true))
+#     p0 = y_pred      # proba that voxels are class i
+#     p1 = ones-y_pred  # proba that voxels are not class i
+#     g0 = y_true
+#     g1 = ones-y_true
+
+#     num = K.sum(p0*g0, compute_axis)
+#     den = num + alpha*K.sum(p0*g1, compute_axis) + \
+#         beta*K.sum(p1*g0, compute_axis)
+
+#     # when summing over classes, T has dynamic range [0 Ncl]
+#     T = K.sum(num/den)
+
+#     Ncl = K.cast(K.shape(y_true)[-1], 'float32')
+#     return Ncl-T
+
+
+def tversky(y_true, y_pred, smooth=0.00001):
+    y_true_pos = K.flatten(y_true)
+    y_pred_pos = K.flatten(y_pred)
+    true_pos = K.sum(y_true_pos * y_pred_pos)
+    false_neg = K.sum(y_true_pos * (1-y_pred_pos))
+    false_pos = K.sum((1-y_true_pos)*y_pred_pos)
+    alpha = 0.8
+    return (true_pos + smooth)/(true_pos + alpha*false_neg + (1-alpha)*false_pos + smooth)
+
+
 def tversky_loss(y_true, y_pred):
-    alpha = 0.5
-    beta = 0.5
-
-    if K.image_data_format() == 'channels_last':
-        compute_axis = tuple(range(1, len(y_pred.shape)-1))
-    else:
-        compute_axis = tuple(range(2, len(y_pred.shape)))
-
-    ones = K.ones(K.shape(y_true))
-    p0 = y_pred      # proba that voxels are class i
-    p1 = ones-y_pred  # proba that voxels are not class i
-    g0 = y_true
-    g1 = ones-y_true
-
-    num = K.sum(p0*g0, compute_axis)
-    den = num + alpha*K.sum(p0*g1, compute_axis) + \
-        beta*K.sum(p1*g0, compute_axis)
-
-    # when summing over classes, T has dynamic range [0 Ncl]
-    T = K.sum(num/den)
-
-    Ncl = K.cast(K.shape(y_true)[-1], 'float32')
-    return Ncl-T
+    return 1 - tversky(y_true, y_pred)
 
 
-def focal_loss(target, output, gamma=2):
-    output /= K.sum(output, axis=-1, keepdims=True)
-    eps = K.epsilon()
-    output = K.clip(output, eps, 1. - eps)
-    return -K.sum(K.pow(1. - output, gamma) * target * K.log(output),
-                  axis=-1)
+def focal_tversky(y_true, y_pred):
+    pt_1 = tversky(y_true, y_pred)
+    gamma = 0.75
+    return K.pow((1-pt_1), gamma)
+
+
+# focal loss with multi label
+def focal_loss(classes_num, gamma=2., alpha=.25, e=0.1):
+    # classes_num contains sample number of each classes
+    def focal_loss_fixed(target_tensor, prediction_tensor):
+        '''
+        prediction_tensor is the output tensor with shape [None, 100], where 100 is the number of classes
+        target_tensor is the label tensor, same shape as predcition_tensor
+        '''
+        import tensorflow as tf
+        from tensorflow.python.ops import array_ops
+        from keras import backend as K
+
+        # 1# get focal loss with no balanced weight which presented in paper function (4)
+        zeros = array_ops.zeros_like(
+            prediction_tensor, dtype=prediction_tensor.dtype)
+        one_minus_p = array_ops.where(tf.greater(
+            target_tensor, zeros), target_tensor - prediction_tensor, zeros)
+        FT = -1 * (one_minus_p ** gamma) * \
+            tf.log(tf.clip_by_value(prediction_tensor, 1e-8, 1.0))
+
+        # 2# get balanced weight alpha
+        classes_weight = array_ops.zeros_like(
+            prediction_tensor, dtype=prediction_tensor.dtype)
+
+        total_num = float(sum(classes_num))
+        classes_w_t1 = [total_num / ff for ff in classes_num]
+        sum_ = sum(classes_w_t1)
+        classes_w_t2 = [ff/sum_ for ff in classes_w_t1]  # scale
+        classes_w_tensor = tf.convert_to_tensor(
+            classes_w_t2, dtype=prediction_tensor.dtype)
+        classes_weight += classes_w_tensor
+
+        alpha = array_ops.where(tf.greater(
+            target_tensor, zeros), classes_weight, zeros)
+
+        # 3# get balanced focal loss
+        balanced_fl = alpha * FT
+        balanced_fl = tf.reduce_sum(balanced_fl)
+
+        # 4# add other op to prevent overfit
+        # reference : https://spaces.ac.cn/archives/4493
+        nb_classes = len(classes_num)
+        final_loss = (1-e) * balanced_fl + e * K.categorical_crossentropy(
+            K.ones_like(prediction_tensor)/nb_classes, prediction_tensor)
+
+        return final_loss
+    return focal_loss_fixed
 
 
 def ignore_unknown_xentropy(ytrue, ypred):
