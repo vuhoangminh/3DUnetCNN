@@ -9,6 +9,8 @@ from brats.config import config
 
 from unet3d.utils import metrics_utils as utils
 
+K.set_image_data_format("channels_first")
+
 
 def dice_coefficient(y_true, y_pred, smooth=0.00001):
     y_true_f = K.flatten(y_true)
@@ -31,10 +33,14 @@ def weighted_dice_coefficient(y_true, y_pred, axis=(-3, -2, -1), smooth=0.00001)
     :param axis:
     :return:
     """
+    if K.image_data_format() == 'channels_last':
+        compute_axis = tuple(range(1, len(y_pred.shape)-1))
+    else:
+        compute_axis = tuple(range(2, len(y_pred.shape)))
     return K.mean(2. * (K.sum(y_true * y_pred,
-                              axis=axis) + smooth/2)/(K.sum(y_true,
-                                                            axis=axis) + K.sum(y_pred,
-                                                                               axis=axis) + smooth))
+                              axis=compute_axis) + smooth/2)/(K.sum(y_true,
+                                                                    axis=compute_axis) + K.sum(y_pred,
+                                                                                               axis=compute_axis) + smooth))
 
 
 def weighted_dice_coefficient_loss(y_true, y_pred):
@@ -73,15 +79,20 @@ def tversky_loss(y_true, y_pred):
     alpha = 0.5
     beta = 0.5
 
+    if K.image_data_format() == 'channels_last':
+        compute_axis = tuple(range(1, len(y_pred.shape)-1))
+    else:
+        compute_axis = tuple(range(2, len(y_pred.shape)))
+
     ones = K.ones(K.shape(y_true))
     p0 = y_pred      # proba that voxels are class i
     p1 = ones-y_pred  # proba that voxels are not class i
     g0 = y_true
     g1 = ones-y_true
 
-    num = K.sum(p0*g0, (0, 1, 2, 3))
-    den = num + alpha*K.sum(p0*g1, (0, 1, 2, 3)) + \
-        beta*K.sum(p1*g0, (0, 1, 2, 3))
+    num = K.sum(p0*g0, compute_axis)
+    den = num + alpha*K.sum(p0*g1, compute_axis) + \
+        beta*K.sum(p1*g0, compute_axis)
 
     # when summing over classes, T has dynamic range [0 Ncl]
     T = K.sum(num/den)
