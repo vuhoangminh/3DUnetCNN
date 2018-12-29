@@ -9,6 +9,7 @@ from unet3d.metrics import weighted_dice_coefficient_loss, tversky_loss, minh_di
 from unet3d.training import load_old_model
 from keras.utils import multi_gpu_model
 
+
 def load_model_multi_gpu(model_file):
 
     print(">> load old model")
@@ -61,11 +62,19 @@ def load_model_multi_gpu(model_file):
     return model
 
 
-def generate_model(model_file, loss_function="weighted", metrics=minh_dice_coef_metric,
+def generate_model(model_file, loss_function="weighted",
+                   metrics=minh_dice_coef_metric,
                    initial_learning_rate=0.001):
 
     model = load_model_multi_gpu(model_file)
 
+    return compile_model(model, loss_function=loss_function,
+                         metrics=metrics, 
+                         initial_learning_rate=initial_learning_rate)
+
+def compile_model(model, loss_function="weighted",
+                  metrics=minh_dice_coef_metric,
+                  initial_learning_rate=0.001):
     try:
         model = multi_gpu_model(model, gpus=2)
         print('!! train on multi gpus')

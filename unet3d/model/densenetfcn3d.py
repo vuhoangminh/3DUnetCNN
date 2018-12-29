@@ -36,6 +36,7 @@ from unet3d.metrics import dice_coefficient_loss, get_label_dice_coefficient_fun
 from unet3d.metrics import minh_dice_coef_loss, dice_coefficient_loss, minh_dice_coef_metric
 from unet3d.metrics import weighted_dice_coefficient_loss, soft_dice_loss, soft_dice_numpy, tversky_loss
 from unet3d.metrics import tv_minh_loss
+from unet3d.utils.model_utils import compile_model
 
 def name_or_none(prefix, name):
     return prefix + name if (prefix is not None and name is not None) else None
@@ -175,26 +176,9 @@ def densefcn_model_3d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_p
     if not isinstance(metrics, list):
         metrics = [metrics]
 
-    try:
-        model = multi_gpu_model(model, gpus=2)
-        print('!! train on multi gpus')
-    except:
-        print('!! train on single gpu')
-        pass
-
-    if loss_function == "tversky":
-        loss = tversky_loss
-    elif loss_function == "minh":
-        loss = minh_dice_coef_loss
-    elif loss_function == "tv_minh":
-        loss = tv_minh_loss
-    else:
-        loss = weighted_dice_coefficient_loss
-
-    model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
-                  loss=loss, metrics=metrics)
-    
-    return model
+    return compile_model(model, loss_function=loss_function,
+                         metrics=metrics, 
+                         initial_learning_rate=initial_learning_rate)
 
 
 def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_decay=1e-4, block_prefix=None):
