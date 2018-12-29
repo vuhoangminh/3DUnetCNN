@@ -73,19 +73,20 @@ input_shape = (4, 64, 64, 64)
 # plot_model(model, to_file='densenetfcn3d.png', show_shapes=True)
 
 input_shape = (4, 128, 128, 128)
-model = unet_model_3d(input_shape=input_shape,
-                      n_labels=3,
-                      n_base_filters=16)
-plot_model(model, to_file='unet3d.png', show_shapes=True)
+model = res_unet_3d(input_shape=input_shape,
+                    n_labels=3,
+                    n_base_filters=16)
+model.summary()
+# plot_model(model, to_file='unet3d.png', show_shapes=True)
 
 model = dense_unet_3d(input_shape=input_shape,
                       n_labels=3,
                       n_base_filters=16)
 model.summary()
-plot_model(model, to_file='dense_unet3d.png', show_shapes=True)
+# plot_model(model, to_file='dense_unet3d.png', show_shapes=True)
 
 # model = res_unet_3d(input_shape=input_shape,
 #                       n_labels=3,
 #                       n_base_filters=16)
 # model.summary()
-# plot_model(model, to_file='res_unet3d.png', show_shapes=True)
+# plot_model(model, to_file='res_unet3d.png', show_shapes=True)from keras.layers import LeakyReLU
