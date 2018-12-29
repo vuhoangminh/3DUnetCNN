@@ -57,7 +57,7 @@ def get_label_dice_coefficient_function(label_index):
     return f
 
 
-def minh_dice_coef_loss(y_true, y_pred, labels=config["labels"]):
+def minh_dice_coef_loss_old(y_true, y_pred, labels=config["labels"]):
     distance = 0
     for label in range(len(labels)):
         dice_coef_class = dice_coefficient(y_true[:, label], y_pred[:, label])
@@ -65,8 +65,26 @@ def minh_dice_coef_loss(y_true, y_pred, labels=config["labels"]):
     return distance
 
 
-def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"]):
-    return (len(labels)-minh_dice_coef_loss(y_true, y_pred, labels=labels))/len(labels)
+def minh_dice_coef_metric_old(y_true, y_pred, labels=config["labels"]):
+    return (len(labels)-minh_dice_coef_loss_old(y_true, y_pred, labels=labels))/len(labels)
+
+
+def minh_dice_coef_loss(y_true, y_pred, labels=config["labels"], weights=[2, 1, 3]):
+    distance = 0
+    for label in range(len(labels)):
+        dice_coef_class = dice_coefficient(y_true[:, label], y_pred[:, label])
+        dice_coef_class_weighted = dice_coef_class*weights[label]/6
+        distance = 1 - dice_coef_class_weighted + distance
+    return distance
+
+
+def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"], weights=[2, 1, 3]):
+    distance = 0
+    for label in range(len(labels)):
+        dice_coef_class = dice_coefficient(y_true[:, label], y_pred[:, label])
+        dice_coef_class_weighted = dice_coef_class*weights[label]/6
+        distance = dice_coef_class_weighted + distance
+    return distance
 
 
 # # Ref: salehi17, "Twersky loss function for image segmentation using 3D FCDN"
