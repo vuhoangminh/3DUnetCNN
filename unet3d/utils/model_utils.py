@@ -1,3 +1,4 @@
+from tensorflow.python.client import device_lib
 import os
 from keras.models import model_from_json
 from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Activation, SpatialDropout3D, Conv3D
@@ -69,14 +70,22 @@ def generate_model(model_file, loss_function="weighted",
     model = load_model_multi_gpu(model_file)
 
     return compile_model(model, loss_function=loss_function,
-                         metrics=metrics, 
+                         metrics=metrics,
                          initial_learning_rate=initial_learning_rate)
+
+
+def get_available_gpus():
+    local_device_protos = device_lib.list_local_devices()
+    name_gpus = [x.name for x in local_device_protos if x.device_type == 'GPU']
+    return len(name_gpus)
+
 
 def compile_model(model, loss_function="weighted",
                   metrics=minh_dice_coef_metric,
                   initial_learning_rate=0.001):
     try:
-        model = multi_gpu_model(model, gpus=4)
+        num_gpus = get_available_gpus()
+        model = multi_gpu_model(model, gpus=num_gpus)
         print('!! train on multi gpus')
     except:
         print('!! train on single gpu')
