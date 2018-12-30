@@ -118,7 +118,7 @@ def get_core_name(challenge="brats", year="2018",
 
 def get_model_name(model, patch_shape, is_crf, depth_unet=None,
                    n_base_filters_unet=None, loss="weighted"):
-    if model == "unet" or model == "denseunet" or model == "resunet":
+    if "unet" in model:
         return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}".format(
             patch_shape, model, str(is_crf),
             str(depth_unet), str(n_base_filters_unet), loss)

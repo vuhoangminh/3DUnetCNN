@@ -33,14 +33,10 @@ def weighted_dice_coefficient(y_true, y_pred, axis=(-3, -2, -1), smooth=0.00001)
     :param axis:
     :return:
     """
-    if K.image_data_format() == 'channels_last':
-        compute_axis = tuple(range(1, len(y_pred.shape)-1))
-    else:
-        compute_axis = tuple(range(2, len(y_pred.shape)))
     return K.mean(2. * (K.sum(y_true * y_pred,
-                              axis=compute_axis) + smooth/2)/(K.sum(y_true,
-                                                                    axis=compute_axis) + K.sum(y_pred,
-                                                                                               axis=compute_axis) + smooth))
+                              axis=axis) + smooth/2)/(K.sum(y_true,
+                                                            axis=axis) + K.sum(y_pred,
+                                                                               axis=axis) + smooth))
 
 
 def weighted_dice_coefficient_loss(y_true, y_pred):
