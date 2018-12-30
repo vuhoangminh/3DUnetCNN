@@ -42,7 +42,7 @@ def make_dir(data_dir):
         os.makedirs(data_dir)
 
 
-def init_path(overwrite=True, crop=True, challenge="brats", year=2018,
+def get_training_h5_paths(overwrite=True, crop=True, challenge="brats", year=2018,
               image_shape="160-160-128", is_bias_correction="1",
               is_normalize="z", is_denoise="0",
               is_hist_match="0", is_test="1",
@@ -110,7 +110,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
           patch_shape="128-128-128", is_crf="0",
           batch_size=1, loss="weighted"):
 
-    data_path, trainids_path, validids_path, model_path = init_path(
+    data_path, trainids_path, validids_path, model_path = get_training_h5_paths(
         overwrite=overwrite, crop=crop, challenge=challenge, year=year,
         image_shape=image_shape, is_bias_correction=is_bias_correction,
         is_normalize=is_normalize, is_denoise=is_denoise,

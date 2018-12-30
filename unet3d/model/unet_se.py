@@ -24,7 +24,7 @@ def se_unet_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_ra
                depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
                batch_normalization=False, activation_name="sigmoid",
                metrics=minh_dice_coef_metric,
-               loss_function="weighted"
+               loss_function="weighted",
                ):
     """
     Builds the 3D UNet Keras model.f
@@ -128,7 +128,8 @@ def create_convolution_se_block(input_layer, n_filters, batch_normalization=Fals
 
 
 def create_convolution_block(input_layer, n_filters, batch_normalization=False, kernel=(3, 3, 3), activation=None,
-                             padding='same', strides=(1, 1, 1), instance_normalization=True):
+                             padding='same', strides=(1, 1, 1), instance_normalization=True, 
+                             is_unet_original=True):
     """
     :param strides:
     :param input_layer:
@@ -151,9 +152,12 @@ def create_convolution_block(input_layer, n_filters, batch_normalization=False, 
                               "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
         layer = InstanceNormalization(axis=1)(layer)
     if activation is None:
-        return Activation('relu')(layer)
+        layer = Activation('relu')(layer)
     else:
-        return activation()(layer)
+        layer = activation()(layer)
+    if not is_unet_original:
+        layer = squeeze_excite_block(layer)
+    return layer
 
 
 def compute_level_output_shape(n_filters, depth, pool_size, image_shape):

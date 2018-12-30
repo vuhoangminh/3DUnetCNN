@@ -117,14 +117,17 @@ def get_core_name(challenge="brats", year="2018",
 
 
 def get_model_name(model, patch_shape, is_crf, depth_unet=None,
-                   n_base_filters_unet=None, loss="weighted"):
+                   n_base_filters_unet=None, loss="weighted",
+                   model_dim=3):
+    model_temp = model
+    model_temp = "{}{}d".format(model, str(model_dim))
     if "unet" in model:
         return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}".format(
-            patch_shape, model, str(is_crf),
+            patch_shape, model_temp, str(is_crf),
             str(depth_unet), str(n_base_filters_unet), loss)
     else:
         return "ps-{}_{}_crf-{}_loss-{}".format(
-            patch_shape, model, str(is_crf), loss)
+            patch_shape, model_temp, str(is_crf), loss)
 
 
 def get_model_h5_filename(datatype, challenge="brats", year="2018",
@@ -133,7 +136,7 @@ def get_model_h5_filename(datatype, challenge="brats", year="2018",
                           is_hist_match="0", is_test="1",
                           depth_unet=4, n_base_filters_unet=16,
                           model_name="unet", patch_shape="128-128-128", is_crf="0",
-                          loss="weighted"):
+                          loss="weighted", model_dim=3):
     core_name = get_core_name(challenge=challenge, year=year,
                               image_shape=image_shape, crop=crop,
                               is_bias_correction=is_bias_correction,
@@ -143,7 +146,8 @@ def get_model_h5_filename(datatype, challenge="brats", year="2018",
     model_full_name = get_model_name(model_name, patch_shape, is_crf,
                                      depth_unet=depth_unet,
                                      n_base_filters_unet=n_base_filters_unet,
-                                     loss=loss)
+                                     loss=loss,
+                                     model_dim=model_dim)
 
     if str2bool(is_test):
         return "test_{}_{}_{}.h5".format(
@@ -189,3 +193,129 @@ def get_shape_from_string(shape_string):
     splitted_string = shape_string.split("-")
     splitted_number = list(map(int, splitted_string))
     return tuple(splitted_number)
+
+
+def get_training_h5_paths(brats_dir, overwrite=True, crop=True, challenge="brats", year=2018,
+                          image_shape="160-160-128", is_bias_correction="1",
+                          is_normalize="z", is_denoise="0",
+                          is_hist_match="0", is_test="1",
+                          depth_unet=4, n_base_filters_unet=16, model_name="unet",
+                          patch_shape="128-128-128", is_crf="0",
+                          loss="weighted",
+                          is_finetune=False,
+                          dir_read_write="base",
+                          model_dim=3):
+
+    data_dir = get_h5_training_dir(brats_dir, "data")
+    make_dir(data_dir)
+    trainids_dir = get_h5_training_dir(brats_dir, "train_val_test_ids")
+    make_dir(trainids_dir)
+    validids_dir = get_h5_training_dir(brats_dir, "train_val_test_ids")
+    make_dir(validids_dir)
+    testids_dir = get_h5_training_dir(brats_dir, "train_val_test_ids")
+    make_dir(testids_dir)
+    model_dir = get_h5_training_dir(brats_dir, "model")
+    make_dir(model_dir)
+
+    data_filename = get_training_h5_filename(datatype="data", challenge=challenge,
+                                             image_shape=image_shape, crop=crop,
+                                             is_bias_correction=is_bias_correction,
+                                             is_denoise=is_denoise,
+                                             is_normalize=is_normalize,
+                                             is_hist_match=is_hist_match,
+                                             is_test=is_test)
+    model_filename = get_model_h5_filename(datatype="model", challenge=challenge,
+                                           image_shape=image_shape, crop=crop,
+                                           is_bias_correction=is_bias_correction,
+                                           is_denoise=is_denoise,
+                                           is_normalize=is_normalize,
+                                           is_hist_match=is_hist_match,
+                                           depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+                                           model_name=model_name, patch_shape=patch_shape, is_crf=is_crf,
+                                           is_test=is_test, loss=loss,
+                                           model_dim=model_dim)
+    if is_test:
+        trainids_filename = "test_train_ids.h5"
+        validids_filename = "test_valid_ids.h5"
+        testids_filename = "test_test_ids.h5"
+    else:
+        trainids_filename = "train_ids.h5"
+        validids_filename = "valid_ids.h5"
+        testids_filename = "test_ids.h5"
+
+    data_path = os.path.join(data_dir, data_filename)
+    if is_finetune:
+        model_path = os.path.join(model_dir, dir_read_write, model_filename)
+    else:
+        model_path = os.path.join(model_dir, model_filename)
+    trainids_path = os.path.join(trainids_dir, trainids_filename)
+    validids_path = os.path.join(validids_dir, validids_filename)
+    testids_path = os.path.join(testids_dir, testids_filename)
+
+    return data_path, trainids_path, validids_path, testids_path, model_path
+
+
+def get_training_h5_paths_old(brats_dir, overwrite=True, crop=True, challenge="brats", year=2018,
+                              image_shape="160-160-128", is_bias_correction="1",
+                              is_normalize="z", is_denoise="0",
+                              is_hist_match="0", is_test="1",
+                              depth_unet=4, n_base_filters_unet=16, model_name="unet",
+                              patch_shape="128-128-128", is_crf="0",
+                              loss="weighted", dir_read_write="base"):
+
+    data_dir = get_h5_training_dir(brats_dir, "data")
+    make_dir(data_dir)
+    trainids_dir = get_h5_training_dir(brats_dir, "train_ids")
+    make_dir(trainids_dir)
+    validids_dir = get_h5_training_dir(brats_dir, "valid_ids")
+    make_dir(validids_dir)
+    testids_dir = get_h5_training_dir(brats_dir, "test_ids")
+    make_dir(testids_dir)
+    model_dir = get_h5_training_dir(brats_dir, "model")
+    make_dir(model_dir)
+
+    data_filename = get_training_h5_filename(datatype="data", challenge=challenge,
+                                             image_shape=image_shape, crop=crop,
+                                             is_bias_correction=is_bias_correction,
+                                             is_denoise=is_denoise,
+                                             is_normalize=is_normalize,
+                                             is_hist_match=is_hist_match,
+                                             is_test=is_test)
+    trainids_filename = get_training_h5_filename(datatype="train_ids", challenge=challenge,
+                                                 image_shape=image_shape, crop=crop,
+                                                 is_bias_correction=is_bias_correction,
+                                                 is_denoise=is_denoise,
+                                                 is_normalize=is_normalize,
+                                                 is_hist_match=is_hist_match,
+                                                 is_test=is_test)
+    validids_filename = get_training_h5_filename(datatype="valid_ids", challenge=challenge,
+                                                 image_shape=image_shape, crop=crop,
+                                                 is_bias_correction=is_bias_correction,
+                                                 is_denoise=is_denoise,
+                                                 is_normalize=is_normalize,
+                                                 is_hist_match=is_hist_match,
+                                                 is_test=is_test)
+    testids_filename = get_training_h5_filename(datatype="test_ids", challenge=challenge,
+                                                image_shape=image_shape, crop=crop,
+                                                is_bias_correction=is_bias_correction,
+                                                is_denoise=is_denoise,
+                                                is_normalize=is_normalize,
+                                                is_hist_match=is_hist_match,
+                                                is_test=is_test)
+    model_filename = get_model_h5_filename(datatype="model", challenge=challenge,
+                                           image_shape=image_shape, crop=crop,
+                                           is_bias_correction=is_bias_correction,
+                                           is_denoise=is_denoise,
+                                           is_normalize=is_normalize,
+                                           is_hist_match=is_hist_match,
+                                           depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+                                           model_name=model_name, patch_shape=patch_shape, is_crf=is_crf,
+                                           is_test=is_test, loss=loss)
+
+    data_path = os.path.join(data_dir, data_filename)
+    trainids_path = os.path.join(trainids_dir, trainids_filename)
+    validids_path = os.path.join(validids_dir, validids_filename)
+    testids_path = os.path.join(testids_dir, testids_filename)
+    model_path = os.path.join(model_dir, dir_read_write, model_filename)
+
+    return data_path, trainids_path, validids_path, testids_path, model_path

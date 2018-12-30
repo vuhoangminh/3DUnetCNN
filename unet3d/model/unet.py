@@ -2,6 +2,7 @@ import numpy as np
 from keras import backend as K
 from keras.engine import Input, Model
 from keras.layers import Conv3D, MaxPooling3D, UpSampling3D, Activation, BatchNormalization, PReLU, Deconvolution3D
+from keras.layers import GlobalAveragePooling3D, Reshape, Dense, multiply, Permute
 from keras.optimizers import Adam
 from keras.utils import multi_gpu_model
 
@@ -22,11 +23,9 @@ except ImportError:
 def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
                   depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
                   batch_normalization=False, activation_name="sigmoid",
-                  #   metrics=dice_coefficient,
-                  #   loss=minh_dice_coef_loss,
                   metrics=minh_dice_coef_metric,
-                  loss_function="weighted"
-                  #   loss=tversky_loss
+                  loss_function="weighted",
+                  is_unet_original=True
                   ):
     """
     Builds the 3D UNet Keras model.f
@@ -53,10 +52,16 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
 
     # add levels with max pooling
     for layer_depth in range(depth):
-        layer1 = create_convolution_block(input_layer=current_layer, n_filters=n_base_filters*(2**layer_depth),
-                                          batch_normalization=batch_normalization)
-        layer2 = create_convolution_block(input_layer=layer1, n_filters=n_base_filters*(2**layer_depth)*2,
-                                          batch_normalization=batch_normalization)
+        layer1 = create_convolution_block(input_layer=current_layer,
+                                          n_filters=n_base_filters *
+                                          (2**layer_depth),
+                                          batch_normalization=batch_normalization,
+                                          is_unet_original=is_unet_original)
+        layer2 = create_convolution_block(input_layer=layer1,
+                                          n_filters=n_base_filters *
+                                          (2**layer_depth)*2,
+                                          batch_normalization=batch_normalization,
+                                          is_unet_original=is_unet_original)
         if layer_depth < depth - 1:
             current_layer = MaxPooling3D(pool_size=pool_size)(layer2)
             levels.append([layer1, layer2, current_layer])
@@ -69,11 +74,16 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
         up_convolution = get_up_convolution(pool_size=pool_size, deconvolution=deconvolution,
                                             n_filters=current_layer._keras_shape[1])(current_layer)
         concat = concatenate([up_convolution, levels[layer_depth][1]], axis=1)
+        if not is_unet_original:
+            concat = squeeze_excite_block(concat)
         current_layer = create_convolution_block(n_filters=levels[layer_depth][1]._keras_shape[1],
-                                                 input_layer=concat, batch_normalization=batch_normalization)
+                                                 input_layer=concat,
+                                                 batch_normalization=batch_normalization,
+                                                 is_unet_original=is_unet_original)
         current_layer = create_convolution_block(n_filters=levels[layer_depth][1]._keras_shape[1],
                                                  input_layer=current_layer,
-                                                 batch_normalization=batch_normalization)
+                                                 batch_normalization=batch_normalization,
+                                                 is_unet_original=is_unet_original)
 
     final_convolution = Conv3D(n_labels, (1, 1, 1))(current_layer)
     act = Activation(activation_name)(final_convolution)
@@ -91,12 +101,13 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
     #         metrics = label_wise_dice_metrics
 
     return compile_model(model, loss_function=loss_function,
-                         metrics=metrics, 
+                         metrics=metrics,
                          initial_learning_rate=initial_learning_rate)
 
 
 def create_convolution_block(input_layer, n_filters, batch_normalization=False, kernel=(3, 3, 3), activation=None,
-                             padding='same', strides=(1, 1, 1), instance_normalization=True):
+                             padding='same', strides=(1, 1, 1), instance_normalization=True,
+                             is_unet_original=True):
     """
     :param strides:
     :param input_layer:
@@ -119,9 +130,12 @@ def create_convolution_block(input_layer, n_filters, batch_normalization=False, 
                               "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
         layer = InstanceNormalization(axis=1)(layer)
     if activation is None:
-        return Activation('relu')(layer)
+        layer = Activation('relu')(layer)
     else:
-        return activation()(layer)
+        layer = activation()(layer)
+    if not is_unet_original:
+        layer = squeeze_excite_block(layer)
+    return layer
 
 
 def compute_level_output_shape(n_filters, depth, pool_size, image_shape):
@@ -146,3 +160,25 @@ def get_up_convolution(n_filters, pool_size, kernel_size=(2, 2, 2), strides=(2, 
                                strides=strides)
     else:
         return UpSampling3D(size=pool_size)
+
+
+def squeeze_excite_block(input, ratio=16):
+    init = input
+    channel_axis = 1 if K.image_data_format() == "channels_first" else -1
+    filters = init._keras_shape[channel_axis]
+
+    # se_shape = (filters, 1, 1, 1) if K.image_data_format() == "channels_first" else (1, 1, 1, filters)
+    se_shape = (1, 1, 1, filters)
+
+    se = GlobalAveragePooling3D()(init)
+    se = Reshape(se_shape)(se)
+    se = Dense(max(filters//ratio, 1), activation='relu',
+               kernel_initializer='he_normal', use_bias=False)(se)
+    se = Dense(filters, activation='sigmoid',
+               kernel_initializer='he_normal', use_bias=False)(se)
+
+    if K.image_data_format() == 'channels_first':
+        se = Permute((4, 1, 2, 3))(se)
+
+    x = multiply([init, se])
+    return x

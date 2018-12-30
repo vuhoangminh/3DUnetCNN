@@ -26,11 +26,12 @@ x = np.zeros((1, 2, 240, 240, 155))
 x[0,0,:,:,:] = volume
 x[0,1,:,:,:] = template
 
-# loss = tv_ndim_loss(x)
+# loss = K.eval(tv_ndim_loss(K.variable(x)))
 
-loss = K.eval(tv_ndim_loss(K.variable(x)))
+# print(loss)
 
-print(loss)
 
-# print(np.mean(loss))
+a = K.variable(x)
+print(a)
+
 

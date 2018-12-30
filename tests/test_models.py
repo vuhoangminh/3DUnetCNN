@@ -1,10 +1,11 @@
-from unet3d.model import se_unet_model_3d
+from unet3d.model import se_unet_3d
 from unet3d.model import densefcn_model_3d
 from unet3d.model import isensee2017_model
 from unet3d.model import unet_model_3d
 from unet3d.model import dense_unet_3d
 from unet3d.model import res_unet_3d
 
+from unet2d.model import unet_model_2d
 
 from keras.utils import plot_model
 from keras_applications.imagenet_utils import _obtain_input_shape
@@ -18,15 +19,19 @@ from keras.models import Model
 import sys
 sys.path.append('external/Fully-Connected-DenseNets-Semantic-Segmentation')
 
+save_dir = "doc/"
 
-weight_decay = 1E-4
-batch_momentum = 0.9
-batch_shape = None
-classes = 21
-include_top = False
-activation = 'sigmoid'
-target_size = (320, 320)
-input_shape = target_size + (3,)
+
+def save_plot(model, save_path):
+    if os.path.exists(save_path):
+        os.remove(save_path)
+        print(">> remove", save_path)
+    plot_model(model, to_file=save_path, show_shapes=True)
+    print(">> save plot to", save_path)
+
+
+def get_path(name):
+    return save_dir + name + ".png"
 
 # input_shape = _obtain_input_shape(input_shape,
 #                                   default_size=32,
@@ -86,8 +91,44 @@ input_shape = (4, 128, 128, 128)
 # model.summary()
 # # plot_model(model, to_file='dense_unet3d.png', show_shapes=True)
 
-model = se_unet_model_3d(input_shape=input_shape,
-                         n_labels=3,
-                         n_base_filters=16)
+
+name = "unet3d"
+model = unet_model_3d(input_shape=(4, 128, 128, 128),
+                      n_labels=3,
+                      depth=4,
+                      n_base_filters=16,
+                      is_unet_original=True)
 model.summary()
-plot_model(model, to_file='se_unet3d.png', show_shapes=True)
+save_plot(model, get_path(name))
+
+
+name = "seunet3d"
+model = unet_model_3d(input_shape=(4, 128, 128, 128),
+                      n_labels=3,
+                      depth=4,
+                      n_base_filters=16,
+                      is_unet_original=False)
+model.summary()
+save_plot(model, get_path(name))
+
+
+name = "unet2d"
+model = unet_model_2d(input_shape=(4, 128, 128),
+                      n_labels=3,
+                      depth=4,
+                      n_base_filters=32,
+                      batch_normalization=True,
+                      is_unet_original=True)
+model.summary()
+save_plot(model, get_path(name))
+
+
+name = "seunet2d"
+model = unet_model_2d(input_shape=(4, 128, 128),
+                      n_labels=3,
+                      depth=4,
+                      n_base_filters=32,
+                      batch_normalization=True,
+                      is_unet_original=False)
+model.summary()
+save_plot(model, get_path(name))

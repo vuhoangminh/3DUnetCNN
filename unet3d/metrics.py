@@ -24,7 +24,7 @@ def dice_coefficient_loss(y_true, y_pred):
     return -dice_coefficient(y_true, y_pred)
 
 
-def weighted_dice_coefficient(y_true, y_pred, axis=(-3, -2, -1), smooth=0.00001):
+def weighted_dice_coefficient(y_true, y_pred, smooth=0.00001):
     """
     Weighted dice coefficient. Default axis assumes a "channels first" data structure
     :param smooth:
@@ -33,6 +33,11 @@ def weighted_dice_coefficient(y_true, y_pred, axis=(-3, -2, -1), smooth=0.00001)
     :param axis:
     :return:
     """
+    if K.image_data_format() == "channels_first":
+        axis = (-3, -2, -1) if y_true.ndim == 5 else (-2, -1)
+    else:
+        axis = (-4, -3, -2) if y_true.ndim == 5 else (-3, -2)
+
     return K.mean(2. * (K.sum(y_true * y_pred,
                               axis=axis) + smooth/2)/(K.sum(y_true,
                                                             axis=axis) + K.sum(y_pred,
