@@ -110,16 +110,29 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
-        # if model_name == "unet":
-        print("init unet model")
-        model = unet_model_2d(input_shape=config["input_shape"],
-                              n_labels=config["n_labels"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                            #   batch_normalization=True,
-                              depth=depth_unet,
-                              n_base_filters=n_base_filters_unet,
-                              loss_function=loss)
+        if model_name == "seunet":
+            print("init seunet model")
+            model = unet_model_2d(input_shape=config["input_shape"],
+                                n_labels=config["n_labels"],
+                                initial_learning_rate=config["initial_learning_rate"],
+                                deconvolution=config["deconvolution"],
+                                #   batch_normalization=True,
+                                depth=depth_unet,
+                                n_base_filters=n_base_filters_unet,
+                                loss_function=loss,
+                                is_unet_original=False)
+        else:
+            print("init unet model")
+            model = unet_model_2d(input_shape=config["input_shape"],
+                                n_labels=config["n_labels"],
+                                initial_learning_rate=config["initial_learning_rate"],
+                                deconvolution=config["deconvolution"],
+                                #   batch_normalization=True,
+                                depth=depth_unet,
+                                n_base_filters=n_base_filters_unet,
+                                loss_function=loss)
+
+
 
     model.summary()
 
