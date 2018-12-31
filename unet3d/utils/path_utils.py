@@ -234,7 +234,7 @@ def get_training_h5_paths(brats_dir, overwrite=True, crop=True, challenge="brats
                                            model_name=model_name, patch_shape=patch_shape, is_crf=is_crf,
                                            is_test=is_test, loss=loss,
                                            model_dim=model_dim)
-    if is_test:
+    if is_test=="1":
         trainids_filename = "test_train_ids.h5"
         validids_filename = "test_valid_ids.h5"
         testids_filename = "test_test_ids.h5"

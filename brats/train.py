@@ -6,7 +6,7 @@ import pprint
 import numpy as np
 
 from unet3d.data import write_data_to_file, open_data_file
-from unet2d.generator import get_training_and_validation_and_testing_generators
+from unet3d.generator import get_training_and_validation_and_testing_generators
 from unet3d.model import unet_model_3d
 from unet3d.model import isensee2017_model
 from unet3d.model import densefcn_model_3d
@@ -107,7 +107,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     if not overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
-        model = generate_model(config["model_file"])
+        model = generate_model(config["model_file"], loss_function=loss)
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
@@ -189,6 +189,12 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         experiment = None
 
     print(config["initial_learning_rate"], config["learning_rate_drop"])
+    print("data file:", config["data_file"])
+    print("model file:", config["model_file"])
+    print("training file:", config["training_file"])
+    print("validation file:", config["validation_file"])
+    print("testing file:", config["testing_file"])
+
     train_model(experiment=experiment,
                 model=model,
                 model_file=config["model_file"],

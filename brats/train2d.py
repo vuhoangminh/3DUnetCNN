@@ -116,6 +116,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                               n_labels=config["n_labels"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
+                            #   batch_normalization=True,
                               depth=depth_unet,
                               n_base_filters=n_base_filters_unet,
                               loss_function=loss)

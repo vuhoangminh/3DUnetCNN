@@ -144,7 +144,7 @@ def train2d():
                         default="0", choices=config_dict["is_crf"],
                         help="crf method")
     parser.add_argument('-ba', '--batch_size', type=int,
-                        default=1,
+                        default=64,
                         help="train batch size")
     parser.add_argument('-l', '--loss', type=str,
                         default="weighted",

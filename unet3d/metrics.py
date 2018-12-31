@@ -33,10 +33,11 @@ def weighted_dice_coefficient(y_true, y_pred, smooth=0.00001):
     :param axis:
     :return:
     """
+    ndim = len(y_true._keras_shape)
     if K.image_data_format() == "channels_first":
-        axis = (-3, -2, -1) if y_true.ndim == 5 else (-2, -1)
+        axis = (-3, -2, -1) if ndim == 5 else (-2, -1)
     else:
-        axis = (-4, -3, -2) if y_true.ndim == 5 else (-3, -2)
+        axis = (-4, -3, -2) if ndim == 5 else (-3, -2)
 
     return K.mean(2. * (K.sum(y_true * y_pred,
                               axis=axis) + smooth/2)/(K.sum(y_true,

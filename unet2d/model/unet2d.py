@@ -106,7 +106,7 @@ def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_ra
 
 
 def create_convolution_block(input_layer, n_filters, batch_normalization=False, kernel=(3, 3), activation=None,
-                             padding='same', strides=(1, 1), instance_normalization=True,
+                             padding='same', strides=(1, 1), instance_normalization=False,
                              is_unet_original=True):
     """
     :param strides:
