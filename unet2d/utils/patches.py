@@ -60,7 +60,7 @@ def get_random_nd_index(index_max):
     return tuple([np.random.choice(index_max[index] + 1) for index in range(len(index_max))])
 
 
-def get_patch_from_3d_data(data, patch_shape, patch_index):
+def get_patch_from_2d_data(data, patch_shape, patch_index):
     """
     Returns a patch from a numpy array.
     :param data: numpy array from which to get the patch.

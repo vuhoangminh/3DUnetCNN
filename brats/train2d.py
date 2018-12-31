@@ -6,11 +6,8 @@ import pprint
 import numpy as np
 
 from unet3d.data import write_data_to_file, open_data_file
-from unet3d.generator import get_training_and_validation_generators, get_training_and_validation_generators_new
-from unet3d.model import unet_model_3d
-from unet3d.model import isensee2017_model
-from unet3d.model import densefcn_model_3d
-from unet3d.model import dense_unet_3d, res_unet_3d, se_unet_3d
+from unet2d.generator import get_training_and_validation_and_testing_generators
+from unet2d.model import unet_model_2d
 from unet3d.training import load_old_model, train_model
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
@@ -49,7 +46,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
           is_hist_match="0", is_test="1",
           depth_unet=4, n_base_filters_unet=16, model_name="unet",
           patch_shape="128-128-128", is_crf="0",
-          batch_size=1, loss="weighted", model_dim=2):
+          batch_size=1, loss="weighted"):
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -57,7 +54,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         is_normalize=is_normalize, is_denoise=is_denoise,
         is_hist_match=is_hist_match, is_test=is_test,
         model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=model_dim)
+        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=2)
 
     config["data_file"] = data_path
     config["model_file"] = model_path
@@ -78,21 +75,20 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     data_file_opened = open_data_file(config["data_file"])
 
     print_section("get training and testing generators")
-    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators_new(
+    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators(
         data_file_opened,
         batch_size=batch_size,
         data_split=config["validation_split"],
         overwrite=overwrite,
         validation_keys_file=config["validation_file"],
         training_keys_file=config["training_file"],
-        # n_steps_file=config["n_steps_file"],
+        testing_keys_file=config["testing_file"],
         n_labels=config["n_labels"],
         labels=config["labels"],
         patch_shape=config["patch_shape"],
         validation_batch_size=batch_size,
         validation_patch_overlap=config["validation_patch_overlap"],
         training_patch_start_offset=config["training_patch_start_offset"],
-        is_create_patch_index_list_original=config["is_create_patch_index_list_original"],
         augment_flipud=config["augment_flipud"],
         augment_fliplr=config["augment_fliplr"],
         augment_elastic=config["augment_elastic"],
@@ -115,7 +111,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         # instantiate new model
         # if model_name == "unet":
         print("init unet model")
-        model = unet_model_3d(input_shape=config["input_shape"],
+        model = unet_model_2d(input_shape=config["input_shape"],
                               pool_size=config["pool_size"],
                               n_labels=config["n_labels"],
                               initial_learning_rate=config["initial_learning_rate"],
@@ -185,7 +181,7 @@ def main():
           is_hist_match=is_hist_match, is_test=is_test,
           model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
           patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
-          loss=loss, model_dim=2)
+          loss=loss)
 
 
 if __name__ == "__main__":

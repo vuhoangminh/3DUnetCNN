@@ -6,10 +6,9 @@ import itertools
 import numpy as np
 import time
 
-from unet3d.utils import pickle_dump, pickle_load
-from unet2d.utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_2d_data
-from unet3d.generator import get_train_valid_test_split, get_number_of_steps
-from unet3d.generator import convert_data, get_number_of_patches
+from .utils import pickle_dump, pickle_load
+from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
+from .augment import augment_data, random_permutation_x_y
 
 import tensorlayer as tl
 from scipy.ndimage.filters import gaussian_filter
@@ -112,6 +111,55 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
     return training_generator, validation_generator, num_training_steps, num_validation_steps
 
 
+def get_number_of_steps(n_samples, batch_size):
+    if n_samples <= batch_size:
+        return n_samples
+    elif np.remainder(n_samples, batch_size) == 0:
+        return n_samples//batch_size
+    else:
+        return n_samples//batch_size + 1
+
+
+def get_train_valid_test_split(data_file, training_file, validation_file,
+                               testing_file, data_split=0.8, overwrite=False):
+    """
+    Splits the data into the training and validation indices list.
+    :param data_file: pytables hdf5 data file
+    :param training_file:
+    :param validation_file:
+    :param data_split:
+    :param overwrite:
+    :return:
+    """
+    if overwrite or not os.path.exists(training_file):
+        print("Creating validation split...")
+        nb_samples = data_file.root.data.shape[0]
+        sample_list = list(range(nb_samples))
+        training_list, testing_list = split_list(
+            sample_list, split=data_split)
+
+        training_list, validation_list = split_list(
+            training_list, split=data_split)
+
+        pickle_dump(training_list, training_file)
+        pickle_dump(validation_list, validation_file)
+        pickle_dump(testing_list, testing_file)
+
+        return training_list, validation_list, testing_list
+    else:
+        print("Loading previous validation split...")
+        return pickle_load(training_file), pickle_load(validation_file), pickle_load(testing_file)
+
+
+def split_list(input_list, split=0.8, shuffle_list=True):
+    if shuffle_list:
+        shuffle(input_list)
+    n_training = int(len(input_list) * split)
+    training = input_list[:n_training]
+    testing = input_list[n_training:]
+    return training, testing
+
+
 def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, patch_shape=None,
                    patch_overlap=0, patch_start_offset=None, shuffle_index_list=True,
                    skip_blank=True,
@@ -144,6 +192,16 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
                 y_list = list()
 
 
+def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None):
+    if patch_shape:
+        index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
+                                             patch_start_offset)
+
+        return len(index_list)
+    else:
+        return len(index_list)
+
+
 def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap, patch_start_offset=None):
     patch_index = list()
     for index in index_list:
@@ -165,25 +223,56 @@ def get_data_from_file(data_file, index, patch_shape=None):
     if patch_shape:
         index, patch_index = index
         data, truth = get_data_from_file(data_file, index, patch_shape=None)
-        x = get_patch_from_2d_data(data, patch_shape, patch_index)
-        y = get_patch_from_2d_data(truth, patch_shape, patch_index)
+        x = get_patch_from_3d_data(data, patch_shape, patch_index)
+        y = get_patch_from_3d_data(truth, patch_shape, patch_index)
     else:
         x, y = data_file.root.data[index], data_file.root.truth[index, 0]
     return x, y
 
 
+def convert_data(x_list, y_list, n_labels=1, labels=None):
+    x = np.asarray(x_list)
+    y = np.asarray(y_list)
+    if n_labels == 1:
+        y[y > 0] = 1
+    elif n_labels > 1:
+        y = get_multi_class_labels(y, n_labels=n_labels, labels=labels)
+    return x, y
+
+
+def get_multi_class_labels(data, n_labels, labels=None):
+    """
+    Translates a label map into a set of binary labels.
+    :param data: numpy array containing the label map with shape: (n_samples, 1, ...).
+    :param n_labels: number of labels.
+    :param labels: integer values of the labels.
+    :return: binary numpy array of shape: (n_samples, n_labels, ...)
+    """
+    new_shape = [data.shape[0], n_labels] + list(data.shape[2:])
+    y = np.zeros(new_shape, np.int8)
+    for label_index in range(n_labels):
+        if labels is not None:
+            y[:, label_index][data[:, 0] == labels[label_index]] = 1
+        else:
+            y[:, label_index][data[:, 0] == (label_index + 1)] = 1
+    return y
+
+
 def elastic_transform_multi(x, alpha, sigma, mode="constant", cval=0, is_random=False):
     """Elastic transformation for images as described in `[Simard2003] <http://deeplearning.cs.cmu.edu/pdfs/Simard.pdf>`__.
+
     Parameters
     -----------
     x : list of numpy.array
         List of greyscale images.
     others : args
         See ``tl.prepro.elastic_transform``.
+
     Returns
     -------
     numpy.array
         A list of processed images.
+
     """
     if is_random is False:
         random_state = np.random.RandomState(None)
@@ -191,36 +280,45 @@ def elastic_transform_multi(x, alpha, sigma, mode="constant", cval=0, is_random=
         random_state = np.random.RandomState(int(time.time()))
 
     shape = x[0].shape
-    if len(shape) == 3:
-        shape = (shape[0], shape[1])
+    if len(shape) == 4:
+        shape = (shape[0], shape[1], shape[2])
     new_shape = random_state.rand(*shape)
 
     results = []
     for data in x:
-        is_3d = False
-        if len(data.shape) == 3 and data.shape[-1] == 1:
-            data = data[:, :, 0]
-            is_3d = True
-        elif len(data.shape) == 3 and data.shape[-1] != 1:
+        is_4d = False
+        if len(data.shape) == 4 and data.shape[-1] == 1:
+            data = data[:, :, :, 0]
+            is_4d = True
+        elif len(data.shape) == 4 and data.shape[-1] != 1:
             raise Exception("Only support greyscale image")
 
-        if len(data.shape) != 2:
+        if len(data.shape) != 3:
             raise AssertionError("input should be grey-scale image")
 
-        dx = gaussian_filter((new_shape * 2 - 1), sigma, mode=mode, cval=cval) * alpha
-        dy = gaussian_filter((new_shape * 2 - 1), sigma, mode=mode, cval=cval) * alpha
+        dx = gaussian_filter((new_shape * 2 - 1), sigma,
+                             mode=mode, cval=cval) * alpha
+        dy = gaussian_filter((new_shape * 2 - 1), sigma,
+                             mode=mode, cval=cval) * alpha
+        dz = np.zeros_like(dx)
 
-        x_, y_ = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]), indexing='ij')
-        indices = np.reshape(x_ + dx, (-1, 1)), np.reshape(y_ + dy, (-1, 1))
+        x_, y_, z_ = np.meshgrid(
+            np.arange(shape[0]), np.arange(shape[1]), np.arange(shape[2]))
+
+        indices = np.reshape(y_+dy, (-1, 1)), np.reshape(x_+dx,
+                                                         (-1, 1)), np.reshape(z_+dz, (-1, 1))
+
         # tl.logging.info(data.shape)
-        if is_3d:
-            results.append(map_coordinates(data, indices, order=1).reshape((shape[0], shape[1], 1)))
+        if is_4d:
+            results.append(map_coordinates(
+                data, indices, order=1).reshape((shape[0], shape[1], 1)))
         else:
-            results.append(map_coordinates(data, indices, order=1).reshape(shape))
+            results.append(map_coordinates(
+                data, indices, order=1).reshape(shape))
     return np.asarray(results)
 
 
-def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+def augment_data_new(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                      augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
     """ data augumentation """
     if augment_flipud:
@@ -263,7 +361,7 @@ def add_data(x_list, y_list, data_file, index, patch_shape=None,
         for i in range(data.shape[0]):
             data_list.append(data[i, :, :, :])
         data_list.append(truth[:, :, :])
-        data_list = augment_data(data=data_list, augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
+        data_list = augment_data_new(data=data_list, augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
                                      augment_elastic=augment_elastic, augment_rotation=augment_rotation,
                                      augment_shift=augment_shift, augment_shear=augment_shear,
                                      augment_zoom=augment_zoom)
