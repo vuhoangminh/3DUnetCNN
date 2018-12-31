@@ -7,23 +7,25 @@ import numpy as np
 import time
 
 from unet3d.utils import pickle_dump, pickle_load
-from unet2d.utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_2d_data
 from unet3d.generator import get_train_valid_test_split, get_number_of_steps
-from unet3d.generator import convert_data, get_number_of_patches
+from unet3d.generator import get_number_of_patches, create_patch_index_list
+from unet3d.generator import get_multi_class_labels, get_data_from_file
 
 import tensorlayer as tl
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
 
+# from unet3d.generator import get_training_and_validation_and_testing_generators
 
-def get_training_and_validation_and_testing_generators(data_file, batch_size, n_labels, training_keys_file,
-                                                       validation_keys_file, testing_keys_file,
-                                                       data_split=0.8, overwrite=False, labels=None, patch_shape=None,
-                                                       validation_patch_overlap=0, training_patch_start_offset=None,
-                                                       validation_batch_size=None,
-                                                       augment_flipud=False, augment_fliplr=False, augment_elastic=False,
-                                                       augment_rotation=False, augment_shift=False, augment_shear=False,
-                                                       augment_zoom=False, n_augment=0, skip_blank=False,):
+
+def get_training_and_validation_and_testing_generators2d(data_file, batch_size, n_labels, training_keys_file,
+                                                         validation_keys_file, testing_keys_file,
+                                                         data_split=0.8, overwrite=False, labels=None, patch_shape=None,
+                                                         validation_patch_overlap=0, training_patch_start_offset=None,
+                                                         validation_batch_size=None,
+                                                         augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+                                                         augment_rotation=False, augment_shift=False, augment_shear=False,
+                                                         augment_zoom=False, n_augment=0, skip_blank=False,):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -69,31 +71,31 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
     print("training_list:", training_list)
 
     print(">> training data generator")
-    training_generator = data_generator(data_file, training_list,
-                                        batch_size=batch_size,
-                                        n_labels=n_labels,
-                                        labels=labels,
-                                        patch_shape=patch_shape,
-                                        patch_overlap=0,
-                                        patch_start_offset=training_patch_start_offset,
-                                        augment_flipud=augment_flipud,
-                                        augment_fliplr=augment_fliplr,
-                                        augment_elastic=augment_elastic,
-                                        augment_rotation=augment_rotation,
-                                        augment_shift=augment_shift,
-                                        augment_shear=augment_shear,
-                                        augment_zoom=augment_zoom,
-                                        n_augment=n_augment,
-                                        skip_blank=skip_blank)
-    print(">> valid data generator")
-    validation_generator = data_generator(data_file, validation_list,
-                                          batch_size=validation_batch_size,
+    training_generator = data_generator2d(data_file, training_list,
+                                          batch_size=batch_size,
                                           n_labels=n_labels,
                                           labels=labels,
                                           patch_shape=patch_shape,
-                                          patch_overlap=validation_patch_overlap,
-                                          skip_blank=skip_blank
-                                          )
+                                          patch_overlap=0,
+                                          patch_start_offset=training_patch_start_offset,
+                                          augment_flipud=augment_flipud,
+                                          augment_fliplr=augment_fliplr,
+                                          augment_elastic=augment_elastic,
+                                          augment_rotation=augment_rotation,
+                                          augment_shift=augment_shift,
+                                          augment_shear=augment_shear,
+                                          augment_zoom=augment_zoom,
+                                          n_augment=n_augment,
+                                          skip_blank=skip_blank)
+    print(">> valid data generator")
+    validation_generator = data_generator2d(data_file, validation_list,
+                                            batch_size=validation_batch_size,
+                                            n_labels=n_labels,
+                                            labels=labels,
+                                            patch_shape=patch_shape,
+                                            patch_overlap=validation_patch_overlap,
+                                            skip_blank=skip_blank
+                                            )
 
     # Set the number of training and testing samples per epoch correctly
     # if overwrite or not os.path.exists(n_steps_file):
@@ -112,12 +114,12 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
     return training_generator, validation_generator, num_training_steps, num_validation_steps
 
 
-def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, patch_shape=None,
-                   patch_overlap=0, patch_start_offset=None, shuffle_index_list=True,
-                   skip_blank=True,
-                   augment_flipud=False, augment_fliplr=False, augment_elastic=False,
-                   augment_rotation=False, augment_shift=False, augment_shear=False,
-                   augment_zoom=False, n_augment=False):
+def data_generator2d(data_file, index_list, batch_size=1, n_labels=1, labels=None, patch_shape=None,
+                     patch_overlap=0, patch_start_offset=None, shuffle_index_list=True,
+                     skip_blank=True,
+                     augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+                     augment_rotation=False, augment_shift=False, augment_shear=False,
+                     augment_zoom=False, n_augment=False):
     orig_index_list = index_list
     while True:
         x_list = list()
@@ -132,47 +134,37 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
             shuffle(index_list)
         while len(index_list) > 0:
             index = index_list.pop()
-            add_data(x_list, y_list, data_file, index, patch_shape=patch_shape,
-                     augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
-                     augment_elastic=augment_elastic, augment_rotation=augment_rotation,
-                     augment_shift=augment_shift, augment_shear=augment_shear,
-                     augment_zoom=augment_zoom)
+            add_data2d(x_list, y_list, data_file, index, patch_shape=patch_shape,
+                       augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
+                       augment_elastic=augment_elastic, augment_rotation=augment_rotation,
+                       augment_shift=augment_shift, augment_shear=augment_shear,
+                       augment_zoom=augment_zoom)
 
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
-                yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
+                yield convert_data2d(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
                 y_list = list()
 
 
-def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap, patch_start_offset=None):
-    patch_index = list()
-    for index in index_list:
-        if patch_start_offset is not None:
-            random_start_offset = np.negative(
-                get_random_nd_index(patch_start_offset))
-            patches = compute_patch_indices(image_shape, patch_shape,
-                                            overlap=patch_overlap, start=random_start_offset,
-                                            is_extract_patch_agressive=False)
-        else:
-            patches = compute_patch_indices(image_shape, patch_shape,
-                                            overlap=patch_overlap,
-                                            is_extract_patch_agressive=False)
-        patch_index.extend(itertools.product([index], patches))
-    return patch_index
+def squeeze_data_from_3d_to_2d(x):
+    shape = x.shape
+    for i in range(len(shape)):
+        if i>1 and shape[i]==1:
+            axis=i
+    return np.squeeze(x, axis=axis)
 
 
-def get_data_from_file(data_file, index, patch_shape=None):
-    if patch_shape:
-        index, patch_index = index
-        data, truth = get_data_from_file(data_file, index, patch_shape=None)
-        x = get_patch_from_2d_data(data, patch_shape, patch_index)
-        y = get_patch_from_2d_data(truth, patch_shape, patch_index)
-    else:
-        x, y = data_file.root.data[index], data_file.root.truth[index, 0]
-    return x, y
+def convert_data2d(x_list, y_list, n_labels=1, labels=None):
+    x = np.asarray(x_list)
+    y = np.asarray(y_list)
+    if n_labels == 1:
+        y[y > 0] = 1
+    elif n_labels > 1:
+        y = get_multi_class_labels(y, n_labels=n_labels, labels=labels)
+    return squeeze_data_from_3d_to_2d(x), squeeze_data_from_3d_to_2d(y)
 
 
-def elastic_transform_multi(x, alpha, sigma, mode="constant", cval=0, is_random=False):
+def elastic_transform_multi2d(x, alpha, sigma, mode="constant", cval=0, is_random=False):
     """Elastic transformation for images as described in `[Simard2003] <http://deeplearning.cs.cmu.edu/pdfs/Simard.pdf>`__.
     Parameters
     -----------
@@ -207,21 +199,26 @@ def elastic_transform_multi(x, alpha, sigma, mode="constant", cval=0, is_random=
         if len(data.shape) != 2:
             raise AssertionError("input should be grey-scale image")
 
-        dx = gaussian_filter((new_shape * 2 - 1), sigma, mode=mode, cval=cval) * alpha
-        dy = gaussian_filter((new_shape * 2 - 1), sigma, mode=mode, cval=cval) * alpha
+        dx = gaussian_filter((new_shape * 2 - 1), sigma,
+                             mode=mode, cval=cval) * alpha
+        dy = gaussian_filter((new_shape * 2 - 1), sigma,
+                             mode=mode, cval=cval) * alpha
 
-        x_, y_ = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]), indexing='ij')
+        x_, y_ = np.meshgrid(
+            np.arange(shape[0]), np.arange(shape[1]), indexing='ij')
         indices = np.reshape(x_ + dx, (-1, 1)), np.reshape(y_ + dy, (-1, 1))
         # tl.logging.info(data.shape)
         if is_3d:
-            results.append(map_coordinates(data, indices, order=1).reshape((shape[0], shape[1], 1)))
+            results.append(map_coordinates(
+                data, indices, order=1).reshape((shape[0], shape[1], 1)))
         else:
-            results.append(map_coordinates(data, indices, order=1).reshape(shape))
+            results.append(map_coordinates(
+                data, indices, order=1).reshape(shape))
     return np.asarray(results)
 
 
-def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
-                     augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
+def augment_data2d(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+                   augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
     """ data augumentation """
     if augment_flipud:
         data = tl.prepro.flip_axis_multi(
@@ -230,7 +227,7 @@ def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elast
         data = tl.prepro.flip_axis_multi(
             data, axis=1, is_random=True)  # left right
     if augment_elastic:
-        data = elastic_transform_multi(
+        data = elastic_transform_multi2d(
             data, alpha=720, sigma=10, is_random=True)
     if augment_rotation:
         data = tl.prepro.rotation_multi(
@@ -247,15 +244,16 @@ def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elast
     return data
 
 
-def add_data(x_list, y_list, data_file, index, patch_shape=None,
-             augment_flipud=False, augment_fliplr=False, augment_elastic=False,
-             augment_rotation=False, augment_shift=False, augment_shear=False,
-             augment_zoom=False, skip_blank=True):
+def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
+               augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+               augment_rotation=False, augment_shift=False, augment_shear=False,
+               augment_zoom=False, skip_blank=True):
     """
     Adds data from the data file to the given lists of feature and target data
     :return:
     """
-    data, truth = get_data_from_file(data_file, index, patch_shape=patch_shape)
+    data, truth = get_data_from_file(
+        data_file, index, patch_shape=patch_shape)
 
     augment = augment_flipud or augment_fliplr or augment_elastic or augment_rotation or augment_shift or augment_shear or augment_zoom
     if augment:
@@ -263,10 +261,10 @@ def add_data(x_list, y_list, data_file, index, patch_shape=None,
         for i in range(data.shape[0]):
             data_list.append(data[i, :, :, :])
         data_list.append(truth[:, :, :])
-        data_list = augment_data(data=data_list, augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
-                                     augment_elastic=augment_elastic, augment_rotation=augment_rotation,
-                                     augment_shift=augment_shift, augment_shear=augment_shear,
-                                     augment_zoom=augment_zoom)
+        data_list = augment_data2d(data=data_list, augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
+                                   augment_elastic=augment_elastic, augment_rotation=augment_rotation,
+                                   augment_shift=augment_shift, augment_shear=augment_shear,
+                                   augment_zoom=augment_zoom)
         for i in range(data.shape[0]):
             data[i, :, :, :] = data_list[i]
         truth[:, :, :] = data_list[-1]

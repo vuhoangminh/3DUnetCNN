@@ -132,13 +132,13 @@ def train2d():
     parser.add_argument('-hi', '--is_hist_match', type=str,
                         default="0")
     parser.add_argument('-m', '--model', type=str,
-                        default="isensee", choices=config_dict["model"])
+                        default="unet", choices=config_dict["model"])
     parser.add_argument('-du', '--depth_unet', type=int,
                         default=4, choices=config_dict["depth_unet"])
     parser.add_argument('-nb', '--n_base_filters_unet', type=int,
                         default=16, choices=config_dict["n_base_filters_unet"])
     parser.add_argument('-ps', '--patch_shape', type=str,
-                        default="128-128", choices=config_dict["patch_shape"],
+                        default="160-192-1", choices=config_dict["patch_shape"],
                         help="patch shape to train")
     parser.add_argument('-crf', '--is_crf', type=str,
                         default="0", choices=config_dict["is_crf"],

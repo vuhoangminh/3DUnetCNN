@@ -8,7 +8,6 @@ import time
 
 from .utils import pickle_dump, pickle_load
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
-from .augment import augment_data, random_permutation_x_y
 
 import tensorlayer as tl
 from scipy.ndimage.filters import gaussian_filter
@@ -101,24 +100,10 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
     print(">> compute number of training and validation steps")
     num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
                                                                    patch_start_offset=training_patch_start_offset,
-                                                                   patch_overlap=0, skip_blank=skip_blank,
-                                                                   augment_flipud=augment_flipud,
-                                                                   augment_fliplr=augment_fliplr,
-                                                                   augment_elastic=augment_elastic,
-                                                                   augment_rotation=augment_rotation,
-                                                                   augment_shift=augment_shift,
-                                                                   augment_shear=augment_shear,
-                                                                   augment_zoom=augment_zoom,),
+                                                                   patch_overlap=0),
                                              batch_size)
     num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                     patch_overlap=validation_patch_overlap, skip_blank=skip_blank,
-                                                                     augment_flipud=augment_flipud,
-                                                                     augment_fliplr=augment_fliplr,
-                                                                     augment_elastic=augment_elastic,
-                                                                     augment_rotation=augment_rotation,
-                                                                     augment_shift=augment_shift,
-                                                                     augment_shear=augment_shear,
-                                                                     augment_zoom=augment_zoom,),
+                                                                     patch_overlap=validation_patch_overlap),
                                                validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)
@@ -208,10 +193,7 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
                 y_list = list()
 
 
-def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                          skip_blank=True, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
-                          augment_rotation=False, augment_shift=False, augment_shear=False,
-                          augment_zoom=False):
+def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None):
     if patch_shape:
         index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
                                              patch_start_offset)
@@ -337,8 +319,8 @@ def elastic_transform_multi(x, alpha, sigma, mode="constant", cval=0, is_random=
     return np.asarray(results)
 
 
-def augment_data_new(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
-                     augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
+def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+                 augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
     """ data augumentation """
     if augment_flipud:
         data = tl.prepro.flip_axis_multi(
@@ -380,10 +362,10 @@ def add_data(x_list, y_list, data_file, index, patch_shape=None,
         for i in range(data.shape[0]):
             data_list.append(data[i, :, :, :])
         data_list.append(truth[:, :, :])
-        data_list = augment_data_new(data=data_list, augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
-                                     augment_elastic=augment_elastic, augment_rotation=augment_rotation,
-                                     augment_shift=augment_shift, augment_shear=augment_shear,
-                                     augment_zoom=augment_zoom)
+        data_list = augment_data(data=data_list, augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
+                                 augment_elastic=augment_elastic, augment_rotation=augment_rotation,
+                                 augment_shift=augment_shift, augment_shear=augment_shear,
+                                 augment_zoom=augment_zoom)
         for i in range(data.shape[0]):
             data[i, :, :, :] = data_list[i]
         truth[:, :, :] = data_list[-1]

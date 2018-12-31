@@ -6,7 +6,7 @@ import pprint
 import numpy as np
 
 from unet3d.data import write_data_to_file, open_data_file
-from unet2d.generator import get_training_and_validation_and_testing_generators
+from unet2d.generator import get_training_and_validation_and_testing_generators2d
 from unet2d.model import unet_model_2d
 from unet3d.training import load_old_model, train_model
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
@@ -75,7 +75,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     data_file_opened = open_data_file(config["data_file"])
 
     print_section("get training and testing generators")
-    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators(
+    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators2d(
         data_file_opened,
         batch_size=batch_size,
         data_split=config["validation_split"],
@@ -102,6 +102,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("-"*60)
     print("# Load or init model")
     print("-"*60)
+    config["input_shape"]=config["input_shape"][0:len(config["input_shape"])-1]
     if not overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
@@ -112,7 +113,6 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         # if model_name == "unet":
         print("init unet model")
         model = unet_model_2d(input_shape=config["input_shape"],
-                              pool_size=config["pool_size"],
                               n_labels=config["n_labels"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
