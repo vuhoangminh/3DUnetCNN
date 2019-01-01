@@ -54,7 +54,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         is_normalize=is_normalize, is_denoise=is_denoise,
         is_hist_match=is_hist_match, is_test=is_test,
         model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=2)
+        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=25)
 
     config["data_file"] = data_path
     config["model_file"] = model_path
