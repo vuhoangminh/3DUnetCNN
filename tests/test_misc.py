@@ -1,10 +1,7 @@
 from unet3d.utils.patches import compute_patch_indices
-import itertools
-from itertools import permutations, repeat
-import nibabel as nib
 import unet3d.utils.path_utils as path_utils
 
-from unet3d.data import write_data_to_file, open_data_file
+from unet3d.data import open_data_file
 # a = [1, 2, 3]
 # b = [4, 5, 6]
 

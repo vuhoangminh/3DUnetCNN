@@ -82,12 +82,26 @@ input_shape = (4, 128, 128, 128)
 # save_plot(model, get_path(name))
 
 
-name = "unet25d"
-model = unet_model_25d(input_shape=(4, 160, 192, 7),
-                       n_labels=3,
-                       depth=4,
-                       n_base_filters=16,
-                       batch_normalization=False,
-                       is_unet_original=True)
+# name = "unet25d"
+# model = unet_model_25d(input_shape=(4, 160, 192, 7),
+#                        n_labels=3,
+#                        depth=4,
+#                        n_base_filters=16,
+#                        batch_normalization=False,
+#                        is_unet_original=True)
+# model.summary()
+# save_plot(model, get_path(name))
+
+
+
+
+from unet3d.model.unet_non import unet_model_3d
+name = "seunet2d"
+model = unet_model_3d(input_shape=(4, 128, 128, 128),
+                      n_labels=3,
+                      depth=4,
+                      n_base_filters=16,
+                      batch_normalization=True,
+                      is_unet_original=False)
 model.summary()
 save_plot(model, get_path(name))
