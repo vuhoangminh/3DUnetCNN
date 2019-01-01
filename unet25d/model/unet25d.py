@@ -1,18 +1,16 @@
 import numpy as np
 from keras import backend as K
 from keras.engine import Input, Model
-from keras.layers import (Activation, BatchNormalization, Conv2D,
+from keras.layers import (Activation, BatchNormalization, Conv2D, Conv3D,
                           Deconvolution2D, Dense, GlobalAveragePooling2D,
-                          MaxPooling2D, Permute, PReLU, Reshape, UpSampling2D,
+                          MaxPooling2D, Permute, PReLU, Reshape, ZeroPadding3D,
                           multiply)
-from keras.optimizers import Adam
-from keras.utils import multi_gpu_model
 
-from unet3d.metrics import (dice_coefficient, dice_coefficient_loss,
-                            get_label_dice_coefficient_function,
-                            minh_dice_coef_loss, minh_dice_coef_metric,
-                            soft_dice_loss, soft_dice_numpy, tv_minh_loss,
-                            tversky_loss, weighted_dice_coefficient_loss)
+from unet2d.model.unet2d import (compute_level_output_shape2d,
+                                 create_convolution_block2d,
+                                 get_up_convolution2d, squeeze_excite_block2d)
+from unet3d.metrics import minh_dice_coef_metric
+from unet3d.model.unet import create_convolution_block
 from unet3d.utils.model_utils import compile_model
 
 K.set_image_data_format("channels_first")
@@ -23,13 +21,13 @@ except ImportError:
     from keras.layers.merge import concatenate
 
 
-def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
-                  depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
-                  batch_normalization=False, activation_name="sigmoid",
-                  metrics=minh_dice_coef_metric,
-                  loss_function="weighted",
-                  is_unet_original=True
-                  ):
+def unet_model_25d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+                   depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
+                   batch_normalization=False, activation_name="sigmoid",
+                   metrics=minh_dice_coef_metric,
+                   loss_function="weighted",
+                   is_unet_original=True
+                   ):
     """
     Builds the 3D UNet Keras model.f
     :param metrics: List metrics to be calculated during model training (default is dice coefficient).
@@ -50,8 +48,13 @@ def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_ra
     :return: Untrained 3D UNet Model
     """
     inputs = Input(input_shape)
-    current_layer = inputs
     levels = list()
+
+    current_layer = create_transition_3d_to_2d(input_layer=inputs,
+                                               n_filters=n_base_filters,
+                                               is_unet_original=is_unet_original,
+                                               batch_normalization=batch_normalization,
+                                               instance_normalization=False)
 
     # add levels with max pooling
     for layer_depth in range(depth):
@@ -92,24 +95,14 @@ def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_ra
     act = Activation(activation_name)(final_convolution)
     model = Model(inputs=inputs, outputs=act)
 
-    # if not isinstance(metrics, list):
-    #     metrics = [metrics]
-
-    # if include_label_wise_dice_coefficients and n_labels > 1:
-    #     label_wise_dice_metrics = [get_label_dice_coefficient_function(
-    #         index) for index in range(n_labels)]
-    #     if metrics:
-    #         metrics = metrics + label_wise_dice_metrics
-    #     else:
-    #         metrics = label_wise_dice_metrics
-
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
                          initial_learning_rate=initial_learning_rate)
 
 
-def create_convolution_block2d(input_layer, n_filters, batch_normalization=False, kernel=(3, 3), activation=None,
-                               padding='same', strides=(1, 1), instance_normalization=False,
+def create_transition_3d_to_2d(input_layer, n_filters, batch_normalization=False, kernel=(3, 3, 3),
+                               activation=None, padding='valid', strides=(1, 1, 1),
+                               instance_normalization=False,
                                is_unet_original=True):
     """
     :param strides:
@@ -121,66 +114,29 @@ def create_convolution_block2d(input_layer, n_filters, batch_normalization=False
     :param padding:
     :return:
     """
-    layer = Conv2D(n_filters, kernel, padding=padding,
-                   strides=strides)(input_layer)
-    if batch_normalization:
-        layer = BatchNormalization(axis=1)(layer)
-    elif instance_normalization:
-        try:
-            from keras_contrib.layers.normalization import InstanceNormalization
-        except ImportError:
-            raise ImportError("Install keras_contrib in order to use instance normalization."
-                              "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
-        layer = InstanceNormalization(axis=1)(layer)
-    if activation is None:
-        layer = Activation('relu')(layer)
-    else:
-        layer = activation()(layer)
-    if not is_unet_original:
-        layer = squeeze_excite_block2d(layer)
-    return layer
+    shape = input_layer._keras_shape
 
+    height = shape[-1]
+    kernel_size = kernel[0]
 
-def compute_level_output_shape2d(n_filters, depth, pool_size, image_shape):
-    """
-    Each level has a particular output shape based on the number of filters used in that level and the depth or number 
-    of max pooling operations that have been done on the data at that point.
-    :param image_shape: shape of the 2d image.
-    :param pool_size: the pool_size parameter used in the max pooling operation.
-    :param n_filters: Number of filters used by the last node in a given level.
-    :param depth: The number of levels down in the U-shaped model a given node is.
-    :return: 5D vector of the shape of the output node 
-    """
-    output_image_shape = np.asarray(
-        np.divide(image_shape, np.power(pool_size, depth)), dtype=np.int32).tolist()
-    return tuple([None, n_filters] + output_image_shape)
+    if height % (kernel_size-1) != 1:
+        raise ValueError(
+            "mod(depth_inputs, kernel_size) should be 1. Please check!")
 
+    depth = height//(kernel_size-1)
 
-def get_up_convolution2d(n_filters, pool_size, kernel_size=(2, 2), strides=(2, 2),
-                         deconvolution=False):
-    if deconvolution:
-        return Deconvolution2D(filters=n_filters, kernel_size=kernel_size,
-                               strides=strides)
-    else:
-        return UpSampling2D(size=pool_size)
+    current_layer = input_layer
+    for _ in range(depth):
+        current_layer = ZeroPadding3D(
+            padding=(1, 1, 0), data_format="channels_first")(current_layer)
+        current_layer = create_convolution_block(input_layer=current_layer, n_filters=n_filters,
+                                                 batch_normalization=batch_normalization,
+                                                 is_unet_original=is_unet_original,
+                                                 instance_normalization=instance_normalization,
+                                                 padding=padding)
 
-
-def squeeze_excite_block2d(input, ratio=16):
-    init = input
-    channel_axis = 1 if K.image_data_format() == "channels_first" else -1
-    filters = init._keras_shape[channel_axis]
-
-    se_shape = (1, 1, filters)
-
-    se = GlobalAveragePooling2D()(init)
-    se = Reshape(se_shape)(se)
-    se = Dense(max(filters//ratio, 1), activation='relu',
-               kernel_initializer='he_normal', use_bias=False)(se)
-    se = Dense(filters, activation='sigmoid',
-               kernel_initializer='he_normal', use_bias=False)(se)
-
-    if K.image_data_format() == 'channels_first':
-        se = Permute((3, 1, 2))(se)
-
-    x = multiply([init, se])
-    return x
+    shape = current_layer._keras_shape
+    to_shape = shape[1:len(shape)-1]
+    
+    current_layer = Reshape(to_shape)(current_layer)
+    return current_layer

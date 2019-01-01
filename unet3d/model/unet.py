@@ -1,15 +1,11 @@
 import numpy as np
 from keras import backend as K
 from keras.engine import Input, Model
-from keras.layers import Conv3D, MaxPooling3D, UpSampling3D, Activation, BatchNormalization, PReLU, Deconvolution3D
-from keras.layers import GlobalAveragePooling3D, Reshape, Dense, multiply, Permute
-from keras.optimizers import Adam
-from keras.utils import multi_gpu_model
-
-from unet3d.metrics import dice_coefficient_loss, get_label_dice_coefficient_function, dice_coefficient
-from unet3d.metrics import minh_dice_coef_loss, dice_coefficient_loss, minh_dice_coef_metric
-from unet3d.metrics import weighted_dice_coefficient_loss, soft_dice_loss, soft_dice_numpy, tversky_loss
-from unet3d.metrics import tv_minh_loss
+from keras.layers import (Activation, BatchNormalization, Conv3D,
+                          Deconvolution3D, Dense, GlobalAveragePooling3D,
+                          MaxPooling3D, Permute, PReLU, Reshape, UpSampling3D,
+                          multiply)
+from unet3d.metrics import minh_dice_coef_metric
 from unet3d.utils.model_utils import compile_model
 
 K.set_image_data_format("channels_first")
