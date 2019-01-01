@@ -102,13 +102,24 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
     # Set the number of training and testing samples per epoch correctly
     # if overwrite or not os.path.exists(n_steps_file):
     print(">> compute number of training and validation steps")
-    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-                                                                   patch_start_offset=training_patch_start_offset,
-                                                                   patch_overlap=0),
-                                             batch_size)
-    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                     patch_overlap=validation_patch_overlap),
-                                               validation_batch_size)
+    patch_overlap = [0, 0, patch_shape[-1]-1]
+    patch_overlap = np.asarray(patch_overlap)
+    training_number_patches = len(create_patch_index_list(training_list, data_file.root.data.shape[-3:], patch_shape,
+                                                patch_overlap, patch_start_offset=training_patch_start_offset))
+    num_training_steps = get_number_of_steps(training_number_patches, batch_size)
+    validation_number_patches = len(create_patch_index_list(validation_list, data_file.root.data.shape[-3:], patch_shape,
+                                                patch_overlap, patch_start_offset=training_patch_start_offset))
+    num_validation_steps = get_number_of_steps(validation_number_patches, batch_size)  
+
+
+
+    # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+    #                                                                patch_start_offset=training_patch_start_offset,
+    #                                                                patch_overlap=patch_overlap),
+    #                                          batch_size)
+    # num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+    #                                                                  patch_overlap=patch_overlap),
+    #                                            validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
@@ -175,4 +186,4 @@ def convert_data25d(x_list, y_list, n_labels=1, labels=None):
     elif n_labels > 1:
         y = get_multi_class_labels(y, n_labels=n_labels, labels=labels)
     slice_gt = y.shape[-1]//2
-    return x, y[...,slice_gt]
+    return x, y[..., slice_gt]
