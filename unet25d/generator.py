@@ -174,4 +174,5 @@ def convert_data25d(x_list, y_list, n_labels=1, labels=None):
         y[y > 0] = 1
     elif n_labels > 1:
         y = get_multi_class_labels(y, n_labels=n_labels, labels=labels)
-    return x, y
+    slice_gt = y.shape[-1]//2
+    return x, y[...,slice_gt]

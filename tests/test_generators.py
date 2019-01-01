@@ -145,9 +145,12 @@ def main25d(overwrite=False):
     save_dir = laptop_save_dir
     temp_in_path = save_dir + "template.nii.gz"
     temp_out_path = save_dir + "out.nii.gz"
+    temp_out_path2 = save_dir + "out2.nii.gz"
+    temp_out_path3 = save_dir + "out3.nii.gz"
+    temp_out_path4 = save_dir + "out4.nii.gz"
     temp_out_truth_path = save_dir + "truth.nii.gz"
-    temp_out_truth_path2 = save_dir + "truth2.nii.gz"
-    temp_out_truth_path3 = save_dir + "truth3.nii.gz"
+    # temp_out_truth_path2 = save_dir + "truth2.nii.gz"
+    # temp_out_truth_path3 = save_dir + "truth3.nii.gz"
 
     n_validation_samples = 0
     validation_samples = list()
@@ -164,14 +167,27 @@ def main25d(overwrite=False):
             temp_out = nib.Nifti1Image(x[0][0], affine=temp_in.affine)
             nib.save(temp_out, temp_out_path)
 
+            temp_in = nib.load(temp_in_path)
+            temp_out = nib.Nifti1Image(x[0][1], affine=temp_in.affine)
+            nib.save(temp_out, temp_out_path2)
+
+            temp_in = nib.load(temp_in_path)
+            temp_out = nib.Nifti1Image(x[0][2], affine=temp_in.affine)
+            nib.save(temp_out, temp_out_path3)
+
+            temp_in = nib.load(temp_in_path)
+            temp_out = nib.Nifti1Image(x[0][3], affine=temp_in.affine)
+            nib.save(temp_out, temp_out_path4)
+
+
             temp_out = nib.Nifti1Image(y[0][0], affine=temp_in.affine)
             nib.save(temp_out, temp_out_truth_path)
 
-            temp_out = nib.Nifti1Image(y[0][1], affine=temp_in.affine)
-            nib.save(temp_out, temp_out_truth_path2)
+            # temp_out = nib.Nifti1Image(y[0][1], affine=temp_in.affine)
+            # nib.save(temp_out, temp_out_truth_path2)
 
-            temp_out = nib.Nifti1Image(y[0][2], affine=temp_in.affine)
-            nib.save(temp_out, temp_out_truth_path3)
+            # temp_out = nib.Nifti1Image(y[0][2], affine=temp_in.affine)
+            # nib.save(temp_out, temp_out_truth_path3)
 
     print(n_validation_samples)
 

@@ -102,8 +102,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("-"*60)
     print("# Load or init model")
     print("-"*60)
-    config["input_shape"] = config["input_shape"][0:len(
-        config["input_shape"])-1]
+
     if not overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
