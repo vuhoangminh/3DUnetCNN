@@ -76,6 +76,11 @@ def get_filename(path):
     return tail or ntpath.basename(head)
 
 
+def get_filename_without_extension(path):
+    filename = get_filename(path)
+    return os.path.splitext(filename)[0]
+
+
 def get_modality(path, ext=".nii.gz"):
     filename = get_filename(path)
     modality = filename.replace(ext, "")
@@ -234,7 +239,7 @@ def get_training_h5_paths(brats_dir, overwrite=True, crop=True, challenge="brats
                                            model_name=model_name, patch_shape=patch_shape, is_crf=is_crf,
                                            is_test=is_test, loss=loss,
                                            model_dim=model_dim)
-    if is_test=="1":
+    if is_test == "1":
         trainids_filename = "test_train_ids.h5"
         validids_filename = "test_valid_ids.h5"
         testids_filename = "test_test_ids.h5"

@@ -15,6 +15,7 @@ from unet3d.model import densefcn_model_3d
 from unet3d.training import load_old_model, train_model
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
+from unet3d.utils.path_utils import make_dir
 import unet3d.utils.args_utils as get_args
 
 from unet3d.utils.path_utils import get_filename
@@ -34,14 +35,6 @@ CURRENT_WORKING_DIR = os.path.realpath(__file__)
 PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
 BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
-
-
-def make_dir(data_dir):
-    # make dir
-    if not os.path.exists(data_dir):
-        print_separator()
-        print("making dir", data_dir)
-        os.makedirs(data_dir)
 
 
 def get_training_h5_paths(overwrite=True, crop=True, challenge="brats", year=2018,

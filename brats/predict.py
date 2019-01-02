@@ -1,9 +1,14 @@
-from unet3d.utils.path_utils import get_project_dir
 import os
 
 from unet3d.prediction import run_validation_cases
+import unet3d.utils.args_utils as get_args
+from unet3d.utils.path_utils import get_project_dir
+from unet3d.utils.path_utils import get_training_h5_paths
+from unet3d.utils.path_utils import get_shape_from_string
+from unet3d.utils.path_utils import get_filename_without_extension
+from unet3d.utils.path_utils import make_dir
 
-from brats.config import config, config_unet
+from brats.config import config, config_unet, config_dict
 config.update(config_unet)
 
 
@@ -12,54 +17,98 @@ PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
 BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
-# config["data_file"] = os.path.abspath(
-#     "brats/database/data/brats_2018_is-160-192-128_crop-1_bias-1_denoise-bm4d_norm-01_hist-1_data.h5")
-# config["model_file"] = os.path.abspath(
-#     "brats/database/model/done/minh_loss/brats_2018_is-160-192-128_crop-1_bias-1_denoise-bm4d_norm-01_hist-1_ps-128-128-128_unet_crf-0_d-4_nb-16_model.h5")
-# config["training_file"] = os.path.abspath(
-#     "brats/database/train_ids/brats_2018_is-160-192-128_crop-1_bias-1_denoise-bm4d_norm-01_hist-1_train_ids.h5")
-# config["validation_file"] = os.path.abspath(
-#     "brats/database/valid_ids/brats_2018_is-160-192-128_crop-1_bias-1_denoise-bm4d_norm-01_hist-1_valid_ids.h5")
-# config["prediction_folder"] = os.path.abspath(
-#     "brats/database/prediction/brats_2018_is-160-192-128_crop-1_bias-1_denoise-bm4d_norm-01_hist-1_ps-128-128-128_unet_crf-0_d-4_nb-16_model")
 
+def predict(overwrite=True, crop=True, challenge="brats", year=2018,
+            image_shape="160-192-128", is_bias_correction="1",
+            is_normalize="z", is_denoise="0",
+            is_hist_match="0", is_test="1",
+            depth_unet=4, n_base_filters_unet=16, model_name="unet",
+            patch_shape="128-128-128", is_crf="0",
+            batch_size=1, loss="weighted"):
 
-core_name = "brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-1"
-core_name = "brats_2018_is-160-192-128_crop-1_bias-1_denoise-bm4d_norm-01_hist-1"
-core_name = "brats_2018_is-160-192-128_crop-1_bias-1_denoise-bm4d_norm-01_hist-1"
+    data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
+        brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+        image_shape=image_shape, is_bias_correction=is_bias_correction,
+        is_normalize=is_normalize, is_denoise=is_denoise,
+        is_hist_match=is_hist_match, is_test=is_test,
+        model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=3,
+        dir_read_write="finetune", is_finetune=True)
 
-model_name = "ps-128-128-128_unet_crf-0_d-4_nb-16_loss-weighted_model"
-# model_name = "ps-128-128-128_isensee_crf-0_loss-weighted_model"
-# model_name = "ps-64-64-64_densefcn_crf-0_loss-weighted_model"
-# model_name = "ps-64-64-64_densenfcn_crf-0_loss-tv_minh_model"
+    config["data_file"] = data_path
+    config["model_file"] = model_path
+    config["training_file"] = trainids_path
+    config["validation_file"] = validids_path
+    config["testing_file"] = testids_path
+    config["patch_shape"] = get_shape_from_string(patch_shape)
+    config["input_shape"] = tuple(
+        [config["nb_channels"]] + list(config["patch_shape"]))
+    config["prediction_folder"] = os.path.join(
+        BRATS_DIR, "database/prediction", get_filename_without_extension(config["model_file"]))
+    make_dir(config["prediction_folder"])
 
-config["data_file"] = os.path.abspath(
-    "brats/database/data/{}_data.h5".format(core_name))
+    print("-"*60)
+    print("SUMMARY")
+    print("-"*60)
+    print("data file:", config["data_file"])
+    print("model file:", config["model_file"])
+    print("training file:", config["training_file"])
+    print("validation file:", config["validation_file"])
+    print("testing file:", config["testing_file"])
+    print("prediction folder:", config["prediction_folder"])
+    print("-"*60)
 
-config["model_file"] = os.path.abspath(
-    "/home/minhvu/github/3DUnetCNN_BRATS/brats/database/model/base/{}_{}.h5".format(core_name, model_name))
-config["model_file"] = os.path.abspath(
-    "/home/minhvu/github/3DUnetCNN_BRATS/brats/database/model/{}_{}.h5".format(core_name, model_name))
-config["model_file"] = os.path.abspath(
-    "/home/minhvu/github/3DUnetCNN_BRATS/brats/database/model/finetune/{}_{}.h5".format(core_name, model_name))
+    if not os.path.exists(config["model_file"]):
+        raise ValueError("can not find model {}. Please check".format(config["model_file"]))
 
-config["training_file"] = os.path.abspath(
-    "brats/database/train_ids/{}_train_ids.h5".format(core_name))
-config["validation_file"] = os.path.abspath(
-    "brats/database/valid_ids/{}_valid_ids.h5".format(core_name))
-config["prediction_folder"] = os.path.abspath(
-    "brats/database/prediction/{}_{}".format(core_name, model_name))
-
-
-def main():
-    prediction_dir = os.path.abspath(config["prediction_folder"])
-    run_validation_cases(validation_keys_file=config["validation_file"],
+    run_validation_cases(validation_keys_file=config["testing_file"],
                          model_file=config["model_file"],
                          training_modalities=config["training_modalities"],
                          labels=config["labels"],
                          hdf5_file=config["data_file"],
                          output_label_map=True,
-                         output_dir=prediction_dir)
+                         output_dir=config["prediction_folder"])
+
+
+def main():
+    args = get_args.train()
+    overwrite = args.overwrite
+    crop = args.crop
+    challenge = args.challenge
+    year = args.year
+    image_shape = args.image_shape
+    is_bias_correction = args.is_bias_correction
+    is_normalize = args.is_normalize
+    is_denoise = args.is_denoise
+    is_test = args.is_test
+    model_name = args.model
+    depth_unet = args.depth_unet
+    n_base_filters_unet = args.n_base_filters_unet
+    patch_shape = args.patch_shape
+    is_crf = args.is_crf
+    batch_size = args.batch_size
+    is_hist_match = args.is_hist_match
+    loss = args.loss
+
+    for is_normalize in config_dict["is_normalize"]:
+        for is_denoise in config_dict["is_denoise"]:
+            for is_hist_match in ["0", "1"]:
+                for model_name in ["unet", "isensee"]:
+                    print("="*60)
+                    print(">> processing:", is_denoise,
+                          is_normalize, is_hist_match, model_name)
+                    is_test="0"
+                    predict(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+                            image_shape=image_shape, is_bias_correction=is_bias_correction,
+                            is_normalize=is_normalize, is_denoise=is_denoise,
+                            is_hist_match=is_hist_match, is_test=is_test,
+                            model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+                            patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
+                            loss=loss)
+                    print("="*60)
+                    print(">> finished:", is_denoise,
+                          is_normalize, is_hist_match, model_name)
+                    print("="*60)
 
 
 if __name__ == "__main__":
