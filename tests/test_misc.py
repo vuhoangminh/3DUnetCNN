@@ -92,4 +92,9 @@ def get_shape_string(input_shape):
     return shape_string
 
 
-'c:\\Users\\minhm\\Documents\\GitHub\\3DUnetCNN_BRATS\\brats\\database\\model\\base\\test_brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-z_hist-0_ps-128-128-128_isensee3d_crf-0_loss-weighted_model.h5'
+path1 = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/database/model/base/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-z_hist-0_ps-160-192-128_isensee3d_crf-0_loss-minh_model.h5"
+path2 = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/database/model/base/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-z_hist-0_ps-160-192-128_unet3d_crf-0_d-4_nb-16_loss-minh_model.h5"
+
+from unet3d.utils.model_utils import load_model_multi_gpu
+model = load_model_multi_gpu(path2)
+model.summary()
