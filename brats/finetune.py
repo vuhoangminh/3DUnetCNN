@@ -54,6 +54,7 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
         n_base_filters_unet=n_base_filters_unet,
         patch_shape=patch_shape,
         is_crf=is_crf,
+        is_finetune=True,
         dir_read_write="base")
 
     config["data_file"] = data_path
@@ -67,23 +68,7 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
 
     # update_train_valid_test_config(config, is_test=is_test)
 
-    folder = os.path.join(BRATS_DIR, "database", "model", "baseline")
-    model_baseline_path = get_model_baseline_path(
-        folder=folder,
-        crop=crop,
-        challenge=challenge,
-        year=year,
-        image_shape=image_shape,
-        is_bias_correction=is_bias_correction,
-        is_normalize=is_normalize,
-        is_denoise=is_denoise,
-        is_hist_match=is_hist_match,
-        is_test=is_test,
-        model_name=model_name,
-        depth_unet=depth_unet,
-        n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape,
-        is_crf=is_crf)
+    folder = os.path.join(BRATS_DIR, "database", "model", "base")
 
     if not os.path.exists(config["model_file"]):
         model_baseline_path = get_model_baseline_path(

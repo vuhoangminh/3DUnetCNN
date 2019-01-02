@@ -208,7 +208,7 @@ def get_model_baseline_path(folder,
                                                           model_dim=model_dim)
     model_baseline_path = None
     for filename in glob.glob(folder+"/*"):
-        print(filename)
+        # print(filename)
         if short_model_name in filename and short_core_name in filename:
             model_baseline_path = filename
     return model_baseline_path
