@@ -161,10 +161,20 @@ def main():
     model_scores = list()
     model_ids = list()
 
-    for is_normalize in config_dict["is_normalize"]:
-        for is_denoise in config_dict["is_denoise"]:
-            for is_hist_match in ["0", "1"]:
+    # for is_normalize in config_dict["is_normalize"]:
+    #     for is_denoise in config_dict["is_denoise"]:
+    #         for is_hist_match in ["0", "1"]:
+    #             for model_name in ["unet", "isensee"]:
+    for is_normalize in ["z"]:
+        for is_denoise in ["0"]:
+            for is_hist_match in ["0"]:
                 for model_name in ["unet", "isensee"]:
+                    patch_shape="160-192-128"
+                    loss="minh"
+                    print("="*60)
+                    print(">> processing:", is_denoise,
+                          is_normalize, is_hist_match, model_name)
+                    is_test="0"
                     print("="*60)
                     print(">> processing:", is_denoise,
                           is_normalize, is_hist_match, model_name)

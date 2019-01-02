@@ -147,7 +147,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                 n_base_filters=n_base_filters_unet,
                                 loss_function=loss)
 
-        if model_name == "seunet":
+        elif model_name == "seunet":
             print("init seunet model")
             model = se_unet_3d(input_shape=config["input_shape"],
                                pool_size=config["pool_size"],
