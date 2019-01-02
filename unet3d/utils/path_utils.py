@@ -121,18 +121,97 @@ def get_core_name(challenge="brats", year="2018",
         str(is_normalize), str(is_hist_match))
 
 
-def get_model_name(model, patch_shape, is_crf, depth_unet=None,
+def get_model_name(model_name, patch_shape, is_crf, depth_unet=None,
                    n_base_filters_unet=None, loss="weighted",
                    model_dim=3):
-    model_temp = model
-    model_temp = "{}{}d".format(model, str(model_dim))
-    if "unet" in model:
+    model_temp = model_name
+    model_temp = "{}{}d".format(model_name, str(model_dim))
+    if "unet" in model_name:
         return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}".format(
             patch_shape, model_temp, str(is_crf),
             str(depth_unet), str(n_base_filters_unet), loss)
     else:
         return "ps-{}_{}_crf-{}_loss-{}".format(
             patch_shape, model_temp, str(is_crf), loss)
+
+
+def get_short_model_name(model_name, patch_shape, is_crf, depth_unet=None,
+                         n_base_filters_unet=None, loss="weighted",
+                         model_dim=3):
+    model_temp = model_name
+    model_temp = "{}{}d".format(model_name, str(model_dim))
+    if "unet" in model_name:
+        return "ps-{}_{}_crf-{}_d-{}_nb-{}".format(
+            patch_shape, model_temp, str(is_crf),
+            str(depth_unet), str(n_base_filters_unet))
+    else:
+        return "ps-{}_{}_crf-{}".format(
+            patch_shape, model_temp, str(is_crf))
+
+
+def get_short_core_name(challenge="brats", year="2018",
+                        image_shape="160-192-128", crop="1",
+                        is_bias_correction="1", is_denoise="0", is_normalize="z",
+                        is_hist_match="0"):
+    return "{}_{}_is-{}_crop-{}_bias-{}".format(
+        challenge, year, image_shape, str(crop), str(
+            is_bias_correction))
+
+
+def get_finetune_name(challenge="brats", year="2018",
+                      image_shape="160-192-128", crop="1",
+                      is_bias_correction="1", is_denoise="0", is_normalize="z",
+                      is_hist_match="0", is_test="1",
+                      depth_unet=4, n_base_filters_unet=16,
+                      model_name="unet", patch_shape="128-128-128", is_crf="0",
+                      loss="weighted", model_dim=3):
+
+    short_model_name = get_short_model_name(model_name=model_name, patch_shape=patch_shape,
+                                            is_crf=is_crf, depth_unet=depth_unet,
+                                            n_base_filters_unet=n_base_filters_unet,
+                                            loss=loss, model_dim=model_dim)
+
+    short_core_name = get_short_core_name(challenge=challenge, year=year,
+                                          image_shape=image_shape, crop=crop,
+                                          is_bias_correction=is_bias_correction,
+                                          is_denoise=is_denoise,
+                                          is_normalize=is_normalize,
+                                          is_hist_match=is_hist_match)
+
+    return short_model_name, short_core_name
+
+
+def get_model_baseline_path(folder,
+                            challenge="brats", year="2018",
+                            image_shape="160-192-128", crop="1",
+                            is_bias_correction="1", is_denoise="0", is_normalize="z",
+                            is_hist_match="0", is_test="1",
+                            depth_unet=4, n_base_filters_unet=16,
+                            model_name="unet", patch_shape="128-128-128", is_crf="0",
+                            loss="weighted", model_dim=3):
+    import glob
+    short_model_name, short_core_name = get_finetune_name(challenge=challenge,
+                                                          year=year,
+                                                          image_shape=image_shape,
+                                                          crop=crop,
+                                                          is_bias_correction=is_bias_correction,
+                                                          is_denoise=is_denoise,
+                                                          is_normalize=is_normalize,
+                                                          is_hist_match=is_hist_match,
+                                                          is_test=is_test,
+                                                          depth_unet=depth_unet,
+                                                          n_base_filters_unet=n_base_filters_unet,
+                                                          model_name=model_name,
+                                                          patch_shape=patch_shape,
+                                                          is_crf=is_crf,
+                                                          loss=loss,
+                                                          model_dim=model_dim)
+    model_baseline_path = None
+    for filename in glob.glob(folder+"/*"):
+        print(filename)
+        if short_model_name in filename and short_core_name in filename:
+            model_baseline_path = filename
+    return model_baseline_path
 
 
 def get_model_h5_filename(datatype, challenge="brats", year="2018",

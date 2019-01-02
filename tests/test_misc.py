@@ -63,9 +63,11 @@ def test_path_utils():
     is_normalize = "z"
     crop = 1
     path = path_utils.get_training_h5_filename(datatype, challenge=challenge,
-                                               year=year, input_shape=input_shape,
-                                               crop=crop, is_bias_correction=is_bias_correction,
-                                               is_denoise=is_denoise, is_normalize=is_normalize)
+                                               year=year,
+                                               crop=crop, 
+                                               is_bias_correction=is_bias_correction,
+                                               is_denoise=is_denoise, 
+                                               is_normalize=is_normalize)
     print(path)
 
 
@@ -79,7 +81,6 @@ def test_read_h5():
     print(data_file_opened)
 
 
-shape = (128, 128, 128)
 
 
 def get_shape_string(input_shape):
@@ -91,33 +92,4 @@ def get_shape_string(input_shape):
     return shape_string
 
 
-indices = compute_patch_indices((160, 192, 128), (128, 128, 128),
-                                overlap=0, start=None, is_extract_patch_agressive=False)
-
-print(indices) 
-
-i_list = indices.tolist()
-print(i_list)
-
-new_list = [[-48,32,0], [80,32,0]]
-
-i_list.extend(new_list)
-
-print(i_list)
-
-
-final_list = np.asarray(i_list)
-print(final_list)
-
-
-a = (128,128,128)
-print(type(a))
-
-
-
-indices = compute_patch_indices((160, 192, 128), (128, 128, 128),
-                                overlap=0, start=None, 
-                                is_extract_patch_agressive=False,
-                                is_predict=True)
-
-print(indices)                                
+'c:\\Users\\minhm\\Documents\\GitHub\\3DUnetCNN_BRATS\\brats\\database\\model\\base\\test_brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-z_hist-0_ps-128-128-128_isensee3d_crf-0_loss-weighted_model.h5'
