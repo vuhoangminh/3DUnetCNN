@@ -7,7 +7,7 @@ import numpy as np
 
 from unet3d.data import write_data_to_file, open_data_file
 from unet2d.generator import get_training_and_validation_and_testing_generators2d
-from unet2d.model import unet_model_2d
+from unet2d.model import unet_model_2d, isensee2d_model
 from unet3d.training import load_old_model, train_model
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
@@ -95,7 +95,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("-"*60)
     print("# Load or init model")
     print("-"*60)
-    config["input_shape"]=config["input_shape"][0:len(config["input_shape"])-1]
+    config["input_shape"] = config["input_shape"][0:len(
+        config["input_shape"])-1]
     if not overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
@@ -106,26 +107,30 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         if model_name == "seunet":
             print("init seunet model")
             model = unet_model_2d(input_shape=config["input_shape"],
-                                n_labels=config["n_labels"],
-                                initial_learning_rate=config["initial_learning_rate"],
-                                deconvolution=config["deconvolution"],
-                                #   batch_normalization=True,
-                                depth=depth_unet,
-                                n_base_filters=n_base_filters_unet,
-                                loss_function=loss,
-                                is_unet_original=False)
+                                  n_labels=config["n_labels"],
+                                  initial_learning_rate=config["initial_learning_rate"],
+                                  deconvolution=config["deconvolution"],
+                                  #   batch_normalization=True,
+                                  depth=depth_unet,
+                                  n_base_filters=n_base_filters_unet,
+                                  loss_function=loss,
+                                  is_unet_original=False)
+        elif model_name == "isensee":
+            print("init isensee model")
+            model = isensee2d_model(input_shape=config["input_shape"],
+                                    n_labels=config["n_labels"],
+                                    initial_learning_rate=config["initial_learning_rate"],
+                                    loss_function=loss)                                  
         else:
             print("init unet model")
             model = unet_model_2d(input_shape=config["input_shape"],
-                                n_labels=config["n_labels"],
-                                initial_learning_rate=config["initial_learning_rate"],
-                                deconvolution=config["deconvolution"],
-                                #   batch_normalization=True,
-                                depth=depth_unet,
-                                n_base_filters=n_base_filters_unet,
-                                loss_function=loss)
-
-
+                                  n_labels=config["n_labels"],
+                                  initial_learning_rate=config["initial_learning_rate"],
+                                  deconvolution=config["deconvolution"],
+                                  #   batch_normalization=True,
+                                  depth=depth_unet,
+                                  n_base_filters=n_base_filters_unet,
+                                  loss_function=loss)
 
     model.summary()
 
@@ -141,6 +146,9 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     else:
         experiment = None
 
+    
+    if model_name == "isensee":
+        config["initial_learning_rate"] = 1e-6
     print(config["initial_learning_rate"], config["learning_rate_drop"])
     train_model(experiment=experiment,
                 model=model,
