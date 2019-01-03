@@ -30,12 +30,12 @@ DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 
 def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
-             image_shape="160-160-128", is_bias_correction="1",
+             image_shape="160-192-128", is_bias_correction="1",
              is_normalize="z", is_denoise="0",
              is_hist_match="0", is_test="1",
              depth_unet=4, n_base_filters_unet=16, model_name="isensee",
              patch_shape="128-128-128", is_crf="0",
-             batch_size=1, loss="weighted"):
+             batch_size=1, loss="weighted", model_dim=3):
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         BRATS_DIR,
@@ -55,7 +55,8 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
         patch_shape=patch_shape,
         is_crf=is_crf,
         is_finetune=True,
-        dir_read_write="base")
+        dir_read_write="base",
+        model_dim=model_dim)
 
     config["data_file"] = data_path
     config["model_file"] = model_path
@@ -86,7 +87,8 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
             depth_unet=depth_unet,
             n_base_filters_unet=n_base_filters_unet,
             patch_shape=patch_shape,
-            is_crf=is_crf)
+            is_crf=is_crf,
+            model_dim=model_dim)
         if model_baseline_path is None:
             raise ValueError("can not fine baseline model. Please check")
         else:
@@ -167,7 +169,9 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
         n_base_filters_unet=n_base_filters_unet,
         patch_shape=patch_shape,
         is_crf=is_crf,
-        dir_read_write="finetune")
+        dir_read_write="finetune",
+        is_finetune=True,
+        model_dim=model_dim)
 
     config["model_file"] = model_path
 
@@ -225,6 +229,7 @@ def main():
     batch_size = args.batch_size
     is_hist_match = args.is_hist_match
     loss = args.loss
+    model_dim = args.model_dim
 
     finetune(overwrite=overwrite,
              crop=crop,
@@ -242,7 +247,8 @@ def main():
              patch_shape=patch_shape,
              is_crf=is_crf,
              batch_size=batch_size,
-             loss=loss)
+             loss=loss,
+             model_dim=model_dim)
 
 
 if __name__ == "__main__":
