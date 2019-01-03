@@ -186,6 +186,9 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("validation file:", config["validation_file"])
     print("testing file:", config["testing_file"])
 
+    if is_test=="1":
+        config["n_epochs"]=5
+
     train_model(experiment=experiment,
                 model=model,
                 model_file=config["model_file"],

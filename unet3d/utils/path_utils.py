@@ -206,6 +206,7 @@ def get_model_baseline_path(folder,
                                                           is_crf=is_crf,
                                                           loss=loss,
                                                           model_dim=model_dim)
+    print(folder, short_model_name, short_core_name)                                                          
     model_baseline_path = None
     for filename in glob.glob(folder+"/*"):
         # print(filename)

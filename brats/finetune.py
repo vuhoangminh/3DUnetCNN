@@ -178,6 +178,9 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
 
     config["model_file"] = model_path
 
+    if is_test=="1":
+        config["n_epochs"]=5
+
     print(config["initial_learning_rate"], config["learning_rate_drop"])
     train_model(experiment=experiment,
                 model=model,
