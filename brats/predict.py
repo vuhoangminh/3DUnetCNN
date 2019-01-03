@@ -58,17 +58,18 @@ def predict(overwrite=True, crop=True, challenge="brats", year=2018,
     print("-"*60)
 
     if not os.path.exists(config["model_file"]):
-        raise ValueError("can not find model {}. Please check".format(config["model_file"]))
+        raise ValueError(
+            "can not find model {}. Please check".format(config["model_file"]))
 
-    if model_dim==3:
+    if model_dim == 3:
         from unet3d.prediction import run_validation_cases
         run_validation_cases(validation_keys_file=config["testing_file"],
-                                model_file=config["model_file"],
-                                training_modalities=config["training_modalities"],
-                                labels=config["labels"],
-                                hdf5_file=config["data_file"],
-                                output_label_map=True,
-                                output_dir=config["prediction_folder"])
+                             model_file=config["model_file"],
+                             training_modalities=config["training_modalities"],
+                             labels=config["labels"],
+                             hdf5_file=config["data_file"],
+                             output_label_map=True,
+                             output_dir=config["prediction_folder"])
 
 
 def main():
@@ -98,12 +99,12 @@ def main():
         for is_denoise in ["0"]:
             for is_hist_match in ["0"]:
                 for model_name in ["unet", "isensee"]:
-                    patch_shape="160-192-128"
-                    loss="minh"
+                    patch_shape = "160-192-128"
+                    loss = "minh"
                     print("="*60)
                     print(">> processing:", is_denoise,
                           is_normalize, is_hist_match, model_name)
-                    is_test="0"
+                    is_test = "0"
                     predict(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
                             image_shape=image_shape, is_bias_correction=is_bias_correction,
                             is_normalize=is_normalize, is_denoise=is_denoise,
