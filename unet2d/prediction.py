@@ -4,9 +4,8 @@ import nibabel as nib
 import numpy as np
 import tables
 
-from unet3d.training import load_old_model
 from unet3d.utils import pickle_load
-from unet2d.utils.patches import reconstruct_from_patches, get_patch_from_3d_data, compute_patch_indices
+from unet3d.utils.patches import reconstruct_from_patches, get_patch_from_3d_data, compute_patch_indices
 from unet3d.augment import permute_data, generate_permutation_keys, reverse_permute_data
 
 

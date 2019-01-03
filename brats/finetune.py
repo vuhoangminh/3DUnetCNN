@@ -150,13 +150,6 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
     print("# start finetuning")
     print("-"*60)
 
-    if is_test == "0":
-        experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
-                                project_name="finetune",
-                                workspace="vuhoangminh")
-    else:
-        experiment = None
-
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         BRATS_DIR,
         overwrite=overwrite,
@@ -178,26 +171,37 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
 
     config["model_file"] = model_path
 
-    if is_test=="1":
-        config["n_epochs"]=5
+    if os.path.exists(config["model_file"]):
+        print("{} existed. Will skip!!!".format(config["model_file"]))
+    else:
 
-    print(config["initial_learning_rate"], config["learning_rate_drop"])
-    train_model(experiment=experiment,
-                model=model,
-                model_file=config["model_file"],
-                training_generator=train_generator,
-                validation_generator=validation_generator,
-                steps_per_epoch=n_train_steps,
-                validation_steps=n_validation_steps,
-                initial_learning_rate=config["initial_learning_rate"],
-                learning_rate_drop=config["learning_rate_drop"],
-                learning_rate_patience=config["patience"],
-                early_stopping_patience=config["early_stop"],
-                n_epochs=config["n_epochs"]
-                )
+        if is_test == "1":
+            config["n_epochs"] = 5
 
-    if is_test == "0":
-        experiment.log_parameters(config)
+        if is_test == "0":
+            experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
+                                    project_name="finetune",
+                                    workspace="vuhoangminh")
+        else:
+            experiment = None
+
+        print(config["initial_learning_rate"], config["learning_rate_drop"])
+        train_model(experiment=experiment,
+                    model=model,
+                    model_file=config["model_file"],
+                    training_generator=train_generator,
+                    validation_generator=validation_generator,
+                    steps_per_epoch=n_train_steps,
+                    validation_steps=n_validation_steps,
+                    initial_learning_rate=config["initial_learning_rate"],
+                    learning_rate_drop=config["learning_rate_drop"],
+                    learning_rate_patience=config["patience"],
+                    early_stopping_patience=config["early_stop"],
+                    n_epochs=config["n_epochs"]
+                    )
+
+        if is_test == "0":
+            experiment.log_parameters(config)
 
     data_file_opened.close()
 
