@@ -87,7 +87,7 @@ for model_name in ["unet", "isensee", "seunet"]:
                     date_current,
                     model_filename)
 
-                cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 128 -dim 2".format(
+                cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 64 -dim 2".format(
                     task,
                     is_test,
                     is_normalize,
