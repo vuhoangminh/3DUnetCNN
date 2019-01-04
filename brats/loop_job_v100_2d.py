@@ -25,18 +25,21 @@ def run(model_filename, out_file, cmd):
     print("log to:", out_file)
     print(cmd)
 
-    out_file = open(out_file, 'w')
+    # out_file = open(out_file, 'w')
 
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, shell=True)
+    # proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+    #                         stderr=subprocess.STDOUT, shell=True)
 
-    # for line in proc.stdout:
-    #     line = line.decode("utf-8")
-    #     sys.stdout.write(line)
-    #     out_file.write(line)
+    # # for line in proc.stdout:
+    # #     line = line.decode("utf-8")
+    # #     sys.stdout.write(line)
+    # #     out_file.write(line)
 
-    proc.wait()
-    out_file.close()
+    # proc.wait()
+
+    os.system(cmd)
+
+    # out_file.close()
 
 
 task = "finetune"
