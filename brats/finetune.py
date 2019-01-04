@@ -171,6 +171,7 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
         is_crf=is_crf,
         dir_read_write="finetune",
         is_finetune=True,
+        # loss=loss, # will fix later
         model_dim=model_dim)
 
     config["model_file"] = model_path

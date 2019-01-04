@@ -17,8 +17,33 @@ config.update(config_unet)
 # # pp.pprint(config)
 config.update(config_unet)
 
+
+def run(model_filename, out_file, cmd):
+
+    print("="*120)
+    print(">> processing:", cmd)
+    print("log to:", out_file)
+    print(cmd)
+
+    out_file = open(out_file, 'w')
+
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, shell=True)
+    for line in proc.stdout:
+        line = line.decode("utf-8")
+        sys.stdout.write(line)
+        out_file.write(line)
+
+    proc.wait()
+    out_file.close()
+
+
 task = "finetune"
 is_test = "0"
+
+model_list = list()
+cmd_list = list()
+out_file_list = list()
 
 for model_name in ["unet", "seunet", "isensee"]:
     for is_denoise in config_dict["is_denoise"]:
@@ -69,20 +94,27 @@ for model_name in ["unet", "seunet", "isensee"]:
                     model_name
                 )
 
-                print("="*120)
-                print(">> processing:", is_denoise,
-                      is_normalize, is_hist_match, model_name)
-                print("log to:", out_file)
-                print(cmd)
+                model_list.append(model_filename)
+                out_file_list.append(out_file)
+                cmd_list.append(cmd)
 
-                out_file = open(out_file, 'w')
 
-                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT, shell=True)
-                for line in proc.stdout:
-                    line = line.decode("utf-8")
-                    sys.stdout.write(line)
-                    out_file.write(line)
+import random
+combined = list(zip(model_list, out_file_list, cmd_list))
+random.shuffle(combined)
 
-                proc.wait()
-                out_file.close()
+model_list[:], out_file_list[:], cmd_list = zip(*combined)
+
+for i in range(len(model_list)):
+    model_filename = model_list[i]
+    out_file = out_file_list[i]
+    cmd = cmd_list[i]
+
+    # print("*"*60)
+    # print(">> processing:")
+    # print(model_filename)
+    # print(out_file)
+    # print(cmd)
+    # print("*"*60)
+
+    run(model_filename, out_file, cmd)
