@@ -102,6 +102,9 @@ def train():
     parser.add_argument('-l', '--loss', type=str,
                         default="weighted",
                         help="loss function")
+    parser.add_argument('-dim', '--model_dim', type=int,
+                        default=3,
+                        help="2d, 2.5d or 3d?")                        
     args = parser.parse_args()
     return args
 

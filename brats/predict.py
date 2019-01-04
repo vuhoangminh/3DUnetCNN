@@ -23,7 +23,7 @@ def predict(overwrite=True, crop=True, challenge="brats", year=2018,
             is_hist_match="0", is_test="1",
             depth_unet=4, n_base_filters_unet=16, model_name="unet",
             patch_shape="128-128-128", is_crf="0",
-            batch_size=1, loss="weighted", model_dim=3):
+            batch_size=1, loss="minh", model_dim=3):
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -63,13 +63,20 @@ def predict(overwrite=True, crop=True, challenge="brats", year=2018,
 
     if model_dim == 3:
         from unet3d.prediction import run_validation_cases
-        run_validation_cases(validation_keys_file=config["testing_file"],
-                             model_file=config["model_file"],
-                             training_modalities=config["training_modalities"],
-                             labels=config["labels"],
-                             hdf5_file=config["data_file"],
-                             output_label_map=True,
-                             output_dir=config["prediction_folder"])
+    elif model_dim == 25:
+        from unet25d.prediction import run_validation_cases
+    elif model_dim == 2:
+        from unet2d.prediction import run_validation_cases
+    else:
+        raise ValueError("dim {} NotImplemented error. Please check".format(model_dim))
+
+    run_validation_cases(validation_keys_file=config["testing_file"],
+                         model_file=config["model_file"],
+                         training_modalities=config["training_modalities"],
+                         labels=config["labels"],
+                         hdf5_file=config["data_file"],
+                         output_label_map=True,
+                         output_dir=config["prediction_folder"])
 
 
 def main():
@@ -91,15 +98,40 @@ def main():
     batch_size = args.batch_size
     is_hist_match = args.is_hist_match
     loss = args.loss
+    model_dim = args.model_dim
 
     # for is_normalize in config_dict["is_normalize"]:
     #     for is_denoise in config_dict["is_denoise"]:
     #         for is_hist_match in ["0", "1"]:
+    
+    
+    # # ================3d==================================
+    # for is_normalize in ["z"]:
+    #     for is_denoise in ["0"]:
+    #         for is_hist_match in ["0"]:
+    #             for model_name in ["unet", "isensee"]:
+    #                 # patch_shape = "160-192-128"
+    # # ================3d==================================  
+      
+    # # ================2d==================================             
+    # model_dim = 2
+    # batch_size = 64
+    # for is_normalize in ["z"]:
+    #     for is_denoise in ["0"]:
+    #         for is_hist_match in ["0"]:
+    #             for model_name in ["unet", "seunet"]:
+    #                 patch_shape = "160-192-1"   
+    # # ================2d==================================             
+
+    # ================25d==================================             
+    model_dim = 2
+    batch_size = 64
     for is_normalize in ["z"]:
         for is_denoise in ["0"]:
             for is_hist_match in ["0"]:
-                for model_name in ["unet", "isensee"]:
-                    patch_shape = "160-192-128"
+                for model_name in ["unet", "seunet"]:
+                    patch_shape = "160-192-17"                          
+    # ================25d==================================                                             
                     loss = "minh"
                     print("="*60)
                     print(">> processing:", is_denoise,
@@ -111,7 +143,7 @@ def main():
                             is_hist_match=is_hist_match, is_test=is_test,
                             model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
                             patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
-                            loss=loss, model_dim=3)
+                            loss=loss, model_dim=model_dim)
                     print("="*60)
                     print(">> finished:", is_denoise,
                           is_normalize, is_hist_match, model_name)

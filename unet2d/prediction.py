@@ -5,11 +5,11 @@ import numpy as np
 import tables
 
 from unet3d.utils import pickle_load
-from unet3d.utils.patches import reconstruct_from_patches, get_patch_from_3d_data, compute_patch_indices
+from unet3d.utils.patches import reconstruct_from_patches2d, get_patch_from_3d_data, compute_patch_indices
 from unet3d.augment import permute_data, generate_permutation_keys, reverse_permute_data
+from unet3d.training import load_old_model
 
-
-def patch_wise_prediction(model, data, overlap=0, batch_size=1, permute=False):
+def patch_wise_prediction(model, data, overlap=0, batch_size=64, permute=False):
     """
     :param batch_size:
     :param model:
@@ -17,7 +17,8 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=1, permute=False):
     :param overlap:
     :return:
     """
-    patch_shape = model.input_shape[-3:]
+    patch_shape = model.input_shape[-2:]
+    patch_shape = (*patch_shape, 1)
     predictions = list()
     indices = compute_patch_indices(data.shape[-3:], patch_size=patch_shape,
                                     overlap=overlap, is_extract_patch_agressive=False,
@@ -36,7 +37,7 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=1, permute=False):
             predictions.append(predicted_patch)
     # output_shape = [int(model.output.shape[1])] + list(data.shape[-3:])
     output_shape = [model.output_shape[1]] + list(data.shape[-3:])
-    return reconstruct_from_patches(predictions, patch_indices=indices, data_shape=output_shape)
+    return reconstruct_from_patches2d(predictions, patch_indices=indices, data_shape=output_shape)
 
 
 def get_prediction_labels(prediction, threshold=0.5, labels=None):
@@ -133,7 +134,8 @@ def run_validation_case(data_index, output_dir, model, data_file, training_modal
     test_truth.to_filename(os.path.join(output_dir, "truth.nii.gz"))
 
     # patch_shape = tuple([int(dim) for dim in model.input.shape[-3:]])
-    patch_shape = model.input_shape[-3:]
+    patch_shape = model.input_shape[-2:]
+    patch_shape = (*patch_shape, 1)
     if patch_shape == test_data.shape[-3:]:
         prediction = predict(model, test_data, permute=permute)
     else:
@@ -159,6 +161,7 @@ def run_validation_cases(validation_keys_file, model_file, training_modalities, 
     # model = load_old_model(model_file)
     data_file = tables.open_file(hdf5_file, "r")
     for index in validation_indices:
+        print(">> processing", index)
         if 'subject_ids' in data_file.root:
             case_directory = os.path.join(
                 output_dir, data_file.root.subject_ids[index].decode('utf-8'))
@@ -179,7 +182,9 @@ def predict(model, data, permute=False):
                 model, data[batch_index]))
         return np.asarray(predictions)
     else:
-        return model.predict(data)
+        data = np.squeeze(data, axis=-1)
+        prediction = model.predict(data)
+        return prediction
 
 
 def predict_with_permutations(model, data):

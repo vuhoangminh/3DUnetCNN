@@ -6,11 +6,11 @@ import tables
 
 from unet3d.training import load_old_model
 from unet3d.utils import pickle_load
-from unet2d.utils.patches import reconstruct_from_patches, get_patch_from_3d_data, compute_patch_indices
+from unet3d.utils.patches import reconstruct_from_patches25d, get_patch_from_3d_data, compute_patch_indices
 from unet3d.augment import permute_data, generate_permutation_keys, reverse_permute_data
 
 
-def patch_wise_prediction(model, data, overlap=0, batch_size=1, permute=False):
+def patch_wise_prediction(model, data, overlap=0, batch_size=64, permute=False):
     """
     :param batch_size:
     :param model:
@@ -37,7 +37,7 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=1, permute=False):
             predictions.append(predicted_patch)
     # output_shape = [int(model.output.shape[1])] + list(data.shape[-3:])
     output_shape = [model.output_shape[1]] + list(data.shape[-3:])
-    return reconstruct_from_patches(predictions, patch_indices=indices, data_shape=output_shape)
+    return reconstruct_from_patches25d(predictions, patch_indices=indices, data_shape=output_shape)
 
 
 def get_prediction_labels(prediction, threshold=0.5, labels=None):

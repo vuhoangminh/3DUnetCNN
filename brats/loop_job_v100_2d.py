@@ -29,10 +29,11 @@ def run(model_filename, out_file, cmd):
 
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT, shell=True)
-    for line in proc.stdout:
-        line = line.decode("utf-8")
-        sys.stdout.write(line)
-        out_file.write(line)
+
+    # for line in proc.stdout:
+    #     line = line.decode("utf-8")
+    #     sys.stdout.write(line)
+    #     out_file.write(line)
 
     proc.wait()
     out_file.close()
