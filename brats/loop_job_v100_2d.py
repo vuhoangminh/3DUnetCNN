@@ -49,7 +49,7 @@ model_list = list()
 cmd_list = list()
 out_file_list = list()
 
-for model_name in ["unet", "seunet", "isensee"]:
+for model_name in ["unet", "isensee", "seunet"]:
     for is_denoise in config_dict["is_denoise"]:
         for is_normalize in config_dict["is_normalize"]:
             for is_hist_match in ["0", "1"]:

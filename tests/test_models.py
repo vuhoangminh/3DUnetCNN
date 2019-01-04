@@ -40,20 +40,20 @@ K.set_image_data_format('channels_first')
 input_shape = (4, 128, 128, 128)
 
 
-name = "unet3d"
-model = unet_model_3d(input_shape=(4, 160, 192, 128),
-                      n_labels=3,
-                      depth=4,
-                      n_base_filters=16,
-                      is_unet_original=True)
-model.summary()
-save_plot(model, get_path(name))
+# name = "unet3d"
+# model = unet_model_3d(input_shape=(4, 160, 192, 128),
+#                       n_labels=3,
+#                       depth=4,
+#                       n_base_filters=16,
+#                       is_unet_original=True)
+# model.summary()
+# save_plot(model, get_path(name))
 
-name = "isensee3d"
-model = isensee2017_model(input_shape=(4, 160, 192, 128),
-                          n_labels=3)
-model.summary()
-save_plot(model, get_path(name))
+# name = "isensee3d"
+# model = isensee2017_model(input_shape=(4, 160, 192, 128),
+#                           n_labels=3)
+# model.summary()
+# save_plot(model, get_path(name))
 
 
 # name = "seunet3d"
@@ -109,3 +109,14 @@ save_plot(model, get_path(name))
 #                       is_unet_original=False)
 # model.summary()
 # save_plot(model, get_path(name))
+
+
+from unet2d.model.capsnet2d import CapsNetR3, CapsNetBasic
+
+# model_list = CapsNetR3(input_shape=(160,192,4), n_class=3)
+model_list = CapsNetR3(input_shape=(512,512,4), n_class=3)
+# model_list = CapsNetR3(input_shape=(4,512,512), n_class=3)
+
+# model_list = CapsNetBasic(input_shape=(512,512,4), n_class=3) 
+
+model_list[0].summary()
