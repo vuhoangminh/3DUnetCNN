@@ -17,19 +17,45 @@ config.update(config_unet)
 # # pp.pprint(config)
 config.update(config_unet)
 
+
+def run(model_filename, out_file, cmd):
+
+    print("="*120)
+    print(">> processing:", cmd)
+    print("log to:", out_file)
+    print(cmd)
+
+    # out_file = open(out_file, 'w')
+
+    # proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+    #                         stderr=subprocess.STDOUT, shell=True)
+
+    # # for line in proc.stdout:
+    # #     line = line.decode("utf-8")
+    # #     sys.stdout.write(line)
+    # #     out_file.write(line)
+
+    # proc.wait()
+
+    os.system(cmd)
+
+    # out_file.close()
+
+
 task = "finetune"
 is_test = "0"
 
-for model_name in ["isensee", "unet"]:
+model_list = list()
+cmd_list = list()
+out_file_list = list()
+
+for model_name in ["unet", "isensee"]:
     for is_denoise in config_dict["is_denoise"]:
         for is_normalize in config_dict["is_normalize"]:
             for is_hist_match in ["0", "1"]:
                 patch_shape = "160-192-128"
                 # patch_shape = "128-128-128"
                 loss = "minh"
-                print("="*120)
-                print(">> processing:", is_denoise,
-                      is_normalize, is_hist_match, model_name)
 
                 log_folder = "log"
                 make_dir(log_folder)
@@ -52,7 +78,7 @@ for model_name in ["isensee", "unet"]:
                     is_crf="0",
                     is_test=is_test,
                     loss=loss,
-                    model_dim=3))
+                    model_dim=2))
 
                 out_file = "{}/{}{}{}_{}_out.log".format(
                     log_folder,
@@ -61,7 +87,7 @@ for model_name in ["isensee", "unet"]:
                     date_current,
                     model_filename)
 
-                cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 1".format(
+                cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 1 -dim 3".format(
                     task,
                     is_test,
                     is_normalize,
@@ -72,16 +98,27 @@ for model_name in ["isensee", "unet"]:
                     model_name
                 )
 
-                print(cmd)
+                model_list.append(model_filename)
+                out_file_list.append(out_file)
+                cmd_list.append(cmd)
 
-                out_file = open(out_file, 'w')
 
-                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT, shell=True)
-                for line in proc.stdout:
-                    line = line.decode("utf-8")
-                    sys.stdout.write(line)
-                    out_file.write(line)
+import random
+combined = list(zip(model_list, out_file_list, cmd_list))
+random.shuffle(combined)
 
-                proc.wait()
-                out_file.close()
+model_list[:], out_file_list[:], cmd_list = zip(*combined)
+
+for i in range(len(model_list)):
+    model_filename = model_list[i]
+    out_file = out_file_list[i]
+    cmd = cmd_list[i]
+
+    # print("*"*60)
+    # print(">> processing:")
+    # print(model_filename)
+    # print(out_file)
+    # print(cmd)
+    # print("*"*60)
+
+    run(model_filename, out_file, cmd)
