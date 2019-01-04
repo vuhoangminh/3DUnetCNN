@@ -3,7 +3,6 @@ from comet_ml import Experiment
 import os
 
 from unet3d.data import open_data_file
-from unet3d.generator import get_training_and_validation_and_testing_generators
 from unet3d.training import train_model
 from unet3d.utils.path_utils import get_project_dir
 from unet3d.utils.path_utils import get_shape_from_string
@@ -106,30 +105,82 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
     make_dir(config["training_file"])
 
     print_section("get training and testing generators")
-    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators(
-        data_file_opened,
-        batch_size=batch_size,
-        data_split=config["validation_split"],
-        overwrite=overwrite,
-        validation_keys_file=config["validation_file"],
-        training_keys_file=config["training_file"],
-        testing_keys_file=config["testing_file"],
-        n_labels=config["n_labels"],
-        labels=config["labels"],
-        patch_shape=config["patch_shape"],
-        validation_batch_size=batch_size,
-        validation_patch_overlap=config["validation_patch_overlap"],
-        training_patch_start_offset=config["training_patch_start_offset"],
-        is_create_patch_index_list_original=config["is_create_patch_index_list_original"],
-        augment_flipud=config["augment_flipud"],
-        augment_fliplr=config["augment_fliplr"],
-        augment_elastic=config["augment_elastic"],
-        augment_rotation=config["augment_rotation"],
-        augment_shift=config["augment_shift"],
-        augment_shear=config["augment_shear"],
-        augment_zoom=config["augment_zoom"],
-        n_augment=config["n_augment"],
-        skip_blank=config["skip_blank"])
+    if model_dim == 3:
+        from unet3d.generator import get_training_and_validation_and_testing_generators
+        train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators(
+            data_file_opened,
+            batch_size=batch_size,
+            data_split=config["validation_split"],
+            overwrite=overwrite,
+            validation_keys_file=config["validation_file"],
+            training_keys_file=config["training_file"],
+            testing_keys_file=config["testing_file"],
+            n_labels=config["n_labels"],
+            labels=config["labels"],
+            patch_shape=config["patch_shape"],
+            validation_batch_size=batch_size,
+            validation_patch_overlap=config["validation_patch_overlap"],
+            training_patch_start_offset=config["training_patch_start_offset"],
+            is_create_patch_index_list_original=config["is_create_patch_index_list_original"],
+            augment_flipud=config["augment_flipud"],
+            augment_fliplr=config["augment_fliplr"],
+            augment_elastic=config["augment_elastic"],
+            augment_rotation=config["augment_rotation"],
+            augment_shift=config["augment_shift"],
+            augment_shear=config["augment_shear"],
+            augment_zoom=config["augment_zoom"],
+            n_augment=config["n_augment"],
+            skip_blank=config["skip_blank"])
+    elif model_dim == 25:
+        from unet25d.generator import get_training_and_validation_and_testing_generators25d
+        train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators25d(
+            data_file_opened,
+            batch_size=batch_size,
+            data_split=config["validation_split"],
+            overwrite=overwrite,
+            validation_keys_file=config["validation_file"],
+            training_keys_file=config["training_file"],
+            testing_keys_file=config["testing_file"],
+            n_labels=config["n_labels"],
+            labels=config["labels"],
+            patch_shape=config["patch_shape"],
+            validation_batch_size=batch_size,
+            validation_patch_overlap=config["validation_patch_overlap"],
+            training_patch_start_offset=config["training_patch_start_offset"],
+            augment_flipud=config["augment_flipud"],
+            augment_fliplr=config["augment_fliplr"],
+            augment_elastic=config["augment_elastic"],
+            augment_rotation=config["augment_rotation"],
+            augment_shift=config["augment_shift"],
+            augment_shear=config["augment_shear"],
+            augment_zoom=config["augment_zoom"],
+            n_augment=config["n_augment"],
+            skip_blank=config["skip_blank"])
+    else:
+        from unet2d.generator import get_training_and_validation_and_testing_generators2d
+        train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators2d(
+            data_file_opened,
+            batch_size=batch_size,
+            data_split=config["validation_split"],
+            overwrite=overwrite,
+            validation_keys_file=config["validation_file"],
+            training_keys_file=config["training_file"],
+            testing_keys_file=config["testing_file"],
+            n_labels=config["n_labels"],
+            labels=config["labels"],
+            patch_shape=config["patch_shape"],
+            validation_batch_size=batch_size,
+            validation_patch_overlap=config["validation_patch_overlap"],
+            training_patch_start_offset=config["training_patch_start_offset"],
+            augment_flipud=config["augment_flipud"],
+            augment_fliplr=config["augment_fliplr"],
+            augment_elastic=config["augment_elastic"],
+            augment_rotation=config["augment_rotation"],
+            augment_shift=config["augment_shift"],
+            augment_shear=config["augment_shear"],
+            augment_zoom=config["augment_zoom"],
+            n_augment=config["n_augment"],
+            skip_blank=config["skip_blank"])
 
     print("-"*60)
     print("# Load or init model")
@@ -171,7 +222,7 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
         is_crf=is_crf,
         dir_read_write="finetune",
         is_finetune=True,
-        loss=loss, # will fix later
+        loss=loss,  # will fix later
         model_dim=model_dim)
 
     config["model_file"] = model_path
