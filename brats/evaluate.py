@@ -46,7 +46,7 @@ def evaluate(overwrite=True, crop=True, challenge="brats", year=2018,
              is_hist_match="0", is_test="1",
              depth_unet=4, n_base_filters_unet=16, model_name="unet",
              patch_shape="128-128-128", is_crf="0",
-             batch_size=1, loss="weighted"):
+             batch_size=1, loss="weighted", model_dim=3):
     header = ("WholeTumor", "TumorCore", "EnhancingTumor")
     masking_functions = (get_whole_tumor_mask,
                          get_tumor_core_mask, get_enhancing_tumor_mask)
@@ -57,7 +57,7 @@ def evaluate(overwrite=True, crop=True, challenge="brats", year=2018,
         is_normalize=is_normalize, is_denoise=is_denoise,
         is_hist_match=is_hist_match, is_test=is_test,
         model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=3,
+        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=model_dim,
         dir_read_write="finetune", is_finetune=True)
 
     config["data_file"] = data_path
@@ -70,47 +70,50 @@ def evaluate(overwrite=True, crop=True, challenge="brats", year=2018,
         [config["nb_channels"]] + list(config["patch_shape"]))
     config["prediction_folder"] = os.path.join(
         BRATS_DIR, "database/prediction", get_filename_without_extension(config["model_file"]))
-    make_dir(config["prediction_folder"])
 
-    prediction_df_csv_folder = os.path.join(
-        BRATS_DIR, "database/prediction/csv/")
-    make_dir(prediction_df_csv_folder)
+    if not os.path.exists(config["prediction_folder"]):
+        print("model not exists. Please check")
+        return None, None
+    else:
+        prediction_df_csv_folder = os.path.join(
+            BRATS_DIR, "database/prediction/csv/")
+        make_dir(prediction_df_csv_folder)
 
-    config["prediction_df_csv"] = prediction_df_csv_folder + \
-        get_filename_without_extension(config["model_file"]) + ".csv"
+        config["prediction_df_csv"] = prediction_df_csv_folder + \
+            get_filename_without_extension(config["model_file"]) + ".csv"
 
-    print("-"*60)
-    print("SUMMARY")
-    print("-"*60)
-    print("model file:", config["model_file"])
-    print("prediction folder:", config["prediction_folder"])
-    print("csv file:", config["prediction_df_csv"])
-    print("-"*60)
+        print("-"*60)
+        print("SUMMARY")
+        print("-"*60)
+        print("model file:", config["model_file"])
+        print("prediction folder:", config["prediction_folder"])
+        print("csv file:", config["prediction_df_csv"])
+        print("-"*60)
 
-    rows = list()
-    subject_ids = list()
-    for case_folder in glob.glob(os.path.join(config["prediction_folder"], "*")):
-        if not os.path.isdir(case_folder):
-            continue
-        subject_ids.append(os.path.basename(case_folder))
-        truth_file = os.path.join(case_folder, "truth.nii.gz")
-        truth_image = nib.load(truth_file)
-        truth = truth_image.get_data()
-        prediction_file = os.path.join(case_folder, "prediction.nii.gz")
-        prediction_image = nib.load(prediction_file)
-        prediction = prediction_image.get_data()
-        rows.append([dice_coefficient(func(truth), func(prediction))
-                     for func in masking_functions])
+        rows = list()
+        subject_ids = list()
+        for case_folder in glob.glob(os.path.join(config["prediction_folder"], "*")):
+            if not os.path.isdir(case_folder):
+                continue
+            subject_ids.append(os.path.basename(case_folder))
+            truth_file = os.path.join(case_folder, "truth.nii.gz")
+            truth_image = nib.load(truth_file)
+            truth = truth_image.get_data()
+            prediction_file = os.path.join(case_folder, "prediction.nii.gz")
+            prediction_image = nib.load(prediction_file)
+            prediction = prediction_image.get_data()
+            rows.append([dice_coefficient(func(truth), func(prediction))
+                         for func in masking_functions])
 
-    df = pd.DataFrame.from_records(rows, columns=header, index=subject_ids)
-    df.to_csv(config["prediction_df_csv"])
+        df = pd.DataFrame.from_records(rows, columns=header, index=subject_ids)
+        df.to_csv(config["prediction_df_csv"])
 
-    scores = dict()
-    for index, score in enumerate(df.columns):
-        values = df.values.T[index]
-        scores[score] = values[np.isnan(values) == False]
+        scores = dict()
+        for index, score in enumerate(df.columns):
+            values = df.values.T[index]
+            scores[score] = values[np.isnan(values) == False]
 
-    return scores, model_path
+        return scores, model_path
     # plot_prediction(df)
 
 
@@ -161,51 +164,50 @@ def main():
     model_scores = list()
     model_ids = list()
 
-    # for is_normalize in config_dict["is_normalize"]:
-    #     for is_denoise in config_dict["is_denoise"]:
-    #         for is_hist_match in ["0", "1"]:
-    #             for model_name in ["unet", "isensee"]:
-    for is_normalize in ["z"]:
-        for is_denoise in ["0"]:
-            for is_hist_match in ["0"]:
-                for model_name in ["unet", "isensee"]:
-                    patch_shape="160-192-128"
-                    loss="minh"
-                    print("="*60)
-                    print(">> processing:", is_denoise,
-                          is_normalize, is_hist_match, model_name)
-                    is_test="0"
-                    print("="*60)
-                    print(">> processing:", is_denoise,
-                          is_normalize, is_hist_match, model_name)
-                    is_test = "0"
-                    model_score, model_path = evaluate(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-                                                       image_shape=image_shape, is_bias_correction=is_bias_correction,
-                                                       is_normalize=is_normalize, is_denoise=is_denoise,
-                                                       is_hist_match=is_hist_match, is_test=is_test,
-                                                       model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-                                                       patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
-                                                       loss=loss)
-                    print("="*60)
-                    print(">> finished:", is_denoise,
-                          is_normalize, is_hist_match, model_name)
-                    print("="*60)
+    for patch_shape in ["128-128-128", "160-192-128", "160-192-1", "160-192-7"]:
+        for model_dim in [2, 3, 25]:
+            for is_normalize in config_dict["is_normalize"]:
+                for is_denoise in config_dict["is_denoise"]:
+                    for is_hist_match in ["0", "1"]:
+                        for model_name in ["unet", "isensee", "seunet"]:
+                            for loss in ["weighted", "minh"]:
+                                print("="*60)
+                                print(">> processing:", is_denoise,
+                                    is_normalize, is_hist_match, model_name)
+                                is_test = "0"
+                                print("="*60)
+                                print(">> processing:", is_denoise,
+                                    is_normalize, is_hist_match, model_name)
+                                is_test = "0"
+                                model_score, model_path = evaluate(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+                                                                image_shape=image_shape, is_bias_correction=is_bias_correction,
+                                                                is_normalize=is_normalize, is_denoise=is_denoise,
+                                                                is_hist_match=is_hist_match, is_test=is_test,
+                                                                model_name=model_name, depth_unet=depth_unet, 
+                                                                n_base_filters_unet=n_base_filters_unet,
+                                                                patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
+                                                                loss=loss, model_dim=model_dim)
+                                if model_score is not None:
+                                    print("="*60)
+                                    print(">> finished:", is_denoise,
+                                        is_normalize, is_hist_match, model_name)
+                                    print("="*60)
 
-                    model_ids.append(
-                        get_filename_without_extension(model_path))
+                                    model_ids.append(
+                                        get_filename_without_extension(model_path))
 
-                    score = [np.mean(model_score["WholeTumor"]),
-                             np.mean(model_score["TumorCore"]),
-                             np.mean(model_score["EnhancingTumor"]),
-                             (np.mean(model_score["WholeTumor"])+np.mean(model_score["TumorCore"])+np.mean(model_score["EnhancingTumor"]))/3]
-                    model_scores.append(score)
+                                    score = [np.mean(model_score["WholeTumor"]),
+                                            np.mean(model_score["TumorCore"]),
+                                            np.mean(
+                                                model_score["EnhancingTumor"]),
+                                            (np.mean(model_score["WholeTumor"])+np.mean(model_score["TumorCore"])+np.mean(model_score["EnhancingTumor"]))/3]
+                                    model_scores.append(score)
 
     header = ("WholeTumor", "TumorCore", "EnhancingTumor", "All")
     final_df = pd.DataFrame.from_records(
         model_scores, columns=header, index=model_ids)
 
     print(final_df)
-
 
     prediction_df_csv_folder = os.path.join(
         BRATS_DIR, "database/prediction/csv/")
@@ -214,6 +216,7 @@ def main():
     to_file = prediction_df_csv_folder + "compile.csv"
 
     final_df.to_csv(to_file)
+
 
 if __name__ == "__main__":
     main()

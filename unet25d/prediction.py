@@ -18,11 +18,16 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=64, permute=False):
     :param overlap:
     :return:
     """
+    patch_overlap = [0, 0, 6]
+    patch_overlap = np.asarray(patch_overlap)
+
     patch_shape = model.input_shape[-3:]
     predictions = list()
     indices = compute_patch_indices(data.shape[-3:], patch_size=patch_shape,
-                                    overlap=overlap, is_extract_patch_agressive=False,
+                                    overlap=patch_overlap, is_extract_patch_agressive=False,
                                     is_predict=True)
+
+    indices = np.delete(indices, range(128,len(indices)), axis=0)                                    
     batch = list()
     i = 0
     while i < len(indices):
@@ -37,6 +42,10 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=64, permute=False):
             predictions.append(predicted_patch)
     # output_shape = [int(model.output.shape[1])] + list(data.shape[-3:])
     output_shape = [model.output_shape[1]] + list(data.shape[-3:])
+
+    for i in range(indices.shape[0]):
+        indices[i,2] = indices[i,2] + 3
+
     return reconstruct_from_patches25d(predictions, patch_indices=indices, data_shape=output_shape)
 
 
@@ -160,6 +169,7 @@ def run_validation_cases(validation_keys_file, model_file, training_modalities, 
     # model = load_old_model(model_file)
     data_file = tables.open_file(hdf5_file, "r")
     for index in validation_indices:
+        print(">> processing", index)
         if 'subject_ids' in data_file.root:
             case_directory = os.path.join(
                 output_dir, data_file.root.subject_ids[index].decode('utf-8'))

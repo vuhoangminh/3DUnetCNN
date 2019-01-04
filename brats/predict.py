@@ -34,49 +34,52 @@ def predict(overwrite=True, crop=True, challenge="brats", year=2018,
         patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=model_dim,
         dir_read_write="finetune", is_finetune=True)
 
-    config["data_file"] = data_path
-    config["model_file"] = model_path
-    config["training_file"] = trainids_path
-    config["validation_file"] = validids_path
-    config["testing_file"] = testids_path
-    config["patch_shape"] = get_shape_from_string(patch_shape)
-    config["input_shape"] = tuple(
-        [config["nb_channels"]] + list(config["patch_shape"]))
-    config["prediction_folder"] = os.path.join(
-        BRATS_DIR, "database/prediction", get_filename_without_extension(config["model_file"]))
-    make_dir(config["prediction_folder"])
-
-    print("-"*60)
-    print("SUMMARY")
-    print("-"*60)
-    print("data file:", config["data_file"])
-    print("model file:", config["model_file"])
-    print("training file:", config["training_file"])
-    print("validation file:", config["validation_file"])
-    print("testing file:", config["testing_file"])
-    print("prediction folder:", config["prediction_folder"])
-    print("-"*60)
-
-    if not os.path.exists(config["model_file"]):
-        raise ValueError(
-            "can not find model {}. Please check".format(config["model_file"]))
-
-    if model_dim == 3:
-        from unet3d.prediction import run_validation_cases
-    elif model_dim == 25:
-        from unet25d.prediction import run_validation_cases
-    elif model_dim == 2:
-        from unet2d.prediction import run_validation_cases
+    if not os.path.exists(model_path):
+        print("model not exists. Please check")
     else:
-        raise ValueError("dim {} NotImplemented error. Please check".format(model_dim))
+        config["data_file"] = data_path
+        config["model_file"] = model_path
+        config["training_file"] = trainids_path
+        config["validation_file"] = validids_path
+        config["testing_file"] = testids_path
+        config["patch_shape"] = get_shape_from_string(patch_shape)
+        config["input_shape"] = tuple(
+            [config["nb_channels"]] + list(config["patch_shape"]))
+        config["prediction_folder"] = os.path.join(
+            BRATS_DIR, "database/prediction", get_filename_without_extension(config["model_file"]))
+        make_dir(config["prediction_folder"])
 
-    run_validation_cases(validation_keys_file=config["testing_file"],
-                         model_file=config["model_file"],
-                         training_modalities=config["training_modalities"],
-                         labels=config["labels"],
-                         hdf5_file=config["data_file"],
-                         output_label_map=True,
-                         output_dir=config["prediction_folder"])
+        print("-"*60)
+        print("SUMMARY")
+        print("-"*60)
+        print("data file:", config["data_file"])
+        print("model file:", config["model_file"])
+        print("training file:", config["training_file"])
+        print("validation file:", config["validation_file"])
+        print("testing file:", config["testing_file"])
+        print("prediction folder:", config["prediction_folder"])
+        print("-"*60)
+
+        if not os.path.exists(config["model_file"]):
+            raise ValueError(
+                "can not find model {}. Please check".format(config["model_file"]))
+
+        if model_dim == 3:
+            from unet3d.prediction import run_validation_cases
+        elif model_dim == 25:
+            from unet25d.prediction import run_validation_cases
+        elif model_dim == 2:
+            from unet2d.prediction import run_validation_cases
+        else:
+            raise ValueError("dim {} NotImplemented error. Please check".format(model_dim))
+
+        run_validation_cases(validation_keys_file=config["testing_file"],
+                            model_file=config["model_file"],
+                            training_modalities=config["training_modalities"],
+                            labels=config["labels"],
+                            hdf5_file=config["data_file"],
+                            output_label_map=True,
+                            output_dir=config["prediction_folder"])
 
 
 def main():
@@ -123,15 +126,30 @@ def main():
     #                 patch_shape = "160-192-1"   
     # # ================2d==================================             
 
-    # ================25d==================================             
-    model_dim = 2
-    batch_size = 64
-    for is_normalize in ["z"]:
-        for is_denoise in ["0"]:
-            for is_hist_match in ["0"]:
-                for model_name in ["unet", "seunet"]:
-                    patch_shape = "160-192-17"                          
-    # ================25d==================================                                             
+    # # ================25d==================================             
+    # model_dim = 25
+    # batch_size = 64
+    # for is_normalize in ["z"]:
+    #     for is_denoise in ["0"]:
+    #         for is_hist_match in ["0"]:
+    #             for model_name in ["unet", "seunet"]:
+    #                 patch_shape = "160-192-7"                          
+    # # ================25d==================================                                             
+                    
+
+    # ================3d==================================
+    for is_normalize in config_dict["is_normalize"]:
+        for is_denoise in config_dict["is_denoise"]:
+            for is_hist_match in ["0", "1"]:
+                for model_name in ["isensee", "unet", "seunet"]:
+    # for is_normalize in ["01", "z"]:
+    #     for is_denoise in ["0"]:
+    #         for is_hist_match in ["0", "1"]:
+    #             for model_name in ["isensee"]:
+                    patch_shape = "160-192-128"
+                    model_dim = 3
+    # ================3d==================================  
+
                     loss = "minh"
                     print("="*60)
                     print(">> processing:", is_denoise,

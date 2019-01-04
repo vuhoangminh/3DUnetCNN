@@ -188,7 +188,7 @@ def train25d():
     parser.add_argument('-hi', '--is_hist_match', type=str,
                         default="0")
     parser.add_argument('-m', '--model', type=str,
-                        default="unet", choices=config_dict["model"])
+                        default="unet")
     parser.add_argument('-du', '--depth_unet', type=int,
                         default=4, choices=config_dict["depth_unet"])
     parser.add_argument('-nb', '--n_base_filters_unet', type=int,

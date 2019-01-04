@@ -9,6 +9,7 @@ from unet2d.model.isensee2d import create_localization_module
 from unet2d.model.isensee2d import create_context_module
 from unet2d.model.isensee2d import create_up_sampling_module
 
+
 from unet25d.model.unet25d import create_transition_3d_to_2d
 from unet3d.metrics import minh_dice_coef_metric
 
@@ -18,9 +19,10 @@ create_convolution_block2d = partial(
     create_convolution_block2d, activation=LeakyReLU, instance_normalization=True)
 
 
-def isensee25d_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
+def isensee25d_model(input_shape=(4, 128, 128, 7), n_base_filters=16, depth=5, dropout_rate=0.3,
                      n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
-                     loss_function="weighted", activation_name="sigmoid", metrics=minh_dice_coef_metric):
+                     loss_function="weighted", activation_name="sigmoid", metrics=minh_dice_coef_metric,
+                     is_unet_original=True):
     """
     This function builds a model proposed by Isensee et al. for the BRATS 2017 challenge:
     https://www.cbica.upenn.edu/sbia/Spyridon.Bakas/MICCAI_BraTS/MICCAI_BraTS_2017_proceedings_shortPapers.pdf
@@ -45,7 +47,7 @@ def isensee25d_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5,
 
     first_layer = create_transition_3d_to_2d(input_layer=inputs,
                                              n_filters=n_base_filters,
-                                             is_unet_original=False,
+                                             is_unet_original=is_unet_original,
                                              instance_normalization=False)
 
     current_layer = first_layer
@@ -58,10 +60,10 @@ def isensee25d_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5,
 
         if current_layer is first_layer:
             in_conv = create_convolution_block2d(
-                current_layer, n_level_filters)
+                current_layer, n_level_filters, is_unet_original=is_unet_original)
         else:
             in_conv = create_convolution_block2d(
-                current_layer, n_level_filters, strides=(2, 2))
+                current_layer, n_level_filters, strides=(2, 2), is_unet_original=is_unet_original)
 
         context_output_layer = create_context_module(
             in_conv, n_level_filters, dropout_rate=dropout_rate)

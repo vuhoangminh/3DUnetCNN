@@ -8,6 +8,7 @@ import numpy as np
 from unet3d.data import write_data_to_file, open_data_file
 from unet25d.generator import get_training_and_validation_and_testing_generators25d
 from unet25d.model import unet_model_25d
+from unet25d.model import isensee25d_model
 from unet3d.training import load_old_model, train_model
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
@@ -114,7 +115,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                    n_base_filters=n_base_filters_unet,
                                    loss_function=loss,
                                    is_unet_original=False)
-        else:
+        elif model_name == "unet":
             print("init unet model")
             model = unet_model_25d(input_shape=config["input_shape"],
                                    n_labels=config["n_labels"],
@@ -124,6 +125,21 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                    depth=depth_unet,
                                    n_base_filters=n_base_filters_unet,
                                    loss_function=loss)
+        elif model_name == "isensee":
+            print("init isensee model")
+            model = isensee25d_model(input_shape=config["input_shape"],
+                                     n_labels=config["n_labels"],
+                                     initial_learning_rate=config["initial_learning_rate"],
+                                     loss_function=loss)
+        elif model_name == "seisensee":
+            print("init seisensee model")
+            model = isensee25d_model(input_shape=config["input_shape"],
+                                     n_labels=config["n_labels"],
+                                     initial_learning_rate=config["initial_learning_rate"],
+                                     loss_function=loss,
+                                     is_unet_original=False)
+
+
 
     model.summary()
 
