@@ -17,6 +17,7 @@ import tensorlayer as tl
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
 
+from unet3d.utils.threadsafe import threadsafe_generator
 # from unet3d.generator import get_training_and_validation_and_testing_generators
 
 
@@ -143,7 +144,7 @@ def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
         patch_index.extend(itertools.product([index], patches))
     return patch_index
 
-
+@threadsafe_generator
 def data_generator25d(data_file, index_list, batch_size=1, n_labels=1, labels=None, patch_shape=None,
                       patch_overlap=0, patch_start_offset=None, shuffle_index_list=True,
                       skip_blank=True,
