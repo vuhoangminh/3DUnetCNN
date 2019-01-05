@@ -7,7 +7,7 @@ import unet3d.utils.print_utils as print_utils
 
 # from .normalize import normalize_data_storage, normalize_01_data_storage
 # from .normalize_minh import normalize_minh_data_storage, reslice_image_set
-from unet3d.normalize_new import normalize_data_storage, reslice_image_set
+from unet3d.normalize import normalize_data_storage, reslice_image_set
 from unet3d.denoise import denoise_data_storage
 
 

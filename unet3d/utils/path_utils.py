@@ -206,7 +206,7 @@ def get_model_baseline_path(folder,
                                                           is_crf=is_crf,
                                                           loss=loss,
                                                           model_dim=model_dim)
-    print(folder, short_model_name, short_core_name)                                                          
+    print(folder, short_model_name, short_core_name)
     model_baseline_path = None
     for filename in glob.glob(folder+"/*"):
         # print(filename)
@@ -404,3 +404,10 @@ def get_training_h5_paths_old(brats_dir, overwrite=True, crop=True, challenge="b
     model_path = os.path.join(model_dir, dir_read_write, model_filename)
 
     return data_path, trainids_path, validids_path, testids_path, model_path
+
+
+def get_workspace_path(is_desktop=True):
+    if is_desktop:
+        return "/home/minhvu/Desktop/temp/"  
+    else:
+        return "C:/Users/minhm/Desktop/temp/"

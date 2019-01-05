@@ -5,7 +5,11 @@ from unet3d.model import unet_model_3d
 from unet3d.model import dense_unet_3d
 from unet3d.model import res_unet_3d
 
+from unet2d.model import densefcn_model_2d
 from unet2d.model import unet_model_2d
+from unet2d.model.capsnet2d import CapsNetR3, CapsNetBasic
+
+
 from unet25d.model import unet_model_25d
 
 from keras.utils import plot_model
@@ -111,12 +115,23 @@ input_shape = (4, 128, 128, 128)
 # save_plot(model, get_path(name))
 
 
-from unet2d.model.capsnet2d import CapsNetR3, CapsNetBasic
+# train_model, eval_model, manipulate_model = CapsNetR3(input_shape=(512,512,4), n_class=3)
+# name = "train_model_caps"
+# save_plot(train_model, get_path(name))
 
-# model_list = CapsNetR3(input_shape=(160,192,4), n_class=3)
-model_list = CapsNetR3(input_shape=(512,512,4), n_class=3)
-# model_list = CapsNetR3(input_shape=(4,512,512), n_class=3)
+# name = "eval_model_caps"
+# save_plot(eval_model, get_path(name))
 
-# model_list = CapsNetBasic(input_shape=(512,512,4), n_class=3) 
+# name = "manipulate_model_caps"
+# save_plot(manipulate_model, get_path(name))
 
-model_list[0].summary()
+
+name = "densenetfcn2d"
+model = densefcn_model_2d(input_shape=(4, 160, 192),
+                          classes=3,
+                          nb_dense_block=4,
+                          nb_layers_per_block=4,
+                          early_transition=True,
+                          dropout_rate=0.4)
+model.summary()                          
+save_plot(model, get_path(name))

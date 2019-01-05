@@ -10,7 +10,7 @@ from skimage import exposure
 from .utils import crop_img, crop_img_to, read_image
 
 from unet3d.utils.utils import resize, read_image_files
-from unet3d.utils.path_utils import get_filename, get_template_path, get_mask_path_from_set_of_files
+from unet3d.utils.path_utils import get_template_path
 
 from unet3d.utils.volume import get_background_mask
 from brats.config import config
@@ -90,6 +90,10 @@ def normalize_01(data):
     x_max = np.max(data)
     data_norm = (data - x_min)/(x_max-x_min)
     return data_norm
+
+
+def perform_clahe(data, clip_limit=0.001):
+    return exposure.equalize_adapthist(data, clip_limit=clip_limit)
 
 
 def hist_match(source, template):
