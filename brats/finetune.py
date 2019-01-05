@@ -241,8 +241,8 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
         else:
             experiment = None
 
-        if model_dim==2 and model_name=="isensee":
-            config["initial_learning_rate"]=1e-7
+        # if model_dim==2 and model_name=="isensee":
+        #     config["initial_learning_rate"]=1e-7
             
         print(config["initial_learning_rate"], config["learning_rate_drop"])
         train_model(experiment=experiment,
