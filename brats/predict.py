@@ -94,13 +94,13 @@ def predict(overwrite=True, crop=True, challenge="brats", year=2018,
                 raise ValueError(
                     "dim {} NotImplemented error. Please check".format(model_dim))
 
-            # run_validation_cases(validation_keys_file=config["testing_file"],
-            #                      model_file=config["model_file"],
-            #                      training_modalities=config["training_modalities"],
-            #                      labels=config["labels"],
-            #                      hdf5_file=config["data_file"],
-            #                      output_label_map=True,
-            #                      output_dir=config["prediction_folder"])
+            run_validation_cases(validation_keys_file=config["testing_file"],
+                                 model_file=config["model_file"],
+                                 training_modalities=config["training_modalities"],
+                                 labels=config["labels"],
+                                 hdf5_file=config["data_file"],
+                                 output_label_map=True,
+                                 output_dir=config["prediction_folder"])
 
 
 def main():

@@ -13,8 +13,10 @@ import os
 import glob
 import pandas as pd
 import matplotlib
-matplotlib.use('agg')
+from medpy.metric.binary import hd, sensitivity, specificity, dc
 
+matplotlib.use('agg')
+voxelspacings = [(0.9375, 1.5, 0.9375), (1, 1.5, 1), (0.8371, 1.5, 0.8371)]
 
 config.update(config_unet)
 
@@ -40,6 +42,30 @@ def dice_coefficient(truth, prediction):
     return 2 * np.sum(truth * prediction)/(np.sum(truth) + np.sum(prediction))
 
 
+def get_score(truth, prediction, masking_functions):
+    score = list()
+    dice_score = [dc(func(truth), func(prediction))
+                  for func in masking_functions]
+    # hd_score = [hd(func(truth), func(prediction))
+    #             for func in masking_functions]
+    sensitivity_score = [sensitivity(func(truth), func(prediction))
+                         for func in masking_functions]
+    specificity_score = [specificity(func(truth), func(prediction))
+                         for func in masking_functions]
+    score.extend(dice_score)
+    # score.extend(sensitivity_score)
+    # score.extend(specificity_score)
+    return score
+    # extend(hd_score)
+
+
+def get_model_info_header(challenge, year, image_shape, is_bias_correction,
+                          is_denoise, is_normalize, is_hist_match,
+                          model_name, model_dim, patch_shape, loss):
+    return [challenge, str(year), image_shape, is_bias_correction, is_denoise,
+            is_normalize, is_hist_match, model_name, str(model_dim), loss, patch_shape]
+
+
 def evaluate(overwrite=True, crop=True, challenge="brats", year=2018,
              image_shape="160-192-128", is_bias_correction="1",
              is_normalize="z", is_denoise="0",
@@ -47,9 +73,12 @@ def evaluate(overwrite=True, crop=True, challenge="brats", year=2018,
              depth_unet=4, n_base_filters_unet=16, model_name="unet",
              patch_shape="128-128-128", is_crf="0",
              batch_size=1, loss="weighted", model_dim=3):
-    header = ("WholeTumor", "TumorCore", "EnhancingTumor")
+
+    header = ("dice_WholeTumor", "dice_TumorCore", "dice_EnhancingTumor")
+
     masking_functions = (get_whole_tumor_mask,
-                         get_tumor_core_mask, get_enhancing_tumor_mask)
+                         get_tumor_core_mask,
+                         get_enhancing_tumor_mask)
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -102,8 +131,8 @@ def evaluate(overwrite=True, crop=True, challenge="brats", year=2018,
             prediction_file = os.path.join(case_folder, "prediction.nii.gz")
             prediction_image = nib.load(prediction_file)
             prediction = prediction_image.get_data()
-            rows.append([dice_coefficient(func(truth), func(prediction))
-                         for func in masking_functions])
+            score_case = get_score(truth, prediction, masking_functions)
+            rows.append(score_case)
 
         df = pd.DataFrame.from_records(rows, columns=header, index=subject_ids)
         df.to_csv(config["prediction_df_csv"])
@@ -160,50 +189,66 @@ def main():
     is_hist_match = args.is_hist_match
     loss = args.loss
 
-    header = ("WholeTumor", "TumorCore", "EnhancingTumor")
+    header = ("dice_WholeTumor", "dice_TumorCore", "dice_EnhancingTumor")
     model_scores = list()
     model_ids = list()
 
-    for patch_shape in ["128-128-128", "160-192-128", "160-192-1", "160-192-7"]:
-        for model_dim in [2, 3, 25]:
-            for is_normalize in config_dict["is_normalize"]:
-                for is_denoise in config_dict["is_denoise"]:
-                    for is_hist_match in ["0", "1"]:
-                        for model_name in ["unet", "isensee", "seunet"]:
-                            for loss in ["weighted", "minh"]:
-                                print("="*60)
-                                print(">> processing:", is_denoise,
-                                    is_normalize, is_hist_match, model_name)
+    for is_normalize in config_dict["is_normalize"]:
+        for is_denoise in config_dict["is_denoise"]:
+            for is_hist_match in config_dict["hist_match"]:
+                for model_name in config_dict["model"]:
+                    for patch_shape in config_dict["patch_shape"]:
+                        for model_dim in [2, 3, 25]:
+                            for loss in config_dict["loss"]:
+                                print("="*120)
+                                print(
+                                    ">> processing model-{}{}, patch_shape-{}, is_denoise-{}, is_normalize-{}, is_hist_match-{}, loss-{}".format(
+                                        model_name,
+                                        model_dim,
+                                        patch_shape,
+                                        is_denoise,
+                                        is_normalize,
+                                        is_hist_match,
+                                        loss))
                                 is_test = "0"
-                                print("="*60)
+                                print("="*120)
                                 print(">> processing:", is_denoise,
-                                    is_normalize, is_hist_match, model_name)
+                                      is_normalize, is_hist_match, model_name)
                                 is_test = "0"
                                 model_score, model_path = evaluate(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-                                                                image_shape=image_shape, is_bias_correction=is_bias_correction,
-                                                                is_normalize=is_normalize, is_denoise=is_denoise,
-                                                                is_hist_match=is_hist_match, is_test=is_test,
-                                                                model_name=model_name, depth_unet=depth_unet, 
-                                                                n_base_filters_unet=n_base_filters_unet,
-                                                                patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
-                                                                loss=loss, model_dim=model_dim)
+                                                                   image_shape=image_shape, is_bias_correction=is_bias_correction,
+                                                                   is_normalize=is_normalize, is_denoise=is_denoise,
+                                                                   is_hist_match=is_hist_match, is_test=is_test,
+                                                                   model_name=model_name, depth_unet=depth_unet,
+                                                                   n_base_filters_unet=n_base_filters_unet,
+                                                                   patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
+                                                                   loss=loss, model_dim=model_dim)
                                 if model_score is not None:
-                                    print("="*60)
-                                    print(">> finished:", is_denoise,
-                                        is_normalize, is_hist_match, model_name)
-                                    print("="*60)
+                                    print("="*120)
+                                    print(">> finished:")
 
                                     model_ids.append(
                                         get_filename_without_extension(model_path))
 
-                                    score = [np.mean(model_score["WholeTumor"]),
-                                            np.mean(model_score["TumorCore"]),
-                                            np.mean(
-                                                model_score["EnhancingTumor"]),
-                                            (np.mean(model_score["WholeTumor"])+np.mean(model_score["TumorCore"])+np.mean(model_score["EnhancingTumor"]))/3]
-                                    model_scores.append(score)
+                                    row = get_model_info_header(challenge, year, image_shape, is_bias_correction,
+                                                                is_denoise, is_normalize, is_hist_match,
+                                                                model_name, model_dim, patch_shape, loss)
+                                    score = [np.mean(model_score["dice_WholeTumor"]),
+                                             np.mean(
+                                                 model_score["dice_TumorCore"]),
+                                             np.mean(
+                                                 model_score["dice_EnhancingTumor"]),
+                                             (np.mean(model_score["dice_WholeTumor"])+np.mean(model_score["dice_TumorCore"])+np.mean(model_score["dice_EnhancingTumor"]))/3]
 
-    header = ("WholeTumor", "TumorCore", "EnhancingTumor", "All")
+                                    row.extend(score)
+                                    model_scores.append(row)
+
+    header = ("challenge", "year", "image_shape", "is_bias_correction",
+              "is_denoise", "is_normalize", "is_hist_match",
+              "model_name", "model_dim", "loss", "patch_shape", 
+              "dice_WholeTumor", "dice_TumorCore",
+              "dice_EnhancingTumor", "dice_Mean")
+              
     final_df = pd.DataFrame.from_records(
         model_scores, columns=header, index=model_ids)
 
