@@ -17,6 +17,7 @@ from keras.layers import GlobalAveragePooling2D
 from keras.layers import Input
 from keras.layers import concatenate
 from keras.layers import BatchNormalization
+from keras_contrib.layers.normalization import InstanceNormalization
 from keras.regularizers import l2
 from keras.engine.topology import get_source_inputs
 import keras.backend as K
@@ -200,8 +201,9 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
     with K.name_scope('ConvBlock'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        # x = BatchNormalization(
+        #     axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_in'))(ip)
         x = Activation('relu')(x)
 
         if bottleneck:
@@ -209,8 +211,9 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
 
             x = Conv2D(inter_channel, (1, 1), kernel_initializer='he_normal', padding='same', use_bias=False,
                        kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv2D'))(x)
-            x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5,
-                                   name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
+            x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_in'))(x)
+            # x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5,
+            #                        name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
             x = Activation('relu')(x)
 
         x = Conv2D(nb_filter, (3, 3), kernel_initializer='he_normal', padding='same', use_bias=False,
@@ -250,8 +253,9 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
     with K.name_scope('ConvBlock'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        # x = BatchNormalization(
+        #     axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_in'))(ip)
         x = Activation('relu')(x)
 
         if bottleneck:
@@ -259,8 +263,9 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
 
             x = Conv2D(inter_channel, (1, 1), kernel_initializer='he_normal', padding='same', use_bias=False,
                        kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv2D'))(x)
-            x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5,
-                                   name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
+            # x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5,
+            #                        name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
+            x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_bottleneck_in'))(x)
             x = Activation('relu')(x)
 
         x = Conv2D(nb_filter, (3, 3), kernel_initializer='he_normal', padding='same', use_bias=False,
@@ -349,8 +354,9 @@ def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_
     with K.name_scope('Transition'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        # x = BatchNormalization(
+        #     axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_in'))(ip)
         x = Activation('relu')(x)
         x = Conv2D(int(nb_filter * compression), (1, 1), kernel_initializer='he_normal', padding='same',
                    use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv2D'))(x)
@@ -506,8 +512,9 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
                    strides=initial_strides, use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
 
         if subsample_initial_block:
-            x = BatchNormalization(
-                axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+            # x = BatchNormalization(
+            #     axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+            x = InstanceNormalization(axis=1, name="initial_in")(x)
             x = Activation('relu')(x)
             x = MaxPooling2D((3, 3), strides=(2, 2), padding='same')(x)
 
@@ -526,8 +533,9 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
                                      dropout_rate=dropout_rate, weight_decay=weight_decay,
                                      block_prefix='dense_%i' % (nb_dense_block - 1))
 
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name='final_bn')(x)
+        # x = BatchNormalization(
+        #     axis=concat_axis, epsilon=1.1e-5, name='final_bn')(x)
+        x = InstanceNormalization(axis=1, name="final_in")(x)
         x = Activation('relu')(x)
 
         if include_top:
@@ -624,8 +632,9 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         # Initial convolution
         x = Conv2D(init_conv_filters, initial_kernel_size, kernel_initializer='he_normal', padding='same', name='initial_conv2D',
                    use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
-        x = BatchNormalization(
-            axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+        # x = BatchNormalization(
+        #     axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+        x = InstanceNormalization(axis=1, name='initial_in')(x)
         x = Activation('relu')(x)
 
         nb_filter = init_conv_filters

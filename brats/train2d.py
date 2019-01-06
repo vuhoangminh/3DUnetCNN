@@ -131,16 +131,17 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                   depth=depth_unet,
                                   n_base_filters=n_base_filters_unet,
                                   loss_function=loss)
-        elif model_name == "densenetfcn":
+        elif model_name == "densefcn":
             model = densefcn_model_2d(input_shape=config["input_shape"],
                                       classes=config["n_labels"],
                                       initial_learning_rate=config["initial_learning_rate"],
                                       nb_dense_block=4,
                                       nb_layers_per_block=4,
                                       early_transition=True,
-                                      dropout_rate=0.4)
+                                      dropout_rate=0.4,
+                                      loss_function=loss)
         else:
-            raise ValueError("Not implemented. Please check")
+            raise ValueError("Model is NotImplemented. Please check")
 
     model.summary()
 
