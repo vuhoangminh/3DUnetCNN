@@ -1,3 +1,5 @@
+from keras.utils import multi_gpu_model
+from unet3d.training import load_old_model
 from tensorflow.python.client import device_lib
 import os
 from keras.models import model_from_json
@@ -5,10 +7,11 @@ from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Activation, Spatia
 from keras.engine import Model
 from keras.optimizers import Adam
 
-from unet3d.metrics import weighted_dice_coefficient_loss, tversky_loss, minh_dice_coef_loss, minh_dice_coef_metric
-
-from unet3d.training import load_old_model
-from keras.utils import multi_gpu_model
+from unet3d.metrics import weighted_dice_coefficient_loss
+from unet3d.metrics import tversky_loss
+from unet3d.metrics import minh_dice_coef_loss
+from unet3d.metrics import tv_minh_loss
+from unet3d.metrics import minh_dice_coef_metric
 
 
 def load_model_multi_gpu(model_file):
@@ -94,6 +97,8 @@ def compile_model(model, loss_function="weighted",
         loss = tversky_loss
     elif loss_function == "minh":
         loss = minh_dice_coef_loss
+    elif loss_function == "tv_minh":
+        loss = tv_minh_loss
     else:
         loss = weighted_dice_coefficient_loss
     model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),

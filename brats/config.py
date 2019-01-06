@@ -107,12 +107,14 @@ config_dict["model"] = ["unet", "isensee", "densefcn", "denseunet", "resunet", "
 config_dict["depth_unet"] = [3, 4, 5]  # depth of unet
 config_dict["n_base_filters_unet"] = [8, 16, 32]  # number of base filters of unet
 config_dict["image_shape"] = ["160-192-128", "144-144-144", "240-240-155"]
-config_dict["patch_shape"] = ["16-16-16", "32-32-32", "64-64-64", "128-128-128", "160-192-128", "80-96-64"]
+config_dict["patch_shape"] = ["16-16-16", "32-32-32", "64-64-64", "128-128-128", "160-192-128", "160-192-1", "160-192-7"]
 config_dict["is_bias_correction"] = ["0","1"]
 config_dict["is_denoise"] = ["0", "bm4d", "gaussian", "median"]
 config_dict["is_normalize"] = ["z", "01"]
 config_dict["is_crf"] = ["0", "post", "cnn", "rnn"]
 config_dict["crop"] = ["0", "1"]
+config_dict["hist_match"] = ["0", "1"]
+config_dict["loss"] = ["weighted", "minh", "tversky", "tv_minh"]
 
 
 config_convert_name = {
