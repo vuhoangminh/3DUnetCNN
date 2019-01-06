@@ -193,7 +193,7 @@ def main25d(overwrite=False):
 
 
 def test_patch():
-    patch_overlap = [0, 0, 6]
+    patch_overlap = [0, 0, 2]
     patch_overlap = np.asarray(patch_overlap)
     index_list = compute_patch_indices(image_shape=(160, 192, 128),
                                        patch_size=(160, 192, 7),
@@ -206,5 +206,5 @@ def test_patch():
 
 
 if __name__ == "__main__":
-    main25d(False)
-    # test_patch()
+    # main25d(False)
+    test_patch()
