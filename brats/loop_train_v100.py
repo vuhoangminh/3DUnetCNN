@@ -38,7 +38,7 @@ if model_dim == 25:
 elif model_dim == 2:
     task = "train2d"
     patch_shape = "160-192-1"
-    batch_size = 128
+    batch_size = 64
 
 is_test = "0"
 
