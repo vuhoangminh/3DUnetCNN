@@ -121,6 +121,13 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                     n_labels=config["n_labels"],
                                     initial_learning_rate=config["initial_learning_rate"],
                                     loss_function=loss)
+        elif model_name == "seisensee":
+            print("init isensee model")
+            model = isensee2d_model(input_shape=config["input_shape"],
+                                    n_labels=config["n_labels"],
+                                    initial_learning_rate=config["initial_learning_rate"],
+                                    loss_function=loss,
+                                    is_unet_original=False)
         elif model_name == "unet":
             print("init unet model")
             model = unet_model_2d(input_shape=config["input_shape"],
@@ -140,6 +147,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                       early_transition=True,
                                       dropout_rate=0.4,
                                       loss_function=loss)
+
         else:
             raise ValueError("Model is NotImplemented. Please check")
 

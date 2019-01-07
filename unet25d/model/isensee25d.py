@@ -58,15 +58,18 @@ def isensee25d_model(input_shape=(4, 128, 128, 7), n_base_filters=16, depth=5, d
         n_level_filters = (2**level_number) * n_base_filters
         level_filters.append(n_level_filters)
 
-        if current_layer is first_layer:
+        if current_layer is inputs:
             in_conv = create_convolution_block2d(
-                current_layer, n_level_filters, is_unet_original=is_unet_original)
+                current_layer, n_level_filters,
+                is_unet_original=is_unet_original)
         else:
             in_conv = create_convolution_block2d(
-                current_layer, n_level_filters, strides=(2, 2), is_unet_original=is_unet_original)
+                current_layer, n_level_filters, strides=(2, 2),
+                is_unet_original=is_unet_original)
 
         context_output_layer = create_context_module(
-            in_conv, n_level_filters, dropout_rate=dropout_rate)
+            in_conv, n_level_filters, dropout_rate=dropout_rate,
+            is_unet_original=is_unet_original)
 
         summation_layer = Add()([in_conv, context_output_layer])
         level_output_layers.append(summation_layer)
@@ -75,11 +78,11 @@ def isensee25d_model(input_shape=(4, 128, 128, 7), n_base_filters=16, depth=5, d
     segmentation_layers = list()
     for level_number in range(depth - 2, -1, -1):
         up_sampling = create_up_sampling_module(
-            current_layer, level_filters[level_number])
+            current_layer, level_filters[level_number], is_unet_original=is_unet_original)
         concatenation_layer = concatenate(
             [level_output_layers[level_number], up_sampling], axis=1)
         localization_output = create_localization_module(
-            concatenation_layer, level_filters[level_number])
+            concatenation_layer, level_filters[level_number], is_unet_original=is_unet_original)
         current_layer = localization_output
         if level_number < n_segmentation_levels:
             segmentation_layers.insert(
