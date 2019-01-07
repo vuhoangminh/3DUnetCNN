@@ -349,7 +349,7 @@ def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elast
 def add_data(x_list, y_list, data_file, index, patch_shape=None,
              augment_flipud=False, augment_fliplr=False, augment_elastic=False,
              augment_rotation=False, augment_shift=False, augment_shear=False,
-             augment_zoom=False, skip_blank=True):
+             augment_zoom=False, skip_blank=True, model_dim=3):
     """
     Adds data from the data file to the given lists of feature and target data
     :return:
@@ -370,6 +370,15 @@ def add_data(x_list, y_list, data_file, index, patch_shape=None,
             data[i, :, :, :] = data_list[i]
         truth[:, :, :] = data_list[-1]
     truth = truth[np.newaxis]
-    # if not skip_blank or np.any(truth != 0):
-    x_list.append(data)
-    y_list.append(truth)
+    is_added = False
+    if model_dim == 3:
+        is_added = True
+    if model_dim == 25:
+        truth_slice = truth[..., int((patch_shape[-1]-1)/2)]
+        if np.any(truth_slice != 0):
+            is_added = True
+    if model_dim == 2 and np.any(truth != 0):
+        is_added = True
+    if is_added:
+        x_list.append(data)
+        y_list.append(truth)

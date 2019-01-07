@@ -8,7 +8,6 @@ import time
 
 from unet3d.utils import pickle_dump, pickle_load
 from unet3d.generator import get_train_valid_test_split, get_number_of_steps
-from unet3d.generator import get_number_of_patches
 from unet3d.generator import get_multi_class_labels, get_data_from_file
 from unet3d.generator import add_data
 from unet3d.utils.patches import compute_patch_indices, get_random_nd_index
@@ -28,7 +27,7 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
                                                           validation_batch_size=None,
                                                           augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                           augment_rotation=False, augment_shift=False, augment_shear=False,
-                                                          augment_zoom=False, n_augment=0, skip_blank=False,):
+                                                          augment_zoom=False, n_augment=0, skip_blank=False, is_test="1"):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -73,8 +72,8 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
 
     print("training_list:", training_list)
 
-    train_patch_overlap = np.asarray([0, 0, 2])
-    valid_patch_overlap = np.asarray([0, 0, 6])
+    train_patch_overlap = np.asarray([0, 0, patch_shape[-1]-2])
+    valid_patch_overlap = np.asarray([0, 0, patch_shape[-1]-1])
     print(">> training data generator")
     training_generator = data_generator25d(data_file, training_list,
                                            batch_size=batch_size,
@@ -106,24 +105,27 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
     # if overwrite or not os.path.exists(n_steps_file):
     print(">> compute number of training and validation steps")
     # patch_overlap = [0, 0, patch_shape[-1]-1]
-    
-    
-    training_number_patches = len(create_patch_index_list(training_list, data_file.root.data.shape[-3:], patch_shape,
-                                                train_patch_overlap, patch_start_offset=training_patch_start_offset))
-    num_training_steps = get_number_of_steps(training_number_patches, batch_size)
-    validation_number_patches = len(create_patch_index_list(validation_list, data_file.root.data.shape[-3:], patch_shape,
-                                                valid_patch_overlap, patch_start_offset=training_patch_start_offset))
-    num_validation_steps = get_number_of_steps(validation_number_patches, batch_size)  
 
+    # training_number_patches = len(create_patch_index_list(training_list, data_file.root.data.shape[-3:], patch_shape,
+    #                                                       train_patch_overlap, patch_start_offset=training_patch_start_offset))
+    # num_training_steps = get_number_of_steps(
+    #     training_number_patches, batch_size)
+    # validation_number_patches = len(create_patch_index_list(validation_list, data_file.root.data.shape[-3:], patch_shape,
+    #                                                         valid_patch_overlap, patch_start_offset=training_patch_start_offset))
+    # num_validation_steps = get_number_of_steps(
+    #     validation_number_patches, batch_size)
 
-
-    # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-    #                                                                patch_start_offset=training_patch_start_offset,
-    #                                                                patch_overlap=patch_overlap),
-    #                                          batch_size)
-    # num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-    #                                                                  patch_overlap=patch_overlap),
-    #                                            validation_batch_size)
+    if is_test=="1":
+        num_training_steps = get_number_of_steps(get_number_of_patches25d(data_file, training_list, patch_shape,
+                                                                        patch_start_offset=training_patch_start_offset,
+                                                                        patch_overlap=train_patch_overlap),
+                                                batch_size)
+        num_validation_steps = get_number_of_steps(get_number_of_patches25d(data_file, validation_list, patch_shape,
+                                                                            patch_overlap=valid_patch_overlap),
+                                                validation_batch_size)
+    else:
+        num_training_steps = 175
+        num_validation_steps = 88
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
@@ -146,6 +148,7 @@ def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
                                             is_extract_patch_agressive=True)
         patch_index.extend(itertools.product([index], patches))
     return patch_index
+
 
 @threadsafe_generator
 def data_generator25d(data_file, index_list, batch_size=1, n_labels=1, labels=None, patch_shape=None,
@@ -172,12 +175,33 @@ def data_generator25d(data_file, index_list, batch_size=1, n_labels=1, labels=No
                      augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
                      augment_elastic=False, augment_rotation=augment_rotation,
                      augment_shift=augment_shift, augment_shear=augment_shear,
-                     augment_zoom=augment_zoom)
+                     augment_zoom=augment_zoom, model_dim=25)
 
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
                 yield convert_data25d(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
                 y_list = list()
+
+
+def get_number_of_patches25d(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
+                             skip_blank=True):
+    if patch_shape:
+        index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
+                                             patch_start_offset)
+        count = 0
+        for i, index in enumerate(index_list, 0):
+            print(">> processing {}/{}, added {}/{}".format(i,
+                                                            len(index_list), count, len(index_list)))
+            x_list = list()
+            y_list = list()
+            add_data(x_list, y_list, data_file, index,
+                     skip_blank=skip_blank, patch_shape=patch_shape,
+                     model_dim=25)
+            if len(x_list) > 0:
+                count += 1
+        return count
+    else:
+        return len(index_list)
 
 
 def convert_data25d(x_list, y_list, n_labels=1, labels=None):
