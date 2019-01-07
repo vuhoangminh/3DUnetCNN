@@ -98,38 +98,6 @@ def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"], weights=[2, 1
     return distance
 
 
-# # Ref: salehi17, "Twersky loss function for image segmentation using 3D FCDN"
-# # -> the score is computed for each class separately and then summed
-# # alpha=beta=0.5 : dice coefficient
-# # alpha=beta=1   : tanimoto coefficient (also known as jaccard)
-# # alpha+beta=1   : produces set of F*-scores
-# # implemented by E. Moebel, 06/04/18
-# def tversky_loss(y_true, y_pred):
-#     alpha = 0.5
-#     beta = 0.5
-
-#     if K.image_data_format() == 'channels_last':
-#         compute_axis = tuple(range(1, len(y_pred.shape)-1))
-#     else:
-#         compute_axis = tuple(range(2, len(y_pred.shape)))
-
-#     ones = K.ones(K.shape(y_true))
-#     p0 = y_pred      # proba that voxels are class i
-#     p1 = ones-y_pred  # proba that voxels are not class i
-#     g0 = y_true
-#     g1 = ones-y_true
-
-#     num = K.sum(p0*g0, compute_axis)
-#     den = num + alpha*K.sum(p0*g1, compute_axis) + \
-#         beta*K.sum(p1*g0, compute_axis)
-
-#     # when summing over classes, T has dynamic range [0 Ncl]
-#     T = K.sum(num/den)
-
-#     Ncl = K.cast(K.shape(y_true)[-1], 'float32')
-#     return Ncl-T
-
-
 def tversky(y_true, y_pred, smooth=0.00001):
     y_true_pos = K.flatten(y_true)
     y_pred_pos = K.flatten(y_pred)
@@ -250,7 +218,7 @@ def soft_dice_numpy(y_pred, y_true, eps=1e-7):
     return - (2. * intersect / (denom + eps)).mean()
 
 
-def tv_ndim_loss(x, beta=2):
+def tv_ndim_score(x, beta=2):
     r"""Implements the N-dim version of function
     $$TV^{\beta}(x) = \sum_{whc} \left ( \left ( x(h, w+1, c) - x(h, w, c) \right )^{2} +
     \left ( x(h+1, w, c) - x(h, w, c) \right )^{2} \right )^{\frac{\beta}{2}}$$
@@ -293,8 +261,16 @@ def tv_ndim_loss(x, beta=2):
     return normalize(x, tv)
 
 
+def tv_ndim_loss(x, beta=2):
+    return -tv_ndim_score(x, beta=beta)
+
+
 def tv_minh_loss(y_true, y_pred, labels=config["labels"]):
     return 0.0001*tv_ndim_loss(y_pred) + minh_dice_coef_loss(y_true, y_pred, labels=config["labels"])
+
+
+def tv_weighted_loss(y_true, y_pred, labels=config["labels"]):
+    return 0.0001*tv_ndim_loss(y_pred) + weighted_dice_coefficient_loss(y_true, y_pred)
 
 
 dice_coef = dice_coefficient

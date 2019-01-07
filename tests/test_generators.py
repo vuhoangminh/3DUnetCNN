@@ -15,7 +15,8 @@ from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_mo
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
 from unet3d.utils.path_utils import get_training_h5_paths
 import unet3d.utils.args_utils as get_args
-from unet25d.generator import get_number_of_patches, create_patch_index_list
+from unet25d.generator import get_number_of_patches25d, create_patch_index_list
+from unet2d.generator import get_number_of_patches2d
 
 from brats.prepare_data import prepare_data
 
@@ -193,10 +194,10 @@ def main25d(overwrite=False):
 
 
 def test_patch():
-    patch_overlap = [0, 0, 2]
+    patch_overlap = [0, 0, -1]
     patch_overlap = np.asarray(patch_overlap)
     index_list = compute_patch_indices(image_shape=(160, 192, 128),
-                                       patch_size=(160, 192, 7),
+                                       patch_size=(160, 192, 1),
                                        overlap=patch_overlap, start=None,
                                        is_extract_patch_agressive=True,
                                        is_predict=False)

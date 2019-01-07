@@ -12,26 +12,31 @@ save_dir = laptop_save_dir
 temp_volume_path = save_dir + "volume.nii.gz"
 temp_template_path = save_dir + "template.nii.gz"
 gaussian_path = save_dir + "gaussian.nii.gz"
+truth_path = save_dir + "truth.nii.gz"
+prediction_path = save_dir + "prediction.nii.gz"
 
 volume = nib.load(temp_volume_path)
 affine = volume.affine
 volume = volume.get_data()
 template = nib.load(temp_template_path)
 template = template.get_data()
+truth = nib.load(truth_path)
+truth = truth.get_data()
 
+prediction = nib.load(prediction_path)
+prediction = prediction.get_data()
 
 
 x = np.zeros((1, 2, 240, 240, 155))
 
-x[0,0,:,:,:] = volume
-x[0,1,:,:,:] = template
+# x[0,0,:,:,:] = volume
+# x[0,1,:,:,:] = template
 
-# loss = K.eval(tv_ndim_loss(K.variable(x)))
+x = truth
+loss = K.eval(tv_ndim_loss(K.variable(x)))
+print(loss)
 
-# print(loss)
-
-
-a = K.variable(x)
-print(a)
-
+x = prediction
+loss = K.eval(tv_ndim_loss(K.variable(x)))
+print(loss)
 

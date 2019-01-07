@@ -72,12 +72,14 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     print("training_list:", training_list)
 
     print(">> training data generator")
+    patch_overlap = [0, 0, -1]
+    patch_overlap = np.asarray(patch_overlap)
     training_generator = data_generator2d(data_file, training_list,
                                           batch_size=batch_size,
                                           n_labels=n_labels,
                                           labels=labels,
                                           patch_shape=patch_shape,
-                                          patch_overlap=0,
+                                          patch_overlap=patch_overlap,
                                           patch_start_offset=training_patch_start_offset,
                                           augment_flipud=augment_flipud,
                                           augment_fliplr=augment_fliplr,
@@ -94,9 +96,8 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                             n_labels=n_labels,
                                             labels=labels,
                                             patch_shape=patch_shape,
-                                            patch_overlap=validation_patch_overlap,
-                                            skip_blank=skip_blank
-                                            )
+                                            patch_overlap=0,
+                                            skip_blank=skip_blank)
 
     # Set the number of training and testing samples per epoch correctly
     # if overwrite or not os.path.exists(n_steps_file):
@@ -104,13 +105,14 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     if is_test == "1":
         num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
                                                                          patch_start_offset=training_patch_start_offset,
-                                                                         patch_overlap=0),
+                                                                         patch_overlap=patch_overlap),
                                                  batch_size)
         num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
                                                                            patch_overlap=0),
                                                    validation_batch_size)
     else:
-        num_training_steps = get_number_of_steps(11137, batch_size)
+        # num_training_steps = get_number_of_steps(11137, batch_size)
+        num_training_steps = get_number_of_steps(5576, batch_size)
         num_validation_steps = get_number_of_steps(2794, validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)
