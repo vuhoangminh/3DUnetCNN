@@ -56,7 +56,7 @@ def run(model_filename, cmd):
         print("{} exists. Will skip!!".format(model_path))
     else:
         print(">> RUNNING:", cmd)
-        # os.system(cmd)
+        os.system(cmd)
 
 for model_name in list_model_name:
     for is_denoise in ["0"]:
