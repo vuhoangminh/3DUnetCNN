@@ -29,14 +29,14 @@ args = parser.parse_args()
 
 model_dim = args.model_dim
 
+
+list_model_name = ["seunet", "unet", "isensee", "seisensee"]
 if model_dim == 25:
     task = "train25d"
-    list_model_name = ["seunet", "unet", "isensee", "seisensee"]
     patch_shape = "160-192-7"
     batch_size = 64
 elif model_dim == 2:
     task = "train2d"
-    list_model_name = ["seunet", "unet", "isensee"]
     patch_shape = "160-192-1"
     batch_size = 128
 
@@ -78,7 +78,7 @@ for model_name in list_model_name:
                         loss=loss,
                         model_dim=model_dim)
 
-                    cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba {} -dim 3".format(
+                    cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba {}".format(
                         task,
                         is_test,
                         is_normalize,

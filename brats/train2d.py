@@ -90,7 +90,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         augment_shear=config["augment_shear"],
         augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
-        skip_blank=config["skip_blank"])
+        skip_blank=config["skip_blank"],
+        is_test=is_test)
 
     print("-"*60)
     print("# Load or init model")
