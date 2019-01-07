@@ -21,11 +21,8 @@ from unet3d.utils.print_utils import print_section, print_separator
 
 from brats.config import config, config_unet
 
-# pp = pprint.PrettyPrinter(indent=4)
-# # pp.pprint(config)
-config.update(config_unet)
-# pp.pprint(config)
 
+config.update(config_unet)
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
 PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
