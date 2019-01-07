@@ -73,13 +73,15 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
 
     print("training_list:", training_list)
 
+    train_patch_overlap = np.asarray([0, 0, 2])
+    valid_patch_overlap = np.asarray([0, 0, 6])
     print(">> training data generator")
     training_generator = data_generator25d(data_file, training_list,
                                            batch_size=batch_size,
                                            n_labels=n_labels,
                                            labels=labels,
                                            patch_shape=patch_shape,
-                                           patch_overlap=0,
+                                           patch_overlap=train_patch_overlap,
                                            patch_start_offset=training_patch_start_offset,
                                            augment_flipud=augment_flipud,
                                            augment_fliplr=augment_fliplr,
@@ -96,20 +98,21 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
                                              n_labels=n_labels,
                                              labels=labels,
                                              patch_shape=patch_shape,
-                                             patch_overlap=validation_patch_overlap,
+                                             patch_overlap=valid_patch_overlap,
                                              skip_blank=skip_blank
                                              )
 
     # Set the number of training and testing samples per epoch correctly
     # if overwrite or not os.path.exists(n_steps_file):
     print(">> compute number of training and validation steps")
-    patch_overlap = [0, 0, patch_shape[-1]-1]
-    patch_overlap = np.asarray(patch_overlap)
+    # patch_overlap = [0, 0, patch_shape[-1]-1]
+    
+    
     training_number_patches = len(create_patch_index_list(training_list, data_file.root.data.shape[-3:], patch_shape,
-                                                patch_overlap, patch_start_offset=training_patch_start_offset))
+                                                train_patch_overlap, patch_start_offset=training_patch_start_offset))
     num_training_steps = get_number_of_steps(training_number_patches, batch_size)
     validation_number_patches = len(create_patch_index_list(validation_list, data_file.root.data.shape[-3:], patch_shape,
-                                                patch_overlap, patch_start_offset=training_patch_start_offset))
+                                                valid_patch_overlap, patch_start_offset=training_patch_start_offset))
     num_validation_steps = get_number_of_steps(validation_number_patches, batch_size)  
 
 
