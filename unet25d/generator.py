@@ -101,31 +101,20 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
                                              skip_blank=skip_blank
                                              )
 
-    # Set the number of training and testing samples per epoch correctly
-    # if overwrite or not os.path.exists(n_steps_file):
     print(">> compute number of training and validation steps")
-    # patch_overlap = [0, 0, patch_shape[-1]-1]
 
-    # training_number_patches = len(create_patch_index_list(training_list, data_file.root.data.shape[-3:], patch_shape,
-    #                                                       train_patch_overlap, patch_start_offset=training_patch_start_offset))
-    # num_training_steps = get_number_of_steps(
-    #     training_number_patches, batch_size)
-    # validation_number_patches = len(create_patch_index_list(validation_list, data_file.root.data.shape[-3:], patch_shape,
-    #                                                         valid_patch_overlap, patch_start_offset=training_patch_start_offset))
-    # num_validation_steps = get_number_of_steps(
-    #     validation_number_patches, batch_size)
-
-    if is_test=="1":
+    if is_test == "1":
         num_training_steps = get_number_of_steps(get_number_of_patches25d(data_file, training_list, patch_shape,
-                                                                        patch_start_offset=training_patch_start_offset,
-                                                                        patch_overlap=train_patch_overlap),
-                                                batch_size)
+                                                                          patch_start_offset=training_patch_start_offset,
+                                                                          patch_overlap=train_patch_overlap),
+                                                 batch_size)
         num_validation_steps = get_number_of_steps(get_number_of_patches25d(data_file, validation_list, patch_shape,
                                                                             patch_overlap=valid_patch_overlap),
-                                                validation_batch_size)
+                                                   validation_batch_size)
     else:
-        num_training_steps = 175
-        num_validation_steps = 88
+        num_training_steps = get_number_of_steps(5576, batch_size)
+        num_validation_steps = get_number_of_steps(2794, validation_batch_size)
+
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)

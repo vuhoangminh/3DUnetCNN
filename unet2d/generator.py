@@ -26,7 +26,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                                          validation_batch_size=None,
                                                          augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                          augment_rotation=False, augment_shift=False, augment_shear=False,
-                                                         augment_zoom=False, n_augment=0, skip_blank=False,):
+                                                         augment_zoom=False, n_augment=0, skip_blank=False, is_test="1"):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -101,13 +101,24 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # Set the number of training and testing samples per epoch correctly
     # if overwrite or not os.path.exists(n_steps_file):
     print(">> compute number of training and validation steps")
-    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-                                                                   patch_start_offset=training_patch_start_offset,
-                                                                   patch_overlap=0),
-                                             batch_size)
-    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                     patch_overlap=validation_patch_overlap),
-                                               validation_batch_size)
+    if is_test == "1":
+        num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
+                                                                         patch_start_offset=training_patch_start_offset,
+                                                                         patch_overlap=0),
+                                                 batch_size)
+        num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
+                                                                           patch_overlap=0),
+                                                   validation_batch_size)
+    else:
+        # num_training_steps = get_number_of_steps(5576, batch_size)
+        # num_validation_steps = get_number_of_steps(2794, validation_batch_size)
+        num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
+                                                                         patch_start_offset=training_patch_start_offset,
+                                                                         patch_overlap=0),
+                                                 batch_size)
+        num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
+                                                                           patch_overlap=0),
+                                                   validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
@@ -151,8 +162,8 @@ def data_generator2d(data_file, index_list, batch_size=1, n_labels=1, labels=Non
 def squeeze_data_from_3d_to_2d(x):
     shape = x.shape
     for i in range(len(shape)):
-        if i>1 and shape[i]==1:
-            axis=i
+        if i > 1 and shape[i] == 1:
+            axis = i
     return np.squeeze(x, axis=axis)
 
 
@@ -271,6 +282,29 @@ def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
             data[i, :, :, :] = data_list[i]
         truth[:, :, :] = data_list[-1]
     truth = truth[np.newaxis]
-    # if not skip_blank or np.any(truth != 0):
-    x_list.append(data)
-    y_list.append(truth)
+    is_added = False
+    if np.any(truth != 0):
+        is_added = True
+    if is_added:
+        x_list.append(data)
+        y_list.append(truth)
+
+
+def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
+                            skip_blank=True):
+    if patch_shape:
+        index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
+                                             patch_start_offset)
+        count = 0
+        for i, index in enumerate(index_list, 0):
+            print(">> processing {}/{}, added {}/{}".format(i,
+                                                            len(index_list), count, len(index_list)))
+            x_list = list()
+            y_list = list()
+            add_data2d(x_list, y_list, data_file, index,
+                       skip_blank=skip_blank, patch_shape=patch_shape)
+            if len(x_list) > 0:
+                count += 1
+        return count
+    else:
+        return len(index_list)
