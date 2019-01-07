@@ -159,9 +159,6 @@ def data_generator25d(data_file, index_list, batch_size=1, n_labels=1, labels=No
         x_list = list()
         y_list = list()
         if patch_shape:
-            # patch_overlap = [0, 0, patch_shape[-1]-1]
-            patch_overlap = [0, 0, 2]
-            patch_overlap = np.asarray(patch_overlap)
             index_list = create_patch_index_list(orig_index_list, data_file.root.data.shape[-3:], patch_shape,
                                                  patch_overlap, patch_start_offset)
         else:
