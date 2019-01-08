@@ -11,7 +11,9 @@ from unet3d.metrics import weighted_dice_coefficient_loss
 from unet3d.metrics import tversky_loss
 from unet3d.metrics import minh_dice_coef_loss
 from unet3d.metrics import tv_minh_loss
+from unet3d.metrics import tv_weighted_loss
 from unet3d.metrics import minh_dice_coef_metric
+
 
 
 def load_model_multi_gpu(model_file):
@@ -85,7 +87,8 @@ def get_available_gpus():
 
 def compile_model(model, loss_function="weighted",
                   metrics=minh_dice_coef_metric,
-                  initial_learning_rate=0.001):
+                  initial_learning_rate=0.001,
+                  alpha=0.1):
     try:
         num_gpus = get_available_gpus()
         model = multi_gpu_model(model, gpus=num_gpus)
@@ -98,7 +101,9 @@ def compile_model(model, loss_function="weighted",
     elif loss_function == "minh":
         loss = minh_dice_coef_loss
     elif loss_function == "tv_minh":
-        loss = tv_minh_loss
+        loss = tv_minh_loss(alpha=alpha)
+    elif loss_function == "tv_weighted":
+        loss = tv_weighted_loss(alpha=alpha)
     else:
         loss = weighted_dice_coefficient_loss
     model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),

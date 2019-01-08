@@ -262,15 +262,19 @@ def tv_ndim_score(x, beta=2):
 
 
 def tv_ndim_loss(x, beta=2):
-    return -tv_ndim_score(x, beta=beta)
+    return tv_ndim_score(x, beta=beta)
 
 
-def tv_minh_loss(y_true, y_pred, labels=config["labels"]):
-    return 0.0001*tv_ndim_loss(y_pred) + minh_dice_coef_loss(y_true, y_pred, labels=config["labels"])
+def tv_minh_loss(alpha=0.1):
+    def loss(y_true, y_pred):
+        return alpha*tv_ndim_loss(y_pred) + minh_dice_coef_loss(y_true, y_pred)
+    return loss
 
 
-def tv_weighted_loss(y_true, y_pred, labels=config["labels"]):
-    return 0.0001*tv_ndim_loss(y_pred) + weighted_dice_coefficient_loss(y_true, y_pred)
+def tv_weighted_loss(alpha=0.1):
+    def loss(y_true, y_pred):
+        return alpha*tv_ndim_loss(y_pred) + weighted_dice_coefficient_loss(y_true, y_pred)
+    return loss
 
 
 dice_coef = dice_coefficient
