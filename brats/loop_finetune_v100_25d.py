@@ -46,8 +46,8 @@ for model_name in ["unet", "isensee"]:
         for is_normalize in config_dict["is_normalize"]:
             for is_hist_match in ["0", "1"]:
                 for loss in ["weighted"]:
-                    for patch_shape in ["160-192-1"]:
-                        model_dim = 2
+                    for patch_shape in ["160-192-7"]:
+                        model_dim = 25
 
                         model_filename = get_model_h5_filename(
                             datatype="model",
@@ -64,7 +64,7 @@ for model_name in ["unet", "isensee"]:
                             loss=loss,
                             model_dim=model_dim)
 
-                        cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 64 -dim 2".format(
+                        cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 64 -dim 25".format(
                             task,
                             is_test,
                             is_normalize,
