@@ -1,3 +1,4 @@
+from unet25d.model import isensee25d_model
 from unet3d.model import se_unet_3d
 from unet3d.model import densefcn_model_3d
 from unet3d.model import isensee2017_model
@@ -126,12 +127,26 @@ input_shape = (4, 128, 128, 128)
 # save_plot(manipulate_model, get_path(name))
 
 
-name = "densenetfcn2d"
-model = densefcn_model_2d(input_shape=(4, 160, 192),
-                          classes=3,
-                          nb_dense_block=4,
-                          nb_layers_per_block=4,
-                          early_transition=True,
-                          dropout_rate=0.4)
-model.summary()                          
+# name = "densenetfcn2d"
+# model = densefcn_model_2d(input_shape=(4, 160, 192),
+#                           classes=3,
+#                           nb_dense_block=4,
+#                           nb_layers_per_block=4,
+#                           early_transition=True,
+#                           dropout_rate=0.4)
+# model.summary()
+# save_plot(model, get_path(name))
+
+
+name = "isensee25d"
+model = isensee25d_model(input_shape=(4, 160, 192, 7),
+                         n_labels=3)
+model.summary()
+save_plot(model, get_path(name))
+
+from unet2d.model import unet_model_2d, isensee2d_model, densefcn_model_2d
+name = "isensee2d"
+model = isensee2d_model(input_shape=(4, 160, 192),
+                        n_labels=3)
+model.summary()
 save_plot(model, get_path(name))

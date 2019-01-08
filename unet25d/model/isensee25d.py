@@ -58,7 +58,7 @@ def isensee25d_model(input_shape=(4, 128, 128, 7), n_base_filters=16, depth=5, d
         n_level_filters = (2**level_number) * n_base_filters
         level_filters.append(n_level_filters)
 
-        if current_layer is inputs:
+        if current_layer is first_layer:
             in_conv = create_convolution_block2d(
                 current_layer, n_level_filters,
                 is_unet_original=is_unet_original)
