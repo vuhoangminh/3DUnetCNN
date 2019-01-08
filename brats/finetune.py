@@ -155,7 +155,8 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
             augment_shear=config["augment_shear"],
             augment_zoom=config["augment_zoom"],
             n_augment=config["n_augment"],
-            skip_blank=config["skip_blank"])
+            skip_blank=config["skip_blank"],
+            is_test=is_test)
     else:
         from unet2d.generator import get_training_and_validation_and_testing_generators2d
         train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators2d(
@@ -180,7 +181,8 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
             augment_shear=config["augment_shear"],
             augment_zoom=config["augment_zoom"],
             n_augment=config["n_augment"],
-            skip_blank=config["skip_blank"])
+            skip_blank=config["skip_blank"],
+            is_test=is_test)
 
     print("-"*60)
     print("# Load or init model")
