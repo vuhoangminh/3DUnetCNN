@@ -1,5 +1,6 @@
 import os
 import glob
+import gc
 from unet3d.utils import pickle_load
 
 import unet3d.utils.args_utils as get_args
@@ -152,6 +153,7 @@ def main():
                                 # print("="*60)
                                 print(">> finished")
                                 print("="*120)
+                                gc.collect()
 
 
     print(list_already_predicted)
