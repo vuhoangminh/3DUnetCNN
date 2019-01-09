@@ -28,13 +28,26 @@ BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 
-def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
-             image_shape="160-192-128", is_bias_correction="1",
-             is_normalize="z", is_denoise="0",
-             is_hist_match="0", is_test="1",
-             depth_unet=4, n_base_filters_unet=16, model_name="isensee",
-             patch_shape="128-128-128", is_crf="0",
-             batch_size=1, loss="weighted", model_dim=3):
+def finetune(overwrite=True,
+             crop=True,
+             challenge="brats",
+             year=2018,
+             image_shape="160-192-128",
+             is_bias_correction="1",
+             is_normalize="z",
+             is_denoise="0",
+             is_hist_match="0",
+             is_test="1",
+             depth_unet=4,
+             n_base_filters_unet=16,
+             model_name="isensee",
+             patch_shape="128-128-128",
+             is_crf="0",
+             batch_size=1,
+             loss="weighted",
+             model_dim=3,
+             weight_tv_to_main_loss=0.1
+             ):
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         BRATS_DIR,
@@ -55,7 +68,8 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
         is_crf=is_crf,
         is_finetune=True,
         dir_read_write="base",
-        model_dim=model_dim)
+        model_dim=model_dim,
+        weight_tv_to_main_loss=weight_tv_to_main_loss)
 
     config["data_file"] = data_path
     config["model_file"] = model_path
@@ -197,7 +211,8 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
         print(">> load old and generate model")
         model = generate_model(config["model_file"],
                                initial_learning_rate=config["initial_learning_rate"],
-                               loss_function=loss)
+                               loss_function=loss,
+                               weight_tv_to_main_loss=weight_tv_to_main_loss)
         model.summary()
 
     # run training
@@ -224,8 +239,9 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
         is_crf=is_crf,
         dir_read_write="finetune",
         is_finetune=True,
-        loss=loss,  # will fix later
-        model_dim=model_dim)
+        loss=loss,
+        model_dim=model_dim,
+        weight_tv_to_main_loss=weight_tv_to_main_loss)
 
     config["model_file"] = model_path
 
@@ -245,7 +261,7 @@ def finetune(overwrite=True, crop=True, challenge="brats", year=2018,
 
         # if model_dim==2 and model_name=="isensee":
         #     config["initial_learning_rate"]=1e-7
-            
+
         print(config["initial_learning_rate"], config["learning_rate_drop"])
         train_model(experiment=experiment,
                     model=model,
@@ -287,6 +303,7 @@ def main():
     is_hist_match = args.is_hist_match
     loss = args.loss
     model_dim = args.model_dim
+    weight_tv_to_main_loss = args.weight_tv_to_main_loss
 
     finetune(overwrite=overwrite,
              crop=crop,
@@ -305,7 +322,8 @@ def main():
              is_crf=is_crf,
              batch_size=batch_size,
              loss=loss,
-             model_dim=model_dim)
+             model_dim=model_dim,
+             weight_tv_to_main_loss=weight_tv_to_main_loss)
 
 
 if __name__ == "__main__":

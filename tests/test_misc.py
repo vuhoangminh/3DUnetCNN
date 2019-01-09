@@ -18,17 +18,24 @@ DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 model_path = BRATS_DIR + "/database/model/finetune/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-z_hist-0_ps-160-192-128_isensee3d_crf-0_loss-minh_model.h5"
 
 
-t0 = time.time()
-model = load_old_model(model_path)
-gc.collect()
-t1 = time.time()
+# t0 = time.time()
+# model = load_old_model(model_path)
+# gc.collect()
+# t1 = time.time()
 
-print("time load old:", t1-t0)
+# print("time load old:", t1-t0)
 
-t0 = time.time()
-model = load_model_multi_gpu(model_path)
-gc.collect()
-t1 = time.time()
+# t0 = time.time()
+# model = load_model_multi_gpu(model_path)
+# gc.collect()
+# t1 = time.time()
 
-print("time load new:", t1-t0)
+# print("time load new:", t1-t0)
 
+
+
+a = 0.00001
+
+print(a)
+
+print(str(a))

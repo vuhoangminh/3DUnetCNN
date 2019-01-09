@@ -123,9 +123,13 @@ def get_core_name(challenge="brats", year="2018",
 
 def get_model_name(model_name, patch_shape, is_crf, depth_unet=None,
                    n_base_filters_unet=None, loss="weighted",
-                   model_dim=3):
+                   model_dim=3, weight_tv_to_main_loss=0.1):
     model_temp = model_name
     model_temp = "{}{}d".format(model_name, str(model_dim))
+    if "tv" in loss:
+        from decimal import Decimal
+        loss = "{}-{}".format(loss, "{:.0E}".format(Decimal(str(weight_tv_to_main_loss))))
+        # loss = loss + "-" + Decimal(str(weight_tv_to_main_loss))
     if "unet" in model_name:
         return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}".format(
             patch_shape, model_temp, str(is_crf),
@@ -221,7 +225,9 @@ def get_model_h5_filename(datatype, challenge="brats", year="2018",
                           is_hist_match="0", is_test="1",
                           depth_unet=4, n_base_filters_unet=16,
                           model_name="unet", patch_shape="128-128-128", is_crf="0",
-                          loss="weighted", model_dim=3):
+                          loss="weighted", 
+                          model_dim=3,
+                          weight_tv_to_main_loss=0.1):
     core_name = get_core_name(challenge=challenge, year=year,
                               image_shape=image_shape, crop=crop,
                               is_bias_correction=is_bias_correction,
@@ -232,7 +238,8 @@ def get_model_h5_filename(datatype, challenge="brats", year="2018",
                                      depth_unet=depth_unet,
                                      n_base_filters_unet=n_base_filters_unet,
                                      loss=loss,
-                                     model_dim=model_dim)
+                                     model_dim=model_dim,
+                                     weight_tv_to_main_loss=weight_tv_to_main_loss)
 
     if str2bool(is_test):
         return "test_{}_{}_{}.h5".format(
@@ -289,6 +296,7 @@ def get_training_h5_paths(brats_dir, overwrite=True, crop=True, challenge="brats
                           loss="weighted",
                           is_finetune=False,
                           dir_read_write="base",
+                          weight_tv_to_main_loss=0.1,
                           model_dim=3):
 
     data_dir = get_h5_training_dir(brats_dir, "data")
@@ -318,7 +326,8 @@ def get_training_h5_paths(brats_dir, overwrite=True, crop=True, challenge="brats
                                            depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
                                            model_name=model_name, patch_shape=patch_shape, is_crf=is_crf,
                                            is_test=is_test, loss=loss,
-                                           model_dim=model_dim)
+                                           model_dim=model_dim,
+                                           weight_tv_to_main_loss=weight_tv_to_main_loss)
     if is_test == "1":
         trainids_filename = "test_train_ids.h5"
         validids_filename = "test_valid_ids.h5"

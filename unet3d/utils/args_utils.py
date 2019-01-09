@@ -52,6 +52,9 @@ def finetune():
     parser.add_argument('-dim', '--model_dim', type=int,
                         default=3,
                         help="2d, 2.5d or 3d?")
+    parser.add_argument('-alpha_tv', '--weight_tv_to_main_loss', type=float,
+                        default=0.1,
+                        help="weight of total variance comapared to main loss (dice coef etc.)")                        
     args = parser.parse_args()
     return args
 
@@ -104,7 +107,10 @@ def train():
                         help="loss function")
     parser.add_argument('-dim', '--model_dim', type=int,
                         default=3,
-                        help="2d, 2.5d or 3d?")                        
+                        help="2d, 2.5d or 3d?")
+    parser.add_argument('-alpha_tv', '--weight_tv_to_main_loss', type=float,
+                        default=0.1,
+                        help="weight of total variance comapared to main loss (dice coef etc.)")
     args = parser.parse_args()
     return args
 
@@ -155,6 +161,9 @@ def train2d():
     parser.add_argument('-l', '--loss', type=str,
                         default="weighted",
                         help="loss function")
+    parser.add_argument('-alpha_tv', '--weight_tv_to_main_loss', type=float,
+                        default=0.1,
+                        help="weight of total variance comapared to main loss (dice coef etc.)")
     args = parser.parse_args()
     return args
 
@@ -205,6 +214,9 @@ def train25d():
     parser.add_argument('-l', '--loss', type=str,
                         default="weighted",
                         help="loss function")
+    parser.add_argument('-alpha_tv', '--weight_tv_to_main_loss', type=float,
+                        default=0.1,
+                        help="weight of total variance comapared to main loss (dice coef etc.)")
     args = parser.parse_args()
     return args
 

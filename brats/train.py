@@ -36,7 +36,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
           is_hist_match="0", is_test="1",
           depth_unet=4, n_base_filters_unet=16, model_name="unet",
           patch_shape="128-128-128", is_crf="0",
-          batch_size=1, loss="weighted"):
+          batch_size=1, loss="weighted",
+          weight_tv_to_main_loss=0.1):
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -44,7 +45,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         is_normalize=is_normalize, is_denoise=is_denoise,
         is_hist_match=is_hist_match, is_test=is_test,
         model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=3)
+        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=3,
+        weight_tv_to_main_loss=weight_tv_to_main_loss)
 
     config["data_file"] = data_path
     config["model_file"] = model_path
@@ -225,6 +227,7 @@ def main():
     batch_size = args.batch_size
     is_hist_match = args.is_hist_match
     loss = args.loss
+    weight_tv_to_main_loss = args.weight_tv_to_main_loss
 
     train(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
           image_shape=image_shape, is_bias_correction=is_bias_correction,
@@ -232,7 +235,7 @@ def main():
           is_hist_match=is_hist_match, is_test=is_test,
           model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
           patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
-          loss=loss)
+          loss=loss, weight_tv_to_main_loss=weight_tv_to_main_loss)
 
 
 if __name__ == "__main__":
