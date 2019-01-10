@@ -85,21 +85,34 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
     act = Activation(activation_name)(final_convolution)
     model = Model(inputs=inputs, outputs=act)
 
-    # if not isinstance(metrics, list):
-    #     metrics = [metrics]
-
-    # if include_label_wise_dice_coefficients and n_labels > 1:
-    #     label_wise_dice_metrics = [get_label_dice_coefficient_function(
-    #         index) for index in range(n_labels)]
-    #     if metrics:
-    #         metrics = metrics + label_wise_dice_metrics
-    #     else:
-    #         metrics = label_wise_dice_metrics
-
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
                          initial_learning_rate=initial_learning_rate)
 
+
+def simple_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
+                    initial_learning_rate=0.00001,
+                    activation_name="sigmoid",
+                    depth=10,
+                    n_base_filters=32,
+                    metrics=minh_dice_coef_metric,
+                    loss_function="weighted",
+                    is_unet_original=True):
+    inputs = Input(input_shape)
+    current_layer = inputs
+    for layer_depth in range(depth):
+        current_layer = create_convolution_block(input_layer=current_layer,
+                                                 n_filters=n_base_filters,
+                                                 batch_normalization=False,
+                                                 is_unet_original=is_unet_original)
+
+    final_convolution = Conv3D(n_labels, (1, 1, 1))(current_layer)
+    act = Activation(activation_name)(final_convolution)
+    model = Model(inputs=inputs, outputs=act)
+
+    return compile_model(model, loss_function=loss_function,
+                         metrics=metrics,
+                         initial_learning_rate=initial_learning_rate)
 
 def create_convolution_block(input_layer, n_filters, batch_normalization=False, kernel=(3, 3, 3), activation=None,
                              padding='same', strides=(1, 1, 1), instance_normalization=True,
