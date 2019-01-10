@@ -130,6 +130,6 @@ config_finetune["n_epochs"] = 100  # cutoff the training after this many epochs
 # learning rate will be reduced after this many epochs if the validation loss is not improving
 config_finetune["patience"] = 5
 # training will be stopped after this many epochs without the validation loss improving
-config_finetune["early_stop"] = 20
+config_finetune["early_stop"] = 16
 config_finetune["initial_learning_rate"] = 4e-5 # factor by which the learning rate will be reduced
 config_finetune["learning_rate_drop"] = 0.2 # portion of the data that will be used for training

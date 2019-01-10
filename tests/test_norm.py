@@ -27,41 +27,41 @@ template = template.get_data()
 # save_nib(volume, temp_volume_path, affine)
 
 
-# volume_norm01 = normalize_volume(volume, template,
-#                                  is_normalize="01",
-#                                  is_hist_match="0")
-# save_nib(volume_norm01, temp_volume_norm01_path, affine)
+volume_norm01 = normalize_volume(volume, template,
+                                 is_normalize="01",
+                                 is_hist_match="0")
+save_nib(volume_norm01, temp_volume_norm01_path, affine)
 
 
-# volume_normz = normalize_volume(volume, template,
-#                                 is_normalize="z",
-#                                 is_hist_match="0")
-# save_nib(volume_normz, temp_volume_normz_path, affine)
+volume_normz = normalize_volume(volume, template,
+                                is_normalize="z",
+                                is_hist_match="0")
+save_nib(volume_normz, temp_volume_normz_path, affine)
 
 
-# volume_norm01_hist = normalize_volume(volume, template,
-#                                       is_normalize="01",
-#                                       is_hist_match="1")
-# save_nib(volume_norm01_hist, temp_volume_norm01_hist_path, affine)
+volume_norm01_hist = normalize_volume(volume, template,
+                                      is_normalize="01",
+                                      is_hist_match="1")
+save_nib(volume_norm01_hist, temp_volume_norm01_hist_path, affine)
 
 
-# volume_normz_hist = normalize_volume(volume, template,
-#                                      is_normalize="z",
-#                                      is_hist_match="1")
-# save_nib(volume_normz_hist, temp_volume_normz_hist_path, affine)
+volume_normz_hist = normalize_volume(volume, template,
+                                     is_normalize="z",
+                                     is_hist_match="1")
+save_nib(volume_normz_hist, temp_volume_normz_hist_path, affine)
 
 
-import numpy as np
-source = volume
+# import numpy as np
+# source = volume
 
-# reshape to 1d
-H, W, D = source.shape
-source_2d = source.reshape((H, W*D))
+# # reshape to 1d
+# H, W, D = source.shape
+# source_2d = source.reshape((H, W*D))
 
 
-volume_clahe = perform_clahe(source_2d, clip_limit=0.002)
-volume_clahe = volume_clahe.reshape(source.shape)
-save_nib(volume_clahe, temp_volume_clahe_path, affine)
+# volume_clahe = perform_clahe(source_2d, clip_limit=0.002)
+# volume_clahe = volume_clahe.reshape(source.shape)
+# save_nib(volume_clahe, temp_volume_clahe_path, affine)
 
 
 # save_nib(template, temp_template_path, affine)

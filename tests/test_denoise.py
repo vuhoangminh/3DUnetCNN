@@ -4,7 +4,7 @@ from scipy.ndimage.filters import gaussian_filter, median_filter
 
 laptop_save_dir = "C:/Users/minhm/Desktop/temp/"
 desktop_save_dir = "/home/minhvu/Desktop/temp/"
-save_dir = desktop_save_dir
+save_dir = laptop_save_dir
 
 temp_volume_path = save_dir + "volume.nii.gz"
 temp_template_path = save_dir + "template.nii.gz"
