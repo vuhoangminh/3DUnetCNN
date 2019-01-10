@@ -114,6 +114,34 @@ def simple_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
                          metrics=metrics,
                          initial_learning_rate=initial_learning_rate)
 
+
+def eye_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
+                        initial_learning_rate=0.00001,
+                        activation_name="sigmoid",
+                        depth=5,
+                        n_base_filters=16,
+                        metrics=minh_dice_coef_metric,
+                        loss_function="weighted",
+                        is_unet_original=True):
+    inputs = Input(input_shape)
+    current_layer = inputs
+    for layer_depth in reversed(range(depth)):
+        kernel_size = (layer_depth+1)*2+1
+        current_layer = create_convolution_block(input_layer=current_layer,
+                                                 n_filters=n_base_filters,
+                                                 batch_normalization=False,
+                                                 is_unet_original=is_unet_original,
+                                                 kernel=(kernel_size, kernel_size, kernel_size))
+
+    final_convolution = Conv3D(n_labels, (1, 1, 1))(current_layer)
+    act = Activation(activation_name)(final_convolution)
+    model = Model(inputs=inputs, outputs=act)
+
+    return compile_model(model, loss_function=loss_function,
+                         metrics=metrics,
+                         initial_learning_rate=initial_learning_rate)
+
+
 def create_convolution_block(input_layer, n_filters, batch_normalization=False, kernel=(3, 3, 3), activation=None,
                              padding='same', strides=(1, 1, 1), instance_normalization=True,
                              is_unet_original=True):

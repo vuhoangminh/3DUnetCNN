@@ -4,7 +4,7 @@ import os
 
 from unet3d.data import open_data_file
 from unet3d.generator import get_training_and_validation_and_testing_generators
-from unet3d.model import unet_model_3d, simple_model_3d
+from unet3d.model import unet_model_3d, simple_model_3d, eye_model_3d
 from unet3d.model import isensee2017_model
 from unet3d.model import densefcn_model_3d
 from unet3d.model import dense_unet_3d, res_unet_3d, se_unet_3d
@@ -163,10 +163,19 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                     pool_size=config["pool_size"],
                                     n_labels=config["n_labels"],
                                     initial_learning_rate=config["initial_learning_rate"],
-                                    # depth=depth_unet,
+                                    depth=4,
                                     # n_base_filters=n_base_filters_unet,
                                     loss_function=loss)
-            simple_model_3d
+
+        elif model_name == "eye":
+            print("init unet model")
+            model = eye_model_3d(input_shape=config["input_shape"],
+                                 pool_size=config["pool_size"],
+                                 n_labels=config["n_labels"],
+                                 initial_learning_rate=config["initial_learning_rate"],
+                                 depth=5,
+                                 n_base_filters=16,
+                                 loss_function=loss)
 
         else:
             print("init isensee model")
