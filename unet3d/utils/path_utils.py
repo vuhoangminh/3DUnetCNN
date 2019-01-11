@@ -144,7 +144,7 @@ def get_short_model_name(model_name, patch_shape, is_crf, depth_unet=None,
                          model_dim=3):
     model_temp = model_name
     model_temp = "{}{}d".format(model_name, str(model_dim))
-    if "unet" in model_name:
+    if "unet" in model_name or "simple" in model_name or "eye" in model_name:
         return "ps-{}_{}_crf-{}_d-{}_nb-{}".format(
             patch_shape, model_temp, str(is_crf),
             str(depth_unet), str(n_base_filters_unet))

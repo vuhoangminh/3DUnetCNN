@@ -163,8 +163,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                     pool_size=config["pool_size"],
                                     n_labels=config["n_labels"],
                                     initial_learning_rate=config["initial_learning_rate"],
-                                    depth=4,
-                                    # n_base_filters=n_base_filters_unet,
+                                    depth=depth_unet,
+                                    n_base_filters=n_base_filters_unet,
                                     loss_function=loss)
 
         elif model_name == "eye":
@@ -173,8 +173,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                  pool_size=config["pool_size"],
                                  n_labels=config["n_labels"],
                                  initial_learning_rate=config["initial_learning_rate"],
-                                 depth=5,
-                                 n_base_filters=16,
+                                 depth=depth_unet,
+                                 n_base_filters=n_base_filters_unet,
                                  loss_function=loss)
 
         else:

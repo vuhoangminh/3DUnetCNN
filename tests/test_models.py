@@ -45,20 +45,20 @@ K.set_image_data_format('channels_first')
 input_shape = (4, 128, 128, 128)
 
 
-# name = "unet3d"
-# model = unet_model_3d(input_shape=(4, 160, 192, 128),
-#                       n_labels=3,
-#                       depth=4,
-#                       n_base_filters=16,
-#                       is_unet_original=True)
-# model.summary()
-# save_plot(model, get_path(name))
+name = "unet3d"
+model = unet_model_3d(input_shape=(4, 160, 192, 128),
+                      n_labels=3,
+                      depth=4,
+                      n_base_filters=16,
+                      is_unet_original=True)
+model.summary()
+save_plot(model, get_path(name))
 
-# name = "isensee3d"
-# model = isensee2017_model(input_shape=(4, 160, 192, 128),
-#                           n_labels=3)
-# model.summary()
-# save_plot(model, get_path(name))
+name = "isensee3d"
+model = isensee2017_model(input_shape=(4, 160, 192, 128),
+                          n_labels=3)
+model.summary()
+save_plot(model, get_path(name))
 
 
 # name = "seunet3d"
@@ -152,19 +152,19 @@ input_shape = (4, 128, 128, 128)
 # save_plot(model, get_path(name))
 
 
-name = "simple3d"
-model = simple_model_3d(input_shape=(4, 160, 192, 128),
-                        n_labels=3,
-                        depth=4,
-                        n_base_filters=32)
-model.summary()
-save_plot(model, get_path(name))
+# name = "simple3d"
+# model = simple_model_3d(input_shape=(4, 160, 192, 128),
+#                         n_labels=3,
+#                         depth=4,
+#                         n_base_filters=32)
+# model.summary()
+# save_plot(model, get_path(name))
 
 
 name = "eye3d"
 model = eye_model_3d(input_shape=(4, 160, 192, 128),
                      n_labels=3,
-                     depth=6,
+                     depth=4,
                      n_base_filters=16)
 model.summary()
-save_plot(model, get_path(name))
+# save_plot(model, get_path(name))
