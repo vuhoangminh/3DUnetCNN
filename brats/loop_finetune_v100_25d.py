@@ -31,7 +31,9 @@ def run(model_filename, cmd):
         print("{} exists. Will skip!!".format(model_path))
     else:
         print(">> RUNNING:", cmd)
+        from keras import backend as K
         os.system(cmd)
+        K.clear_session()
 
 
 task = "finetune"
