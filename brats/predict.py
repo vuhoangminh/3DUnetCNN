@@ -128,35 +128,37 @@ def main():
     loss = args.loss
     model_dim = args.model_dim
 
-    for is_normalize in config_dict["is_normalize"]:
-        for is_denoise in config_dict["is_denoise"]:
-            for is_hist_match in config_dict["hist_match"]:
-                for model_name in config_dict["model"]:
-                    for patch_shape in config_dict["patch_shape"]:
-                        for model_dim in [2, 3, 25]:
-                            for loss in config_dict["loss"]:
-                                print("="*120)
-                                print(
-                                    ">> processing model-{}{}, patch_shape-{}, is_denoise-{}, is_normalize-{}, is_hist_match-{}, loss-{}".format(
-                                        model_name,
-                                        model_dim,
-                                        patch_shape,
-                                        is_denoise,
-                                        is_normalize,
-                                        is_hist_match,
-                                        loss))
-                                is_test = "0"
-                                predict(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-                                        image_shape=image_shape, is_bias_correction=is_bias_correction,
-                                        is_normalize=is_normalize, is_denoise=is_denoise,
-                                        is_hist_match=is_hist_match, is_test=is_test,
-                                        model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-                                        patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
-                                        loss=loss, model_dim=model_dim)
-                                # print("="*60)
-                                print(">> finished")
-                                print("="*120)
-                                gc.collect()
+    for depth_unet in [4]:
+        for n_base_filters_unet in [32]:
+            for is_normalize in config_dict["is_normalize"]:
+                for is_denoise in config_dict["is_denoise"]:
+                    for is_hist_match in config_dict["hist_match"]:
+                        for model_name in config_dict["model"]:
+                            for patch_shape in config_dict["patch_shape"]:
+                                for model_dim in [2, 3, 25]:
+                                    for loss in config_dict["loss"]:
+                                        print("="*120)
+                                        print(
+                                            ">> processing model-{}{}, patch_shape-{}, is_denoise-{}, is_normalize-{}, is_hist_match-{}, loss-{}".format(
+                                                model_name,
+                                                model_dim,
+                                                patch_shape,
+                                                is_denoise,
+                                                is_normalize,
+                                                is_hist_match,
+                                                loss))
+                                        is_test = "0"
+                                        predict(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+                                                image_shape=image_shape, is_bias_correction=is_bias_correction,
+                                                is_normalize=is_normalize, is_denoise=is_denoise,
+                                                is_hist_match=is_hist_match, is_test=is_test,
+                                                model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+                                                patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
+                                                loss=loss, model_dim=model_dim)
+                                        # print("="*60)
+                                        print(">> finished")
+                                        print("="*120)
+                                        gc.collect()
 
 
     print(list_already_predicted)
