@@ -187,7 +187,8 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         experiment.log_parameters(config)
 
     data_file_opened.close()
-
+    from keras import backend as K
+    K.clear_session()
 
 def main():
     args = get_args.train2d()

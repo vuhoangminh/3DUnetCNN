@@ -281,7 +281,8 @@ def finetune(overwrite=True,
             experiment.log_parameters(config)
 
     data_file_opened.close()
-
+    from keras import backend as K
+    K.clear_session()
 
 def main():
     args = get_args.finetune()
