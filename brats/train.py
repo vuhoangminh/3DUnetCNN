@@ -158,7 +158,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                loss_function=loss)
 
         elif model_name == "simple":
-            print("init unet model")
+            print("init simple model")
             model = simple_model_3d(input_shape=config["input_shape"],
                                     pool_size=config["pool_size"],
                                     n_labels=config["n_labels"],
@@ -168,7 +168,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                     loss_function=loss)
 
         elif model_name == "eye":
-            print("init unet model")
+            print("init eye model")
             model = eye_model_3d(input_shape=config["input_shape"],
                                  pool_size=config["pool_size"],
                                  n_labels=config["n_labels"],

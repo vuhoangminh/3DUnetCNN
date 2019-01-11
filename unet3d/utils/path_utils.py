@@ -130,7 +130,7 @@ def get_model_name(model_name, patch_shape, is_crf, depth_unet=None,
         from decimal import Decimal
         loss = "{}-{}".format(loss, "{:.0E}".format(Decimal(str(weight_tv_to_main_loss))))
         # loss = loss + "-" + Decimal(str(weight_tv_to_main_loss))
-    if "unet" in model_name:
+    if "unet" in model_name or "simple" in model_name or "eye" in model_name:
         return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}".format(
             patch_shape, model_temp, str(is_crf),
             str(depth_unet), str(n_base_filters_unet), loss)
