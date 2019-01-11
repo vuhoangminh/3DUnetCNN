@@ -164,7 +164,8 @@ save_plot(model, get_path(name))
 name = "eye3d"
 model = eye_model_3d(input_shape=(4, 160, 192, 128),
                      n_labels=3,
-                     depth=4,
-                     n_base_filters=16)
+                     depth=3,
+                     n_base_filters=16,
+                     growth_rate=4)
 model.summary()
 # save_plot(model, get_path(name))
