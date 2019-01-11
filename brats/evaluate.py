@@ -97,8 +97,11 @@ def evaluate(overwrite=True, crop=True, challenge="brats", year=2018,
     config["patch_shape"] = get_shape_from_string(patch_shape)
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
+    
+    prediction_dir = "/mnt/sda/3DUnetCNN_BRATS/brats"
+        # prediction_dir = BRATS_DIR
     config["prediction_folder"] = os.path.join(
-        BRATS_DIR, "database/prediction", get_filename_without_extension(config["model_file"]))
+        prediction_dir, "database/prediction", get_filename_without_extension(config["model_file"]))
 
     if not os.path.exists(config["prediction_folder"]):
         print("model not exists. Please check")
