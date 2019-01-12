@@ -106,7 +106,7 @@ config_dict["year"] = [2018, 2019]
 config_dict["model"] = ["unet", "isensee", "densefcn", "denseunet", "resunet", "seunet", "seisensee", "simple", "eye"]
 # "deepmedic", "maskrcnn", "cascaded", "proposed"]
 config_dict["depth_unet"] = [3, 4, 5, 6]  # depth of unet
-config_dict["n_base_filters_unet"] = [8, 16, 32]  # number of base filters of unet
+config_dict["n_base_filters_unet"] = [4, 8, 16, 32]  # number of base filters of unet
 config_dict["image_shape"] = ["160-192-128", "144-144-144", "240-240-155"]
 config_dict["patch_shape"] = ["16-16-16", "32-32-32", "64-64-64", "128-128-128", "160-192-128", "160-192-1", "160-192-7"]
 config_dict["is_bias_correction"] = ["0","1"]

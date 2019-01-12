@@ -119,7 +119,7 @@ def eye_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
                  initial_learning_rate=0.00001,
                  activation_name="sigmoid",
                  depth=5,
-                 n_base_filters=16,
+                 n_base_filters=8,
                  growth_rate=2,
                  metrics=minh_dice_coef_metric,
                  loss_function="weighted",
@@ -128,8 +128,9 @@ def eye_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
     current_layer = inputs
     for layer_depth in reversed(range(depth)):
         kernel_size = 3 + layer_depth*growth_rate
+        n_filters = n_base_filters*2**(depth-layer_depth-1)
         current_layer = create_convolution_block(input_layer=current_layer,
-                                                 n_filters=n_base_filters,
+                                                 n_filters=n_filters,
                                                  batch_normalization=False,
                                                  is_unet_original=is_unet_original,
                                                  kernel=(kernel_size, kernel_size, kernel_size))
