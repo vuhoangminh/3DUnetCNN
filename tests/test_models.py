@@ -5,6 +5,7 @@ from unet3d.model import isensee2017_model
 from unet3d.model import unet_model_3d, simple_model_3d, eye_model_3d
 from unet3d.model import dense_unet_3d
 from unet3d.model import res_unet_3d
+from unet3d.model import mnet_model_3d
 
 from unet2d.model import densefcn_model_2d
 from unet2d.model import unet_model_2d
@@ -45,20 +46,20 @@ K.set_image_data_format('channels_first')
 input_shape = (4, 128, 128, 128)
 
 
-name = "unet3d"
-model = unet_model_3d(input_shape=(4, 160, 192, 128),
-                      n_labels=3,
-                      depth=4,
-                      n_base_filters=16,
-                      is_unet_original=True)
-model.summary()
-save_plot(model, get_path(name))
+# name = "unet3d"
+# model = unet_model_3d(input_shape=(4, 160, 192, 128),
+#                       n_labels=3,
+#                       depth=4,
+#                       n_base_filters=16,
+#                       is_unet_original=True)
+# model.summary()
+# save_plot(model, get_path(name))
 
-name = "isensee3d"
-model = isensee2017_model(input_shape=(4, 160, 192, 128),
-                          n_labels=3)
-model.summary()
-save_plot(model, get_path(name))
+# name = "isensee3d"
+# model = isensee2017_model(input_shape=(4, 160, 192, 128),
+#                           n_labels=3)
+# model.summary()
+# save_plot(model, get_path(name))
 
 
 # name = "seunet3d"
@@ -161,11 +162,19 @@ save_plot(model, get_path(name))
 # save_plot(model, get_path(name))
 
 
-name = "eye3d"
-model = eye_model_3d(input_shape=(4, 160, 192, 128),
-                     n_labels=3,
-                     depth=3,
-                     n_base_filters=16,
-                     growth_rate=4)
-model.summary()
+# name = "eye3d"
+# model = eye_model_3d(input_shape=(4, 160, 192, 128),
+#                      n_labels=3,
+#                      depth=3,
+#                      n_base_filters=16,
+#                      growth_rate=4)
+# model.summary()
 # save_plot(model, get_path(name))
+
+
+name = "mnet3d"
+model = mnet_model_3d(input_shape=(4, 160, 192, 128),
+                      n_labels=3,
+                      n_base_filters=32)
+model.summary()
+save_plot(model, get_path(name))

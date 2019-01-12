@@ -32,17 +32,25 @@ model_path = BRATS_DIR + "/database/model/finetune/brats_2018_is-160-192-128_cro
 
 # print("time load new:", t1-t0)
 
-path = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/database/prediction/csv/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-0_ps-128-128-128_isensee3d_crf-0_loss-minh_model.csv"
-import pandas as pd
 
-df = pd.read_csv(path)
+# path = "C:/Users/minhm/Documents/GitHub/3DUnetCNN_BRATS/brats/database/prediction/csv/brats_2018_is-160-192-128_crop-1_bias-1_denoise-0_norm-01_hist-0_ps-128-128-128_isensee3d_crf-0_loss-minh_model.csv"
+# import pandas as pd
 
-scores = dict()
-for index, score in enumerate(df.columns):
-    if "dice" in score:
-        values = df.values.T[index]
-        scores[score] = values[np.isnan(values) == False]
+# df = pd.read_csv(path)
 
-print(scores)
+# scores = dict()
+# for index, score in enumerate(df.columns):
+#     if "dice" in score:
+#         values = df.values.T[index]
+#         scores[score] = values[np.isnan(values) == False]
 
-print(model_path)
+# print(scores)
+
+# print(model_path)
+
+
+depth = 4
+for layer_depth in reversed(range(depth)):
+    kernel_size = 3 + layer_depth*2
+    filters = 8*2**(depth-layer_depth-1)
+    print(kernel_size, filters)
