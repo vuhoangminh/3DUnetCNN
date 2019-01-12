@@ -175,7 +175,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                  initial_learning_rate=config["initial_learning_rate"],
                                  depth=depth_unet,
                                  n_base_filters=n_base_filters_unet,
-                                 growth_rate=4,
+                                 growth_rate=2,
                                  loss_function=loss)
 
         else:
