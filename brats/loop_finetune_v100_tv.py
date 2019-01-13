@@ -32,7 +32,7 @@ def run(model_filename, cmd):
     else:
         print(">> RUNNING:", cmd)
         print("model filename:", model_filename)
-        os.system(cmd)
+        # os.system(cmd)
 
 
 task = "finetune"

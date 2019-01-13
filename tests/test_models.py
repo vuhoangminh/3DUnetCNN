@@ -3,7 +3,7 @@ from unet25d.model import isensee25d_model
 from unet3d.model import se_unet_3d
 from unet3d.model import densefcn_model_3d
 from unet3d.model import isensee2017_model
-from unet3d.model import unet_model_3d, simple_model_3d, eye_model_3d
+from unet3d.model import unet_model_3d, simple_model_3d, eye_model_3d, multiscale_unet_model_3d
 from unet3d.model import dense_unet_3d
 from unet3d.model import res_unet_3d
 from unet3d.model import mnet_model_3d
@@ -173,11 +173,11 @@ input_shape = (4, 128, 128, 128)
 # save_plot(model, get_path(name))
 
 
-name = "mnet3d"
-model = mnet_model_3d(input_shape=(4, 160, 192, 128),
-                      n_labels=3,
-                      n_base_filters=64)
-model.summary()
+# name = "mnet3d"
+# model = mnet_model_3d(input_shape=(4, 160, 192, 128),
+#                       n_labels=3,
+#                       n_base_filters=64)
+# model.summary()
 # save_plot(model, get_path(name))
 
 
@@ -185,3 +185,12 @@ model.summary()
 #                        n_labels=3,
 #                        n_base_filters=16)
 # model.summary()
+
+
+name = "multi_unet3d"
+model = multiscale_unet_model_3d(input_shape=(4, 160, 192, 128),
+                                 n_labels=3,
+                                 n_base_filters=32,
+                                 depth=3)
+model.summary()
+save_plot(model, get_path(name))
