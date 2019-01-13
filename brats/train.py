@@ -179,12 +179,23 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                  loss_function=loss)
 
         elif model_name == "m":
+            print("init mnet model")
             model = mnet_model_3d(input_shape=config["input_shape"],
                                   pool_size=config["pool_size"],
                                   n_labels=config["n_labels"],
                                   initial_learning_rate=config["initial_learning_rate"],
                                   n_base_filters=32,
                                   loss_function=loss)
+
+        elif model_name == "m2":
+            print("init mnet model")
+            from unet3d.model.mnet import mnet_model2_3d
+            model = mnet_model2_3d(input_shape=config["input_shape"],
+                                   pool_size=config["pool_size"],
+                                   n_labels=config["n_labels"],
+                                   initial_learning_rate=config["initial_learning_rate"],
+                                   n_base_filters=16,
+                                   loss_function=loss)
 
         else:
             print("init isensee model")

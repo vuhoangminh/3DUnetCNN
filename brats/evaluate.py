@@ -199,7 +199,8 @@ def main():
     # for depth_unet in [3,4]:
     #     for n_base_filters_unet in [16,32]:
     for model_dim in [2, 3, 25]:
-        for model_name in config_dict["model"]:
+        # for model_name in config_dict["model"]:
+        for model_name in ["m", "m2"]:
             for is_normalize in config_dict["is_normalize"]:
                 for is_denoise in config_dict["is_denoise"]:
                     for is_hist_match in config_dict["hist_match"]:

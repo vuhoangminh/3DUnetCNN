@@ -1,6 +1,7 @@
 from functools import partial
 
-from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Activation, SpatialDropout3D, Conv3D
+from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Activation
+from keras.layers import SpatialDropout3D, Conv3D, Deconvolution3D, MaxPooling3D
 from keras.engine import Model
 from keras.optimizers import Adam
 
@@ -109,6 +110,9 @@ def mnet_model2_3d(input_shape=(4, 128, 128, 128), n_base_filters=32,
     down1 = create_convolution_block(down0, n_filters=4, strides=pool_size)
     down2 = create_convolution_block(down1, n_filters=4, strides=pool_size)
     down3 = create_convolution_block(down2, n_filters=4, strides=pool_size)
+    # down1 = MaxPooling3D(pool_size=pool_size)(down0)
+    # down2 = MaxPooling3D(pool_size=pool_size)(down1)
+    # down3 = MaxPooling3D(pool_size=pool_size)(down2)
 
     conv0 = create_convolution_block(down0, n_filters=n_base_filters)
     conv1 = create_convolution_block(down1, n_filters=n_base_filters*2)
@@ -120,12 +124,12 @@ def mnet_model2_3d(input_shape=(4, 128, 128, 128), n_base_filters=32,
 
     concat2 = concatenate([out3, conv2], axis=1)
     out2 = create_convolution_block(concat2, n_filters=n_base_filters*4)
-    out2 = create_up_sampling_module(
+    out2 = create_up_sampling_module2(
         out2, n_filters=n_base_filters*4, size=pool_size)
 
     concat1 = concatenate([out2, conv1], axis=1)
     out1 = create_convolution_block(concat1, n_filters=n_base_filters*2)
-    out1 = create_up_sampling_module(
+    out1 = create_up_sampling_module2(
         out1, n_filters=n_base_filters*2, size=pool_size)
 
     concat0 = concatenate([out1, conv0], axis=1)
@@ -149,5 +153,12 @@ def create_localization_module(input_layer, n_filters):
 
 def create_up_sampling_module(input_layer, n_filters, size=(2, 2, 2)):
     up_sample = UpSampling3D(size=size)(input_layer)
+    convolution = create_convolution_block(up_sample, n_filters)
+    return convolution
+
+
+def create_up_sampling_module2(input_layer, n_filters, size=(2, 2, 2)):
+    up_sample = Deconvolution3D(filters=n_filters, kernel_size=size,
+                                strides=size)(input_layer)
     convolution = create_convolution_block(up_sample, n_filters)
     return convolution
