@@ -103,7 +103,8 @@ config["skip_blank"] = True
 config_dict = dict()
 config_dict["challenge"] = ["brats"]
 config_dict["year"] = [2018, 2019]
-config_dict["model"] = ["unet", "isensee", "densefcn", "denseunet", "resunet", "seunet", "seisensee", "simple", "eye", "m", "m2"]
+config_dict["model"] = ["unet", "isensee", "densefcn", "denseunet", "resunet", "seunet", "seisensee", "simple", "eye", "m", "m2", "multi"]
+config_dict["model_depth"] = ["unet", "seunet", "multi", "denseunet", "resunet"]
 # "deepmedic", "maskrcnn", "cascaded", "proposed"]
 config_dict["depth_unet"] = [3, 4, 5, 6]  # depth of unet
 config_dict["n_base_filters_unet"] = [4, 8, 16, 32]  # number of base filters of unet

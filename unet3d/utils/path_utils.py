@@ -12,6 +12,7 @@ import ntpath
 from unet3d.utils.print_utils import print_processing, print_section, print_separator
 import numpy as np
 from unet3d.utils.utils import str2bool
+from brats.config import config_dict
 
 
 def get_project_dir(path, project_name):
@@ -130,7 +131,7 @@ def get_model_name(model_name, patch_shape, is_crf, depth_unet=None,
         from decimal import Decimal
         loss = "{}-{}".format(loss, "{:.0E}".format(Decimal(str(weight_tv_to_main_loss))))
         # loss = loss + "-" + Decimal(str(weight_tv_to_main_loss))
-    if "unet" in model_name or "simple" in model_name or "eye" in model_name:
+    if any(ext in model_name for ext in config_dict["model_depth"]):        
         return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}".format(
             patch_shape, model_temp, str(is_crf),
             str(depth_unet), str(n_base_filters_unet), loss)
