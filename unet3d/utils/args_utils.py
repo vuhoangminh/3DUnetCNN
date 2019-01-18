@@ -92,7 +92,9 @@ def train():
     parser.add_argument('-du', '--depth_unet', type=int,
                         default=4, choices=config_dict["depth_unet"])
     parser.add_argument('-nb', '--n_base_filters_unet', type=int,
-                        default=16, choices=config_dict["n_base_filters_unet"])
+                        default=16, 
+                        # choices=config_dict["n_base_filters_unet"]
+                        )
     parser.add_argument('-ps', '--patch_shape', type=str,
                         default="128-128-128", choices=config_dict["patch_shape"],
                         help="patch shape to train")

@@ -19,3 +19,6 @@ test_dir
 *.out
 *.png
 *.sh
+*.csv
+*.xlsx
+!compile.csv
