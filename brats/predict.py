@@ -128,11 +128,12 @@ def main():
     loss = args.loss
     model_dim = args.model_dim
 
-    # for depth_unet in [4, 5]:
-    for depth_unet in [5, 4]:
-        for n_base_filters_unet in [32, 16]:
-            # for model_dim in [2, 3, 25]:
-            for model_dim in [2, 3, 25]:                
+    for depth_unet in [4]:
+    # for depth_unet in [5, 4]:
+        # for n_base_filters_unet in [32, 16]:
+        for n_base_filters_unet in [16]:
+            for model_dim in [25]:
+            # for model_dim in [2, 3, 25]:                
                 if depth_unet == 5 or n_base_filters_unet == 32:
                     list_model = config_dict["model_depth"]
                 else:
