@@ -127,9 +127,6 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
 
-    print("Number of training steps: ", num_training_steps)
-    print("Number of validation steps: ", num_validation_steps)
-
     return training_generator, validation_generator, num_training_steps, num_validation_steps
 
 
