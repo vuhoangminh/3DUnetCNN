@@ -375,7 +375,8 @@ def add_data(x_list, y_list, data_file, index, patch_shape=None,
         is_added = True
     if model_dim == 25:
         truth_slice = truth[..., int((patch_shape[-1]-1)/2)]
-        if np.any(truth_slice != 0):
+        # if np.any(truth_slice != 0):
+        if np.any(data != 0):
             is_added = True
     if model_dim == 2 and np.any(truth != 0):
         is_added = True

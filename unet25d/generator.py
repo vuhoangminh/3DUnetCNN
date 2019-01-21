@@ -103,17 +103,17 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
 
     print(">> compute number of training and validation steps")
 
-    if is_test == "1":
-        num_training_steps = get_number_of_steps(get_number_of_patches25d(data_file, training_list, patch_shape,
-                                                                          patch_start_offset=training_patch_start_offset,
-                                                                          patch_overlap=train_patch_overlap),
-                                                 batch_size)
-        num_validation_steps = get_number_of_steps(get_number_of_patches25d(data_file, validation_list, patch_shape,
-                                                                            patch_overlap=valid_patch_overlap),
-                                                   validation_batch_size)
-    else:
-        num_training_steps = get_number_of_steps(5576, batch_size)
-        num_validation_steps = get_number_of_steps(2794, validation_batch_size)
+    # if is_test == "1":
+    num_training_steps = get_number_of_steps(get_number_of_patches25d(data_file, training_list, patch_shape,
+                                                                        patch_start_offset=training_patch_start_offset,
+                                                                        patch_overlap=train_patch_overlap),
+                                                batch_size)
+    num_validation_steps = get_number_of_steps(get_number_of_patches25d(data_file, validation_list, patch_shape,
+                                                                        patch_overlap=valid_patch_overlap),
+                                                validation_batch_size)
+    # else:
+    #     num_training_steps = get_number_of_steps(5576, batch_size)
+    #     num_validation_steps = get_number_of_steps(2794, validation_batch_size)
 
 
     print("Number of training steps: ", num_training_steps)
