@@ -378,7 +378,8 @@ def add_data(x_list, y_list, data_file, index, patch_shape=None,
         # if np.any(truth_slice != 0):
         if np.any(data != 0):
             is_added = True
-    if model_dim == 2 and np.any(truth != 0):
+    # if model_dim == 2 and np.any(truth != 0):
+    if model_dim==2 and np.any(data != 0):
         is_added = True
     if is_added:
         x_list.append(data)
