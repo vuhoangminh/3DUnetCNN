@@ -71,9 +71,11 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
         data_split=0.8, overwrite=False)
 
     print("training_list:", training_list)
-
-    train_patch_overlap = np.asarray([0, 0, patch_shape[-1]-2])
+    # train_patch_overlap = np.asarray([0, 0, patch_shape[-1]-2])
+    # valid_patch_overlap = np.asarray([0, 0, patch_shape[-1]-1])
+    train_patch_overlap = np.asarray([0, 0, patch_shape[-1]-1])
     valid_patch_overlap = np.asarray([0, 0, patch_shape[-1]-1])
+
     print(">> training data generator")
     training_generator = data_generator25d(data_file, training_list,
                                            batch_size=batch_size,
@@ -121,7 +123,7 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
                                                                    patch_overlap=train_patch_overlap),
                                              batch_size)
     num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                     patch_overlap=validation_patch_overlap),
+                                                                     patch_overlap=valid_patch_overlap),
                                                validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)

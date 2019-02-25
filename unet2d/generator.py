@@ -101,7 +101,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
 
     # Set the number of training and testing samples per epoch correctly
     # if overwrite or not os.path.exists(n_steps_file):
-    print(">> compute number of training and validation steps")
+    # print(">> compute number of training and validation steps")
     # if is_test == "1":
     #     num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
     #                                                                      patch_start_offset=training_patch_start_offset,
@@ -110,6 +110,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     #     num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
     #                                                                        patch_overlap=0),
     #                                                validation_batch_size)
+
     # else:
     #     # num_training_steps = get_number_of_steps(11137, batch_size)
     #     num_training_steps = get_number_of_steps(5576, batch_size)

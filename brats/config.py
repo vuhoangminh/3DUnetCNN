@@ -79,12 +79,12 @@ config_unet["is_create_patch_index_list_original"] = True
 
 
 config["augment_flipud"] = False
-config["augment_fliplr"] = True
-# config["augment_fliplr"] = False
+# config["augment_fliplr"] = True
+config["augment_fliplr"] = False
 # config["augment_elastic"] = True
 config["augment_elastic"] = False
-# config["augment_rotation"] = False
-config["augment_rotation"] = True
+config["augment_rotation"] = False
+# config["augment_rotation"] = True
 config["augment_shift"] = False
 config["augment_shear"] = False
 config["augment_zoom"] = False
