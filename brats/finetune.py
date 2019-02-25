@@ -220,6 +220,10 @@ def finetune(overwrite=True,
     print("# start finetuning")
     print("-"*60)
 
+    print("Number of training steps: ", n_train_steps)
+    print("Number of validation steps: ", n_validation_steps)
+
+
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         BRATS_DIR,
         overwrite=overwrite,
