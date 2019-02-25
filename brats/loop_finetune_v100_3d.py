@@ -69,7 +69,7 @@ for model_name in ["unet", "isensee"]:
                             loss=loss,
                             model_dim=model_dim)
 
-                        cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 64 -dim 3".format(
+                        cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 1 -dim 3".format(
                             task,
                             is_test,
                             is_normalize,
