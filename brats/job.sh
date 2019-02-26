@@ -2,7 +2,7 @@
 #SBATCH -A SNIC2018-3-406
 #SBATCH -n 1
 #SBATCH --exclusive
-#SBATCH --time=05-00:00:00
+#SBATCH --time=07-00:00:00
 #SBATCH --error=%J_error.out
 #SBATCH --output=%J_output.out
 #SBATCH --gres=gpu:k80:2
