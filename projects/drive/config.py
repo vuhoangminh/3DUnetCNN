@@ -23,7 +23,7 @@ config["dataset_minh_normalize"] = ["original_minh_normalize", "preprocessed_min
 config["original_folder"] = ["original_bak"]
 config["project_name"] = "3DUnetCNN_BRATS"
 config["brats_folder"] = "projects/drive"
-config["dataset_folder"] = "dataset"
+config["dataset_folder"] = "projects/drive/database"
 config["template_data_folder"] = "data_train"
 config["template_folder"] = "HGG/Brats18_2013_2_1"
 

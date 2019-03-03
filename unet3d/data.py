@@ -61,7 +61,8 @@ def add_data_to_storage(data_storage, truth_storage, affine_storage, subject_dat
     affine_storage.append(np.asarray(affine)[np.newaxis])
 
 
-def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, truth_dtype=np.uint8,
+def write_data_to_file(training_data_files, out_file, image_shape, brats_dir,
+                       config, truth_dtype=np.uint8,
                        subject_ids=None, normalize=True, crop=True, is_normalize="z",
                        is_hist_match="0", dataset="test", is_denoise="0"):
     """
@@ -111,10 +112,11 @@ def write_data_to_file(training_data_files, out_file, image_shape, brats_dir, tr
         normalize_data_storage(data_storage=data_storage,
                                training_data_files=training_data_files,
                                brats_dir=brats_dir,
+                               config=config,
                                dataset=dataset,
                                is_normalize=is_normalize,
                                is_hist_match=is_hist_match)
-                               
+
     hdf5_file.close()
     return out_file
 

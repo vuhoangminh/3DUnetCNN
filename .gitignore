@@ -24,4 +24,4 @@ test_dir
 *.tif
 *.xlsx
 !compile.csv
-data/
+raw/

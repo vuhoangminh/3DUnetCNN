@@ -13,7 +13,6 @@ from unet3d.utils.utils import resize, read_image_files
 from unet3d.utils.path_utils import get_template_path
 
 from unet3d.utils.volume import get_background_mask
-from brats.config import config
 
 from unet3d.utils.utils import str2bool
 
@@ -183,7 +182,7 @@ def normalize_volume(source, template,
     return source_norm
 
 
-def normalize_data(data, data_paths, brats_dir,
+def normalize_data(data, data_paths, brats_dir, config,
                    dataset="test",
                    is_normalize="z",
                    is_hist_match="0"):
@@ -213,13 +212,14 @@ def normalize_data(data, data_paths, brats_dir,
     return data
 
 
-def normalize_data_storage(data_storage, training_data_files, brats_dir,
+def normalize_data_storage(data_storage, training_data_files, brats_dir, config,
                            dataset="original", is_normalize="z", is_hist_match="0"):
     for index in range(data_storage.shape[0]):
         data_paths = training_data_files[index]
         data_storage[index] = normalize_data(data_storage[index],
                                              data_paths,
                                              brats_dir,
+                                             config=config,
                                              dataset=dataset,
                                              is_normalize=is_normalize,
                                              is_hist_match=is_hist_match)

@@ -10,6 +10,8 @@ def denoise_data(data, is_denoise="gaussian"):
             volume_denoise = gaussian_filter(volume, sigma=0.5)
         elif is_denoise == "median":
             volume_denoise = median_filter(volume, size=3)
+        elif is_denoise == "bm4d":
+            volume_denoise = volume
         else:
             raise Exception("{} not support", is_denoise)
         data[i, :, :, :] = volume_denoise
