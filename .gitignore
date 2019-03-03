@@ -20,5 +20,8 @@ test_dir
 *.png
 # *.sh
 *.csv
+*.gif
+*.tif
 *.xlsx
 !compile.csv
+data/
