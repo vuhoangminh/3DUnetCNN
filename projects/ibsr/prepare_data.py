@@ -99,12 +99,12 @@ def main():
     is_hist_match = args.is_hist_match
 
 
-    # for is_denoise in config_dict["is_denoise"]:
-    #     for is_normalize in config_dict["is_normalize"]:
-    #         for is_hist_match in ["0", "1"]:
-    for is_denoise in ["bm4d"]:
+    for is_denoise in config_dict["is_denoise"]:
         for is_normalize in config_dict["is_normalize"]:
             for is_hist_match in ["0", "1"]:
+    # for is_denoise in ["bm4d"]:
+    #     for is_normalize in config_dict["is_normalize"]:
+    #         for is_hist_match in ["0", "1"]:
                 if is_normalize == "z" and is_hist_match == "1":
                     continue
                 else:

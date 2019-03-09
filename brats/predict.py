@@ -38,7 +38,8 @@ def predict(overwrite=True, crop=True, challenge="brats", year=2018,
             is_hist_match="0", is_test="1",
             depth_unet=4, n_base_filters_unet=16, model_name="unet",
             patch_shape="128-128-128", is_crf="0",
-            batch_size=1, loss="minh", model_dim=3):
+            batch_size=1, loss="minh", model_dim=3,
+            prediction_dir="SERVER"):
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
@@ -61,12 +62,15 @@ def predict(overwrite=True, crop=True, challenge="brats", year=2018,
         config["input_shape"] = tuple(
             [config["nb_channels"]] + list(config["patch_shape"]))
 
-        prediction_dir = "/mnt/sda/3DUnetCNN_BRATS/brats"
+
+        if prediction_dir=="SERVER":
+            prediction_dir = "brats"
+        else:
+            prediction_dir = "/mnt/sda/3DUnetCNN_BRATS/brats"
         # prediction_dir = BRATS_DIR
         config["prediction_folder"] = os.path.join(
             prediction_dir, "database/prediction", get_filename_without_extension(config["model_file"]))
 
-        
         if is_all_cases_predicted(config["prediction_folder"], config["testing_file"]):
             print("Already predicted. Skip...")
             list_already_predicted.append(config["prediction_folder"])
@@ -130,7 +134,7 @@ def main():
 
     for depth_unet in [4]:
         for n_base_filters_unet in [16]:
-            for model_dim in [3]:
+            for model_dim in [3,2]:
             # for model_dim in [2, 3, 25]:                
                 # if depth_unet == 5 or n_base_filters_unet == 32:
                 #     list_model = config_dict["model_depth"]
@@ -156,23 +160,23 @@ def main():
                                                 is_hist_match,
                                                 loss))
                                         is_test = "0"
-    #                                     predict(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-    #                                             image_shape=image_shape, is_bias_correction=is_bias_correction,
-    #                                             is_normalize=is_normalize, is_denoise=is_denoise,
-    #                                             is_hist_match=is_hist_match, is_test=is_test,
-    #                                             model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-    #                                             patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
-    #                                             loss=loss, model_dim=model_dim)
-    #                                     # print("="*60)
-    #                                     print(">> finished")
-    #                                     print("="*120)
-    #                                     gc.collect()
-    #                                     from keras import backend as K
-    #                                     K.clear_session()
+                                        predict(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+                                                image_shape=image_shape, is_bias_correction=is_bias_correction,
+                                                is_normalize=is_normalize, is_denoise=is_denoise,
+                                                is_hist_match=is_hist_match, is_test=is_test,
+                                                model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+                                                patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
+                                                loss=loss, model_dim=model_dim)
+                                        # print("="*60)
+                                        print(">> finished")
+                                        print("="*120)
+                                        gc.collect()
+                                        from keras import backend as K
+                                        K.clear_session()
 
 
-    # print(list_already_predicted)
-    # print(len(list_already_predicted))
+    print(list_already_predicted)
+    print(len(list_already_predicted))
 
 if __name__ == "__main__":
     main()
