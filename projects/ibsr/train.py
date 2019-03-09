@@ -19,8 +19,7 @@ from brats.prepare_data import prepare_data
 
 from unet3d.utils.print_utils import print_section, print_separator
 
-from brats.config import config, config_unet
-
+from projects.ibsr.config import config, config_dict, config_unet
 
 config.update(config_unet)
 
@@ -262,7 +261,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
 
 
 def main():
-    args = get_args.train()
+    args = get_args.train_ibsr()
     overwrite = args.overwrite
     crop = args.crop
     challenge = args.challenge

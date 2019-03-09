@@ -19,12 +19,9 @@ from brats.prepare_data import prepare_data
 
 from unet3d.utils.print_utils import print_processing, print_section, print_separator
 
-from brats.config import config, config_unet
+from projects.ibsr.config import config, config_dict, config_unet
 
-# pp = pprint.PrettyPrinter(indent=4)
-# # pp.pprint(config)
 config.update(config_unet)
-# pp.pprint(config)
 
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
