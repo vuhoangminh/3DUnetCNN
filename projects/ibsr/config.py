@@ -34,7 +34,7 @@ config["image_shape"] = (144,144,144)
 # config["is_create_patch_index_list_original"] = False
 
 
-config["labels"] = (1, 2, 4)  # the label numbers on the input image
+config["labels"] = (1, 2, 3)  # the label numbers on the input image
 # config["labels"] = (0, 1, 2, 4)  # the label numbers on the input image
 config["n_labels"] = len(config["labels"])
 

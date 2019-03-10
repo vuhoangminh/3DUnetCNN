@@ -282,6 +282,21 @@ def main():
     loss = args.loss
     weight_tv_to_main_loss = args.weight_tv_to_main_loss
 
+    data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
+        brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+        image_shape=image_shape, is_bias_correction=is_bias_correction,
+        is_normalize=is_normalize, is_denoise=is_denoise,
+        is_hist_match=is_hist_match, is_test=is_test,
+        model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=3,
+        weight_tv_to_main_loss=weight_tv_to_main_loss)
+
+    if overwrite or not os.path.exists(data_path):
+        prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+                     image_shape=image_shape, is_bias_correction=is_bias_correction,
+                     is_normalize=is_normalize, is_denoise=is_denoise,
+                     is_hist_match=is_hist_match, is_test=is_test)
+
     train(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
           image_shape=image_shape, is_bias_correction=is_bias_correction,
           is_normalize=is_normalize, is_denoise=is_denoise,

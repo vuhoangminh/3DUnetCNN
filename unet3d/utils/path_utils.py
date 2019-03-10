@@ -15,6 +15,18 @@ from unet3d.utils.utils import str2bool
 from brats.config import config_dict
 
 
+def find_is_augment(config):
+    augment_flipud=config["augment_flipud"],
+    augment_fliplr=config["augment_fliplr"],
+    augment_elastic=config["augment_elastic"],
+    augment_rotation=config["augment_rotation"],
+    augment_shift=config["augment_shift"],
+    augment_shear=config["augment_shear"],
+    augment_zoom=config["augment_zoom"]
+    augment = augment_flipud or augment_fliplr or augment_elastic or augment_rotation or augment_shift or augment_shear or augment_zoom
+    return "1" if augment else "0"
+
+
 def get_project_dir(path, project_name):
     paths = path.split(project_name)
     return paths[0] + project_name
@@ -103,11 +115,6 @@ def get_template_path(path, brats_dir, dataset="test", template_data_folder="dat
     return template_path
 
 
-# brats_2018_is-160-192-128_bias-1_denoise-0_norm-z_ps-128-128-128_unet_crf-0_d-4_nb-16.h5
-# brats_2018_is-160-192-128_bias-1_denoise-bm4d_norm-minh_data.h5
-# brats_2018_is-160-192-128_bias-1_denoise-bm4d_norm-minh_train_ids.h5
-# brats_2018_is-160-192-128_bias-1_denoise-bm4d_norm-minh_valid_ids.h5
-
 def get_h5_training_dir(brats_dir, datatype="data"):
     return os.path.join(brats_dir, "database", datatype)
 
@@ -124,20 +131,22 @@ def get_core_name(challenge="brats", year="2018",
 
 def get_model_name(model_name, patch_shape, is_crf, depth_unet=None,
                    n_base_filters_unet=None, loss="weighted",
-                   model_dim=3, weight_tv_to_main_loss=0.1):
+                   model_dim=3, weight_tv_to_main_loss=0.1,
+                   is_augment="1"):
     model_temp = model_name
     model_temp = "{}{}d".format(model_name, str(model_dim))
     if "tv" in loss:
         from decimal import Decimal
-        loss = "{}-{}".format(loss, "{:.0E}".format(Decimal(str(weight_tv_to_main_loss))))
+        loss = "{}-{}".format(loss,
+                              "{:.0E}".format(Decimal(str(weight_tv_to_main_loss))))
         # loss = loss + "-" + Decimal(str(weight_tv_to_main_loss))
-    if any(ext in model_name for ext in config_dict["model_depth"]):        
-        return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}".format(
+    if any(ext in model_name for ext in config_dict["model_depth"]):
+        return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}_aug-{}".format(
             patch_shape, model_temp, str(is_crf),
-            str(depth_unet), str(n_base_filters_unet), loss)
+            str(depth_unet), str(n_base_filters_unet), loss, str(is_augment))
     else:
-        return "ps-{}_{}_crf-{}_loss-{}".format(
-            patch_shape, model_temp, str(is_crf), loss)
+        return "ps-{}_{}_crf-{}_loss-{}_aug-{}".format(
+            patch_shape, model_temp, str(is_crf), loss, str(is_augment))
 
 
 def get_short_model_name(model_name, patch_shape, is_crf, depth_unet=None,
@@ -226,9 +235,10 @@ def get_model_h5_filename(datatype, challenge="brats", year="2018",
                           is_hist_match="0", is_test="1",
                           depth_unet=4, n_base_filters_unet=16,
                           model_name="unet", patch_shape="128-128-128", is_crf="0",
-                          loss="weighted", 
+                          loss="weighted",
                           model_dim=3,
-                          weight_tv_to_main_loss=0.1):
+                          weight_tv_to_main_loss=0.1,
+                          is_augment="1"):
     core_name = get_core_name(challenge=challenge, year=year,
                               image_shape=image_shape, crop=crop,
                               is_bias_correction=is_bias_correction,
@@ -298,7 +308,8 @@ def get_training_h5_paths(brats_dir, overwrite=True, crop=True, challenge="brats
                           is_finetune=False,
                           dir_read_write="base",
                           weight_tv_to_main_loss=0.1,
-                          model_dim=3):
+                          model_dim=3,
+                          is_augment="1"):
 
     data_dir = get_h5_training_dir(brats_dir, "data")
     make_dir(data_dir)
@@ -418,6 +429,6 @@ def get_training_h5_paths_old(brats_dir, overwrite=True, crop=True, challenge="b
 
 def get_workspace_path(is_desktop=True):
     if is_desktop:
-        return "/home/minhvu/Desktop/temp/"  
+        return "/home/minhvu/Desktop/temp/"
     else:
         return "C:/Users/minhm/Desktop/temp/"

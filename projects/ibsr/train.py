@@ -13,18 +13,19 @@ from unet3d.utils.path_utils import get_project_dir
 from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import make_dir
-import unet3d.utils.args_utils as get_args
-
-from brats.prepare_data import prepare_data
-
 from unet3d.utils.print_utils import print_section, print_separator
 
+import unet3d.utils.path_utils as path_utils
+import unet3d.utils.args_utils as get_args
+
+from projects.ibsr.prepare_data import prepare_data
 from projects.ibsr.config import config, config_dict, config_unet
 
 config.update(config_unet)
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
-PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
+PROJECT_DIR = path_utils.get_project_dir(
+    CURRENT_WORKING_DIR, config["project_name"])
 BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
@@ -55,12 +56,6 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     config["patch_shape"] = get_shape_from_string(patch_shape)
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
-
-    if overwrite or not os.path.exists(data_path):
-        prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-                     image_shape=image_shape, is_bias_correction=is_bias_correction,
-                     is_normalize=is_normalize, is_denoise=is_denoise,
-                     is_hist_match=is_hist_match, is_test=is_test)
 
     print_section("Open file")
     data_file_opened = open_data_file(config["data_file"])
@@ -110,91 +105,6 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                                   depth=depth_unet,
                                   n_base_filters=n_base_filters_unet,
                                   loss_function=loss)
-
-        # elif model_name == "densefcn":
-        #     print("init densenet model")
-        #     # config["initial_learning_rate"] = 1e-5
-        #     model = densefcn_model_3d(input_shape=config["input_shape"],
-        #                               classes=config["n_labels"],
-        #                               initial_learning_rate=config["initial_learning_rate"],
-        #                               nb_dense_block=5,
-        #                               nb_layers_per_block=4,
-        #                               early_transition=True,
-        #                               dropout_rate=0.2,
-        #                               loss_function=loss)
-
-        # elif model_name == "denseunet":
-        #     print("init denseunet model")
-        #     model = dense_unet_3d(input_shape=config["input_shape"],
-        #                           pool_size=config["pool_size"],
-        #                           n_labels=config["n_labels"],
-        #                           initial_learning_rate=config["initial_learning_rate"],
-        #                           deconvolution=config["deconvolution"],
-        #                           depth=depth_unet,
-        #                           n_base_filters=n_base_filters_unet,
-        #                           loss_function=loss)
-
-        # elif model_name == "resunet":
-        #     print("init resunet model")
-        #     model = res_unet_3d(input_shape=config["input_shape"],
-        #                         pool_size=config["pool_size"],
-        #                         n_labels=config["n_labels"],
-        #                         initial_learning_rate=config["initial_learning_rate"],
-        #                         deconvolution=config["deconvolution"],
-        #                         depth=depth_unet,
-        #                         n_base_filters=n_base_filters_unet,
-        #                         loss_function=loss)
-
-        # elif model_name == "seunet":
-        #     print("init seunet model")
-        #     model = se_unet_3d(input_shape=config["input_shape"],
-        #                        pool_size=config["pool_size"],
-        #                        n_labels=config["n_labels"],
-        #                        initial_learning_rate=config["initial_learning_rate"],
-        #                        deconvolution=config["deconvolution"],
-        #                        depth=depth_unet,
-        #                        n_base_filters=n_base_filters_unet,
-        #                        loss_function=loss)
-
-        # elif model_name == "simple":
-        #     print("init simple model")
-        #     model = simple_model_3d(input_shape=config["input_shape"],
-        #                             pool_size=config["pool_size"],
-        #                             n_labels=config["n_labels"],
-        #                             initial_learning_rate=config["initial_learning_rate"],
-        #                             depth=depth_unet,
-        #                             n_base_filters=n_base_filters_unet,
-        #                             loss_function=loss)
-
-        # elif model_name == "eye":
-        #     print("init eye model")
-        #     model = eye_model_3d(input_shape=config["input_shape"],
-        #                          pool_size=config["pool_size"],
-        #                          n_labels=config["n_labels"],
-        #                          initial_learning_rate=config["initial_learning_rate"],
-        #                          depth=depth_unet,
-        #                          n_base_filters=n_base_filters_unet,
-        #                          growth_rate=4,
-        #                          loss_function=loss)
-
-        # elif model_name == "m":
-        #     print("init mnet model")
-        #     model = mnet_model_3d(input_shape=config["input_shape"],
-        #                           pool_size=config["pool_size"],
-        #                           n_labels=config["n_labels"],
-        #                           initial_learning_rate=config["initial_learning_rate"],
-        #                           n_base_filters=32,
-        #                           loss_function=loss)
-
-        # elif model_name == "m2":
-        #     print("init mnet model")
-        #     from unet3d.model.mnet import mnet_model2_3d
-        #     model = mnet_model2_3d(input_shape=config["input_shape"],
-        #                            pool_size=config["pool_size"],
-        #                            n_labels=config["n_labels"],
-        #                            initial_learning_rate=config["initial_learning_rate"],
-        #                            n_base_filters=16,
-        #                            loss_function=loss)
 
         elif model_name == "multi":
             print("init multiscale unet model")
@@ -270,7 +180,7 @@ def main():
     is_bias_correction = args.is_bias_correction
     is_normalize = args.is_normalize
     is_denoise = args.is_denoise
-    is_test = args.is_test
+    is_test = "0"
     model_name = args.model
     depth_unet = args.depth_unet
     n_base_filters_unet = args.n_base_filters_unet
@@ -280,6 +190,21 @@ def main():
     is_hist_match = args.is_hist_match
     loss = args.loss
     weight_tv_to_main_loss = args.weight_tv_to_main_loss
+
+    data_path, _, _, _, _ = path_utils.get_training_h5_paths(
+        brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+        image_shape=image_shape, is_bias_correction=is_bias_correction,
+        is_normalize=is_normalize, is_denoise=is_denoise,
+        is_hist_match=is_hist_match, is_test=is_test,
+        model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
+        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=3,
+        weight_tv_to_main_loss=weight_tv_to_main_loss)
+
+    if overwrite or not os.path.exists(data_path):
+        prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
+                     image_shape=image_shape, is_bias_correction=is_bias_correction,
+                     is_normalize=is_normalize, is_denoise=is_denoise,
+                     is_hist_match=is_hist_match, is_test=is_test)
 
     train(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
           image_shape=image_shape, is_bias_correction=is_bias_correction,
