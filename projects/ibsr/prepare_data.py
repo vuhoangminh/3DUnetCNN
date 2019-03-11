@@ -39,10 +39,7 @@ def fetch_training_data_files(dataset):
     return training_data_files
 
 
-def prepare_data(overwrite=True, crop=True, challenge="brats", year=2018,
-                 image_shape="256-128-256", is_bias_correction="0",
-                 is_normalize="z", is_denoise="0",
-                 is_hist_match="0", is_test="1"):
+def prepare_data(args):
 
     data_dir = get_h5_training_dir(BRATS_DIR, "data")
 
@@ -54,13 +51,7 @@ def prepare_data(overwrite=True, crop=True, challenge="brats", year=2018,
 
     print_section("convert input images into an hdf5 file")
 
-    data_filename = get_training_h5_filename(datatype="data", challenge=challenge,
-                                             image_shape=image_shape, crop=crop,
-                                             is_bias_correction="0",
-                                             is_denoise=is_denoise,
-                                             is_normalize=is_normalize,
-                                             is_hist_match=is_hist_match,
-                                             is_test=is_test)
+    data_filename = get_training_h5_filename("data", args)
 
     print(data_filename)
 
@@ -68,55 +59,38 @@ def prepare_data(overwrite=True, crop=True, challenge="brats", year=2018,
 
     print("save to", data_file_path)
 
-    dataset = get_dataset(is_test=is_test, is_denoise=is_denoise)
+    dataset = get_dataset(is_test=args.is_test, is_denoise=args.is_denoise)
 
     print("reading folder:", dataset)
 
-    if overwrite or not os.path.exists(data_file_path):
+    if args.overwrite or not os.path.exists(data_file_path):
         training_files = fetch_training_data_files(dataset)
         write_data_to_file(training_files, data_file_path,
-                           config=config,
-                           image_shape=get_shape_from_string(image_shape),
                            brats_dir=BRATS_DIR,
-                           crop=str2bool(crop),
-                           is_normalize=is_normalize,
-                           is_hist_match=is_hist_match,
                            dataset=dataset,
-                           is_denoise=is_denoise)
-
+                           config=config,
+                           image_shape=get_shape_from_string(args.image_shape),
+                           crop=str2bool(args.crop),
+                           is_normalize=args.is_normalize,
+                           is_hist_match=args.is_hist_match,
+                           is_denoise=args.is_denoise)
 
 def main():
     args = get_args.prepare_data_ibsr()
-    overwrite = args.overwrite
-    crop = args.crop
-    challenge = args.challenge
-    year = args.year
-    image_shape = args.image_shape
-    is_bias_correction = args.is_bias_correction
-    is_normalize = args.is_normalize
-    is_denoise = args.is_denoise
-    is_test = args.is_test
-    is_hist_match = args.is_hist_match
 
-
+    args.is_test = "0"
     for is_denoise in config_dict["is_denoise"]:
+        args.is_denoise = is_denoise
         for is_normalize in config_dict["is_normalize"]:
+            args.is_normalize = is_normalize
             for is_hist_match in ["0", "1"]:
-    # for is_denoise in ["bm4d"]:
-    #     for is_normalize in config_dict["is_normalize"]:
-    #         for is_hist_match in ["0", "1"]:
+                args.is_hist_match = is_hist_match
                 if is_normalize == "z" and is_hist_match == "1":
                     continue
                 else:
-                    print(">> prepare data {} {} {}".format(is_denoise, is_normalize, is_hist_match))
-                    prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-                                    image_shape=image_shape, is_bias_correction=is_bias_correction,
-                                    is_normalize=is_normalize, is_denoise=is_denoise,
-                                    is_hist_match=is_hist_match, is_test="0")
-                    # prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-                    #                 image_shape=image_shape, is_bias_correction=is_bias_correction,
-                    #                 is_normalize=is_normalize, is_denoise=is_denoise,
-                    #                 is_hist_match=is_hist_match, is_test="0")
+                    print(">> prepare data {} {} {}".format(
+                        is_denoise, is_normalize, is_hist_match))
+                    prepare_data(args)
 
 if __name__ == "__main__":
     main()

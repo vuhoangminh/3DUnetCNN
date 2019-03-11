@@ -16,15 +16,32 @@ from brats.config import config_dict
 
 
 def find_is_augment(config):
-    augment_flipud=config["augment_flipud"],
-    augment_fliplr=config["augment_fliplr"],
-    augment_elastic=config["augment_elastic"],
-    augment_rotation=config["augment_rotation"],
-    augment_shift=config["augment_shift"],
-    augment_shear=config["augment_shear"],
-    augment_zoom=config["augment_zoom"]
-    augment = augment_flipud or augment_fliplr or augment_elastic or augment_rotation or augment_shift or augment_shear or augment_zoom
-    return "1" if augment else "0"
+    augment_flipud = config["augment_flipud"],
+    augment_fliplr = config["augment_fliplr"],
+    augment_elastic = config["augment_elastic"],
+    augment_rotation = config["augment_rotation"],
+    augment_shift = config["augment_shift"],
+    augment_shear = config["augment_shear"],
+    augment_zoom = config["augment_zoom"]
+    augment = augment_flipud[0] or augment_fliplr[0] or augment_elastic[0] or augment_rotation[0] or augment_shift[0] or augment_shear[0] or augment_zoom
+    if augment:
+        is_augment = "1"
+    else:
+        is_augment = "0"
+    return is_augment
+
+
+def update_is_augment(args, config):
+    config["augment_flipud"] = False
+    config["augment_elastic"] = False
+    config["augment_rotation"] = False
+    config["augment_shift"] = False
+    config["augment_shear"] = False
+    config["augment_zoom"] = False
+    config["augment_rotation"], config["augment_fliplr"]= False, False
+    if args.is_augment=="1":
+        config["augment_rotation"], config["augment_fliplr"]= True, True
+    return config
 
 
 def get_project_dir(path, project_name):
@@ -119,107 +136,59 @@ def get_h5_training_dir(brats_dir, datatype="data"):
     return os.path.join(brats_dir, "database", datatype)
 
 
-def get_core_name(challenge="brats", year="2018",
-                  image_shape="160-192-128", crop="1",
-                  is_bias_correction="1", is_denoise="0", is_normalize="z",
-                  is_hist_match="0"):
+def get_core_name(args):
     return "{}_{}_is-{}_crop-{}_bias-{}_denoise-{}_norm-{}_hist-{}".format(
-        challenge, year, image_shape, str(crop), str(
-            is_bias_correction), str(is_denoise),
-        str(is_normalize), str(is_hist_match))
+        args.challenge, args.year, args.image_shape, str(args.crop),
+        str(args.is_bias_correction), str(args.is_denoise),
+        str(args.is_normalize), str(args.is_hist_match))
 
 
-def get_model_name(model_name, patch_shape, is_crf, depth_unet=None,
-                   n_base_filters_unet=None, loss="weighted",
-                   model_dim=3, weight_tv_to_main_loss=0.1,
-                   is_augment="1"):
-    model_temp = model_name
-    model_temp = "{}{}d".format(model_name, str(model_dim))
-    if "tv" in loss:
+def get_model_name(args):
+    model_temp = args.model
+    model_temp = "{}{}d".format(args.model, str(args.model_dim))
+    if "tv" in args.loss:
         from decimal import Decimal
-        loss = "{}-{}".format(loss,
-                              "{:.0E}".format(Decimal(str(weight_tv_to_main_loss))))
+        args.loss = "{}-{}".format(args.loss,
+                                     "{:.0E}".format(Decimal(str(args.weight_tv_to_main_loss))))
         # loss = loss + "-" + Decimal(str(weight_tv_to_main_loss))
-    if any(ext in model_name for ext in config_dict["model_depth"]):
+    if any(ext in args.model for ext in config_dict["model_depth"]):
         return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}_aug-{}".format(
-            patch_shape, model_temp, str(is_crf),
-            str(depth_unet), str(n_base_filters_unet), loss, str(is_augment))
+            args.patch_shape, model_temp, str(args.is_crf),
+            str(args.depth_unet), str(args.n_base_filters_unet),
+            args.loss, str(args.is_augment))
     else:
         return "ps-{}_{}_crf-{}_loss-{}_aug-{}".format(
-            patch_shape, model_temp, str(is_crf), loss, str(is_augment))
+            args.patch_shape, model_temp, str(args.is_crf),
+            args.loss, str(args.is_augment))
 
 
-def get_short_model_name(model_name, patch_shape, is_crf, depth_unet=None,
-                         n_base_filters_unet=None, loss="weighted",
-                         model_dim=3):
-    model_temp = model_name
-    model_temp = "{}{}d".format(model_name, str(model_dim))
-    if "unet" in model_name or "simple" in model_name or "eye" in model_name:
+def get_short_model_name(args):
+    model_temp = args.model
+    model_temp = "{}{}d".format(args.model, str(args.model_dim))
+    if "unet" in args.model or "simple" in args.model or "eye" in args.model:
         return "ps-{}_{}_crf-{}_d-{}_nb-{}".format(
-            patch_shape, model_temp, str(is_crf),
-            str(depth_unet), str(n_base_filters_unet))
+            args.patch_shape, model_temp, str(args.is_crf),
+            str(args.depth_unet), str(args.n_base_filters_unet))
     else:
         return "ps-{}_{}_crf-{}".format(
-            patch_shape, model_temp, str(is_crf))
+            args.patch_shape, model_temp, str(args.is_crf))
 
 
-def get_short_core_name(challenge="brats", year="2018",
-                        image_shape="160-192-128", crop="1",
-                        is_bias_correction="1", is_denoise="0", is_normalize="z",
-                        is_hist_match="0"):
+def get_short_core_name(args):
     return "{}_{}_is-{}_crop-{}_bias-{}".format(
-        challenge, year, image_shape, str(crop), str(
-            is_bias_correction))
+        args.challenge, args.year, args.image_shape,
+        str(args.crop), str(args.is_bias_correction))
 
 
-def get_finetune_name(challenge="brats", year="2018",
-                      image_shape="160-192-128", crop="1",
-                      is_bias_correction="1", is_denoise="0", is_normalize="z",
-                      is_hist_match="0", is_test="1",
-                      depth_unet=4, n_base_filters_unet=16,
-                      model_name="unet", patch_shape="128-128-128", is_crf="0",
-                      loss="weighted", model_dim=3):
-
-    short_model_name = get_short_model_name(model_name=model_name, patch_shape=patch_shape,
-                                            is_crf=is_crf, depth_unet=depth_unet,
-                                            n_base_filters_unet=n_base_filters_unet,
-                                            loss=loss, model_dim=model_dim)
-
-    short_core_name = get_short_core_name(challenge=challenge, year=year,
-                                          image_shape=image_shape, crop=crop,
-                                          is_bias_correction=is_bias_correction,
-                                          is_denoise=is_denoise,
-                                          is_normalize=is_normalize,
-                                          is_hist_match=is_hist_match)
-
+def get_finetune_name(args):
+    short_model_name = get_short_model_name(args)
+    short_core_name = get_short_core_name(args)
     return short_model_name, short_core_name
 
 
-def get_model_baseline_path(folder,
-                            challenge="brats", year="2018",
-                            image_shape="160-192-128", crop="1",
-                            is_bias_correction="1", is_denoise="0", is_normalize="z",
-                            is_hist_match="0", is_test="1",
-                            depth_unet=4, n_base_filters_unet=16,
-                            model_name="unet", patch_shape="128-128-128", is_crf="0",
-                            loss="weighted", model_dim=3):
+def get_model_baseline_path(folder, args):
     import glob
-    short_model_name, short_core_name = get_finetune_name(challenge=challenge,
-                                                          year=year,
-                                                          image_shape=image_shape,
-                                                          crop=crop,
-                                                          is_bias_correction=is_bias_correction,
-                                                          is_denoise=is_denoise,
-                                                          is_normalize=is_normalize,
-                                                          is_hist_match=is_hist_match,
-                                                          is_test=is_test,
-                                                          depth_unet=depth_unet,
-                                                          n_base_filters_unet=n_base_filters_unet,
-                                                          model_name=model_name,
-                                                          patch_shape=patch_shape,
-                                                          is_crf=is_crf,
-                                                          loss=loss,
-                                                          model_dim=model_dim)
+    short_model_name, short_core_name = get_finetune_name(args)
     print(folder, short_model_name, short_core_name)
     model_baseline_path = None
     for filename in glob.glob(folder+"/*"):
@@ -229,50 +198,20 @@ def get_model_baseline_path(folder,
     return model_baseline_path
 
 
-def get_model_h5_filename(datatype, challenge="brats", year="2018",
-                          image_shape="160-192-128", crop="1",
-                          is_bias_correction="1", is_denoise="0", is_normalize="z",
-                          is_hist_match="0", is_test="1",
-                          depth_unet=4, n_base_filters_unet=16,
-                          model_name="unet", patch_shape="128-128-128", is_crf="0",
-                          loss="weighted",
-                          model_dim=3,
-                          weight_tv_to_main_loss=0.1,
-                          is_augment="1"):
-    core_name = get_core_name(challenge=challenge, year=year,
-                              image_shape=image_shape, crop=crop,
-                              is_bias_correction=is_bias_correction,
-                              is_denoise=is_denoise,
-                              is_normalize=is_normalize,
-                              is_hist_match=is_hist_match)
-    model_full_name = get_model_name(model_name, patch_shape, is_crf,
-                                     depth_unet=depth_unet,
-                                     n_base_filters_unet=n_base_filters_unet,
-                                     loss=loss,
-                                     model_dim=model_dim,
-                                     weight_tv_to_main_loss=weight_tv_to_main_loss)
-
-    if str2bool(is_test):
+def get_model_h5_filename(datatype, args):
+    core_name = get_core_name(args)
+    model_full_name = get_model_name(args)
+    if str2bool(args.is_test):
         return "test_{}_{}_{}.h5".format(
             core_name, model_full_name, datatype)
-
     else:
         return "{}_{}_{}.h5".format(
             core_name, model_full_name, datatype)
 
 
-def get_training_h5_filename(datatype, challenge="brats", year="2018",
-                             image_shape="160-192-128", crop="1",
-                             is_bias_correction="1", is_denoise="0", is_normalize="z",
-                             is_hist_match="0", is_test="1"):
-
-    core_name = get_core_name(challenge=challenge, year=year,
-                              image_shape=image_shape, crop=crop,
-                              is_bias_correction=is_bias_correction,
-                              is_denoise=is_denoise,
-                              is_normalize=is_normalize,
-                              is_hist_match=is_hist_match)
-    if str2bool(is_test):
+def get_training_h5_filename(datatype, args):
+    core_name = get_core_name(args)
+    if str2bool(args.is_test):
         return "test_{}_{}.h5".format(core_name, datatype)
     else:
         return "{}_{}.h5".format(core_name, datatype)
@@ -298,18 +237,7 @@ def get_shape_from_string(shape_string):
     return tuple(splitted_number)
 
 
-def get_training_h5_paths(brats_dir, overwrite=True, crop=True, challenge="brats", year=2018,
-                          image_shape="160-160-128", is_bias_correction="1",
-                          is_normalize="z", is_denoise="0",
-                          is_hist_match="0", is_test="1",
-                          depth_unet=4, n_base_filters_unet=16, model_name="unet",
-                          patch_shape="128-128-128", is_crf="0",
-                          loss="weighted",
-                          is_finetune=False,
-                          dir_read_write="base",
-                          weight_tv_to_main_loss=0.1,
-                          model_dim=3,
-                          is_augment="1"):
+def get_training_h5_paths(brats_dir, args, is_finetune=False, dir_read_write="base"):
 
     data_dir = get_h5_training_dir(brats_dir, "data")
     make_dir(data_dir)
@@ -322,25 +250,9 @@ def get_training_h5_paths(brats_dir, overwrite=True, crop=True, challenge="brats
     model_dir = get_h5_training_dir(brats_dir, "model")
     make_dir(model_dir)
 
-    data_filename = get_training_h5_filename(datatype="data", challenge=challenge,
-                                             image_shape=image_shape, crop=crop,
-                                             is_bias_correction=is_bias_correction,
-                                             is_denoise=is_denoise,
-                                             is_normalize=is_normalize,
-                                             is_hist_match=is_hist_match,
-                                             is_test=is_test)
-    model_filename = get_model_h5_filename(datatype="model", challenge=challenge,
-                                           image_shape=image_shape, crop=crop,
-                                           is_bias_correction=is_bias_correction,
-                                           is_denoise=is_denoise,
-                                           is_normalize=is_normalize,
-                                           is_hist_match=is_hist_match,
-                                           depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-                                           model_name=model_name, patch_shape=patch_shape, is_crf=is_crf,
-                                           is_test=is_test, loss=loss,
-                                           model_dim=model_dim,
-                                           weight_tv_to_main_loss=weight_tv_to_main_loss)
-    if is_test == "1":
+    data_filename = get_training_h5_filename("data", args)
+    model_filename = get_model_h5_filename("model", args)
+    if args.is_test == "1":
         trainids_filename = "test_train_ids.h5"
         validids_filename = "test_valid_ids.h5"
         testids_filename = "test_test_ids.h5"
@@ -359,76 +271,3 @@ def get_training_h5_paths(brats_dir, overwrite=True, crop=True, challenge="brats
     testids_path = os.path.join(testids_dir, testids_filename)
 
     return data_path, trainids_path, validids_path, testids_path, model_path
-
-
-def get_training_h5_paths_old(brats_dir, overwrite=True, crop=True, challenge="brats", year=2018,
-                              image_shape="160-160-128", is_bias_correction="1",
-                              is_normalize="z", is_denoise="0",
-                              is_hist_match="0", is_test="1",
-                              depth_unet=4, n_base_filters_unet=16, model_name="unet",
-                              patch_shape="128-128-128", is_crf="0",
-                              loss="weighted", dir_read_write="base"):
-
-    data_dir = get_h5_training_dir(brats_dir, "data")
-    make_dir(data_dir)
-    trainids_dir = get_h5_training_dir(brats_dir, "train_ids")
-    make_dir(trainids_dir)
-    validids_dir = get_h5_training_dir(brats_dir, "valid_ids")
-    make_dir(validids_dir)
-    testids_dir = get_h5_training_dir(brats_dir, "test_ids")
-    make_dir(testids_dir)
-    model_dir = get_h5_training_dir(brats_dir, "model")
-    make_dir(model_dir)
-
-    data_filename = get_training_h5_filename(datatype="data", challenge=challenge,
-                                             image_shape=image_shape, crop=crop,
-                                             is_bias_correction=is_bias_correction,
-                                             is_denoise=is_denoise,
-                                             is_normalize=is_normalize,
-                                             is_hist_match=is_hist_match,
-                                             is_test=is_test)
-    trainids_filename = get_training_h5_filename(datatype="train_ids", challenge=challenge,
-                                                 image_shape=image_shape, crop=crop,
-                                                 is_bias_correction=is_bias_correction,
-                                                 is_denoise=is_denoise,
-                                                 is_normalize=is_normalize,
-                                                 is_hist_match=is_hist_match,
-                                                 is_test=is_test)
-    validids_filename = get_training_h5_filename(datatype="valid_ids", challenge=challenge,
-                                                 image_shape=image_shape, crop=crop,
-                                                 is_bias_correction=is_bias_correction,
-                                                 is_denoise=is_denoise,
-                                                 is_normalize=is_normalize,
-                                                 is_hist_match=is_hist_match,
-                                                 is_test=is_test)
-    testids_filename = get_training_h5_filename(datatype="test_ids", challenge=challenge,
-                                                image_shape=image_shape, crop=crop,
-                                                is_bias_correction=is_bias_correction,
-                                                is_denoise=is_denoise,
-                                                is_normalize=is_normalize,
-                                                is_hist_match=is_hist_match,
-                                                is_test=is_test)
-    model_filename = get_model_h5_filename(datatype="model", challenge=challenge,
-                                           image_shape=image_shape, crop=crop,
-                                           is_bias_correction=is_bias_correction,
-                                           is_denoise=is_denoise,
-                                           is_normalize=is_normalize,
-                                           is_hist_match=is_hist_match,
-                                           depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-                                           model_name=model_name, patch_shape=patch_shape, is_crf=is_crf,
-                                           is_test=is_test, loss=loss)
-
-    data_path = os.path.join(data_dir, data_filename)
-    trainids_path = os.path.join(trainids_dir, trainids_filename)
-    validids_path = os.path.join(validids_dir, validids_filename)
-    testids_path = os.path.join(testids_dir, testids_filename)
-    model_path = os.path.join(model_dir, dir_read_write, model_filename)
-
-    return data_path, trainids_path, validids_path, testids_path, model_path
-
-
-def get_workspace_path(is_desktop=True):
-    if is_desktop:
-        return "/home/minhvu/Desktop/temp/"
-    else:
-        return "C:/Users/minhm/Desktop/temp/"

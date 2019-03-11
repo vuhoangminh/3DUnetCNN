@@ -1,6 +1,8 @@
 from comet_ml import Experiment
 
 import os
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 from unet3d.data import open_data_file
 from unet3d.generator import get_training_and_validation_and_testing_generators
@@ -9,12 +11,8 @@ from unet3d.model import isensee2017_model
 from unet3d.model import densefcn_model_3d
 from unet3d.model import dense_unet_3d, res_unet_3d, se_unet_3d
 from unet3d.training import train_model
-from unet3d.utils.path_utils import get_project_dir
-from unet3d.utils.path_utils import get_shape_from_string
-from unet3d.utils.path_utils import get_training_h5_paths
-from unet3d.utils.path_utils import make_dir
-from unet3d.utils.print_utils import print_section, print_separator
 
+import unet3d.utils.print_utils as print_utils
 import unet3d.utils.path_utils as path_utils
 import unet3d.utils.args_utils as get_args
 
@@ -30,49 +28,36 @@ BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 
-def train(overwrite=True, crop=True, challenge="brats", year=2018,
-          image_shape="160-160-128", is_bias_correction="1",
-          is_normalize="z", is_denoise="0",
-          is_hist_match="0", is_test="1",
-          depth_unet=4, n_base_filters_unet=16, model_name="unet",
-          patch_shape="128-128-128", is_crf="0",
-          batch_size=1, loss="weighted",
-          weight_tv_to_main_loss=0.1):
+def train(args):
 
-    data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
-        brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-        image_shape=image_shape, is_bias_correction=is_bias_correction,
-        is_normalize=is_normalize, is_denoise=is_denoise,
-        is_hist_match=is_hist_match, is_test=is_test,
-        model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=3,
-        weight_tv_to_main_loss=weight_tv_to_main_loss)
+    data_path, trainids_path, validids_path, testids_path, model_path = path_utils.get_training_h5_paths(
+        brats_dir=BRATS_DIR, args=args)
 
     config["data_file"] = data_path
     config["model_file"] = model_path
     config["training_file"] = trainids_path
     config["validation_file"] = validids_path
     config["testing_file"] = testids_path
-    config["patch_shape"] = get_shape_from_string(patch_shape)
+    config["patch_shape"] = path_utils.get_shape_from_string(args.patch_shape)
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
 
-    print_section("Open file")
+    print_utils.print_section("Open file")
     data_file_opened = open_data_file(config["data_file"])
 
-    print_section("get training and testing generators")
+    print_utils.print_section("get training and testing generators")
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators(
         data_file_opened,
-        batch_size=batch_size,
+        batch_size=args.batch_size,
+        validation_batch_size=args.batch_size,
+        overwrite=args.overwrite,
         data_split=config["validation_split"],
-        overwrite=overwrite,
         validation_keys_file=config["validation_file"],
         training_keys_file=config["training_file"],
         testing_keys_file=config["testing_file"],
         n_labels=config["n_labels"],
         labels=config["labels"],
         patch_shape=config["patch_shape"],
-        validation_batch_size=batch_size,
         validation_patch_overlap=config["validation_patch_overlap"],
         training_patch_start_offset=config["training_patch_start_offset"],
         augment_flipud=config["augment_flipud"],
@@ -83,46 +68,36 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
         augment_shear=config["augment_shear"],
         augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
-        skip_blank=config["skip_blank"])
+        skip_blank=config["skip_blank"],
+        project="ibsr")
 
     print("-"*60)
     print("# Load or init model")
     print("-"*60)
-    if not overwrite and os.path.exists(config["model_file"]):
+    if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
-        model = generate_model(config["model_file"], loss_function=loss)
+        model = generate_model(config["model_file"], loss_function=args.loss)
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
-        if model_name == "unet":
+        if args.model == "unet":
             print("init unet model")
             model = unet_model_3d(input_shape=config["input_shape"],
                                   pool_size=config["pool_size"],
                                   n_labels=config["n_labels"],
                                   initial_learning_rate=config["initial_learning_rate"],
                                   deconvolution=config["deconvolution"],
-                                  depth=depth_unet,
-                                  n_base_filters=n_base_filters_unet,
-                                  loss_function=loss)
-
-        elif model_name == "multi":
-            print("init multiscale unet model")
-            model = multiscale_unet_model_3d(input_shape=config["input_shape"],
-                                             pool_size=config["pool_size"],
-                                             n_labels=config["n_labels"],
-                                             initial_learning_rate=config["initial_learning_rate"],
-                                             deconvolution=config["deconvolution"],
-                                             depth=depth_unet,
-                                             n_base_filters=n_base_filters_unet,
-                                             loss_function=loss)
+                                  depth=args.depth_unet,
+                                  n_base_filters=args.n_base_filters_unet,
+                                  loss_function=args.loss)
 
         else:
             print("init isensee model")
             model = isensee2017_model(input_shape=config["input_shape"],
                                       n_labels=config["n_labels"],
                                       initial_learning_rate=config["initial_learning_rate"],
-                                      loss_function=loss)
+                                      loss_function=args.loss)
 
     model.summary()
 
@@ -131,7 +106,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("-"*60)
     # run training
 
-    if is_test == "0":
+    if args.is_test == "0":
         experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
                                 project_name="train",
                                 workspace="vuhoangminh")
@@ -145,7 +120,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     print("validation file:", config["validation_file"])
     print("testing file:", config["testing_file"])
 
-    if is_test == "1":
+    if args.is_test == "1":
         config["n_epochs"] = 5
 
     train_model(experiment=experiment,
@@ -162,7 +137,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
                 n_epochs=config["n_epochs"]
                 )
 
-    if is_test == "0":
+    if args.is_test == "0":
         experiment.log_parameters(config)
 
     data_file_opened.close()
@@ -171,49 +146,17 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
 
 
 def main():
+    global config
     args = get_args.train_ibsr()
-    overwrite = args.overwrite
-    crop = args.crop
-    challenge = args.challenge
-    year = args.year
-    image_shape = args.image_shape
-    is_bias_correction = args.is_bias_correction
-    is_normalize = args.is_normalize
-    is_denoise = args.is_denoise
-    is_test = "0"
-    model_name = args.model
-    depth_unet = args.depth_unet
-    n_base_filters_unet = args.n_base_filters_unet
-    patch_shape = args.patch_shape
-    is_crf = args.is_crf
-    batch_size = args.batch_size
-    is_hist_match = args.is_hist_match
-    loss = args.loss
-    weight_tv_to_main_loss = args.weight_tv_to_main_loss
+    
+    config = path_utils.update_is_augment(args, config)
+    
+    data_path, _, _, _, _ = path_utils.get_training_h5_paths(BRATS_DIR, args)
 
-    data_path, _, _, _, _ = path_utils.get_training_h5_paths(
-        brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-        image_shape=image_shape, is_bias_correction=is_bias_correction,
-        is_normalize=is_normalize, is_denoise=is_denoise,
-        is_hist_match=is_hist_match, is_test=is_test,
-        model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=3,
-        weight_tv_to_main_loss=weight_tv_to_main_loss)
+    if args.overwrite or not os.path.exists(data_path):
+        prepare_data(args)
 
-    if overwrite or not os.path.exists(data_path):
-        prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-                     image_shape=image_shape, is_bias_correction=is_bias_correction,
-                     is_normalize=is_normalize, is_denoise=is_denoise,
-                     is_hist_match=is_hist_match, is_test=is_test)
-
-    train(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-          image_shape=image_shape, is_bias_correction=is_bias_correction,
-          is_normalize=is_normalize, is_denoise=is_denoise,
-          is_hist_match=is_hist_match, is_test=is_test,
-          model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-          patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
-          loss=loss, weight_tv_to_main_loss=weight_tv_to_main_loss)
-
+    train(args)
 
 if __name__ == "__main__":
     main()

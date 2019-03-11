@@ -21,7 +21,8 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
                                                        validation_batch_size=None, is_create_patch_index_list_original=True,
                                                        augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                        augment_rotation=False, augment_shift=False, augment_shear=False,
-                                                       augment_zoom=False, n_augment=0, skip_blank=False,):
+                                                       augment_zoom=False, n_augment=0, skip_blank=False,
+                                                       project="brats"):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -58,11 +59,18 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
     if not validation_batch_size:
         validation_batch_size = batch_size
 
-    training_list, validation_list, _ = get_train_valid_test_split(
-        data_file, training_file=training_keys_file,
-        validation_file=validation_keys_file,
-        testing_file=testing_keys_file,
-        data_split=0.8, overwrite=False)
+    if project=="brats":
+        training_list, validation_list, _ = get_train_valid_test_split(
+            data_file, training_file=training_keys_file,
+            validation_file=validation_keys_file,
+            testing_file=testing_keys_file,
+            data_split=0.8, overwrite=False)
+    else:
+        training_list, validation_list, _ = get_train_valid_test_split_isbr(
+            data_file, training_file=training_keys_file,
+            validation_file=validation_keys_file,
+            testing_file=testing_keys_file,
+            overwrite=False)
 
     print("training_list:", training_list)
 
@@ -119,6 +127,36 @@ def get_number_of_steps(n_samples, batch_size):
         return n_samples//batch_size
     else:
         return n_samples//batch_size + 1
+
+
+def get_train_valid_test_split_isbr(data_file, training_file, validation_file,
+                                    testing_file, overwrite=False):
+    """
+    Splits the data into the training and validation indices list.
+    :param data_file: pytables hdf5 data file
+    :param training_file:
+    :param validation_file:
+    :param data_split:
+    :param overwrite:
+    :return:
+    """
+    if overwrite or not os.path.exists(training_file):
+        print("Creating validation split...")
+        nb_samples = data_file.root.data.shape[0]
+        sample_list = list(range(nb_samples))
+
+        testing_list = [1,9,14]
+        validation_list = [10,11,12,13,16]
+        training_list = [0,2,3,4,5,6,7,8,15,17]         
+
+        pickle_dump(training_list, training_file)
+        pickle_dump(validation_list, validation_file)
+        pickle_dump(testing_list, testing_file)
+
+        return training_list, validation_list, testing_list
+    else:
+        print("Loading previous validation split...")
+        return pickle_load(training_file), pickle_load(validation_file), pickle_load(testing_file)
 
 
 def get_train_valid_test_split(data_file, training_file, validation_file,
@@ -380,7 +418,7 @@ def add_data(x_list, y_list, data_file, index, patch_shape=None,
         is_added = True
     # if model_dim == 2 and np.any(truth != 0):
     # if model_dim==2 and np.any(data != 0):
-    if model_dim==2:
+    if model_dim == 2:
         is_added = True
     if is_added:
         x_list.append(data)
