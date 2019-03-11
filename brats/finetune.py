@@ -85,23 +85,7 @@ def finetune(overwrite=True,
     folder = os.path.join(BRATS_DIR, "database", "model", "base")
 
     if not os.path.exists(config["model_file"]):
-        model_baseline_path = get_model_baseline_path(
-            folder=folder,
-            crop=crop,
-            challenge=challenge,
-            year=year,
-            image_shape=image_shape,
-            is_bias_correction=is_bias_correction,
-            is_normalize=is_normalize,
-            is_denoise=is_denoise,
-            is_hist_match=is_hist_match,
-            is_test=is_test,
-            model_name=model_name,
-            depth_unet=depth_unet,
-            n_base_filters_unet=n_base_filters_unet,
-            patch_shape=patch_shape,
-            is_crf=is_crf,
-            model_dim=model_dim)
+        model_baseline_path = get_model_baseline_path(folder=folder, args=args)
         if model_baseline_path is None:
             raise ValueError("can not fine baseline model. Please check")
         else:

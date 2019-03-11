@@ -8,6 +8,7 @@ import time
 
 from unet3d.utils import pickle_dump, pickle_load
 from unet3d.generator import get_train_valid_test_split, get_number_of_steps
+from unet3d.generator import get_train_valid_test_split_isbr
 from unet3d.generator import get_number_of_patches, create_patch_index_list
 from unet3d.generator import get_multi_class_labels, get_data_from_file
 
@@ -26,7 +27,9 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                                          validation_batch_size=None,
                                                          augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                          augment_rotation=False, augment_shift=False, augment_shear=False,
-                                                         augment_zoom=False, n_augment=0, skip_blank=False, is_test="1"):
+                                                         augment_zoom=False, n_augment=0, skip_blank=False, is_test="1",
+                                                         patch_overlap = [0, 0, -1],
+                                                         project="brats"):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -63,16 +66,22 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     if not validation_batch_size:
         validation_batch_size = batch_size
 
-    training_list, validation_list, _ = get_train_valid_test_split(
-        data_file, training_file=training_keys_file,
-        validation_file=validation_keys_file,
-        testing_file=testing_keys_file,
-        data_split=0.8, overwrite=False)
+    if project=="brats":
+        training_list, validation_list, _ = get_train_valid_test_split(
+            data_file, training_file=training_keys_file,
+            validation_file=validation_keys_file,
+            testing_file=testing_keys_file,
+            data_split=0.8, overwrite=False)
+    else:
+        training_list, validation_list, _ = get_train_valid_test_split_isbr(
+            data_file, training_file=training_keys_file,
+            validation_file=validation_keys_file,
+            testing_file=testing_keys_file,
+            overwrite=False)
 
     print("training_list:", training_list)
 
     print(">> training data generator")
-    patch_overlap = [0, 0, -1]
     patch_overlap = np.asarray(patch_overlap)
     training_generator = data_generator2d(data_file, training_list,
                                           batch_size=batch_size,
@@ -120,13 +129,18 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # print("Number of validation steps: ", num_validation_steps)
 
     from unet3d.generator import get_number_of_patches
-    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-                                                                   patch_start_offset=training_patch_start_offset,
-                                                                   patch_overlap=patch_overlap),
-                                             batch_size)
-    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                     patch_overlap=validation_patch_overlap),
-                                               validation_batch_size)
+    # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+    #                                                                patch_start_offset=training_patch_start_offset,
+    #                                                                patch_overlap=patch_overlap),
+    #                                          batch_size)
+    # num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+    #                                                                  patch_overlap=validation_patch_overlap),
+    #                                            validation_batch_size)
+
+    # ibsr
+    num_training_steps = 22
+    num_validation_steps = 12
+
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)

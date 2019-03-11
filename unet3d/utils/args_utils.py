@@ -30,9 +30,6 @@ def parent_train_parser():
     parser.add_argument('-l', '--loss', type=str,
                         default="weighted",
                         help="loss function")
-    parser.add_argument('-dim', '--model_dim', type=int,
-                        default=3,
-                        help="2d, 2.5d or 3d?")
     parser.add_argument('-alpha_tv', '--weight_tv_to_main_loss', type=float,
                         default=0.1,
                         help="weight of total variance comapared to main loss (dice coef etc.)")
@@ -113,6 +110,8 @@ def train():
     parser.add_argument('-b', '--is_bias_correction', type=str,
                         default="1", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
+    parser.add_argument('-dim', '--model_dim', type=int,
+                        default=3)                        
     args = parser.parse_args()
     return args
 
@@ -141,6 +140,8 @@ def train2d():
     parser.add_argument('-b', '--is_bias_correction', type=str,
                         default="1", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
+    parser.add_argument('-dim', '--model_dim', type=int,
+                        default=2)                        
     args = parser.parse_args()
     return args
 
@@ -169,6 +170,8 @@ def train25d():
     parser.add_argument('-b', '--is_bias_correction', type=str,
                         default="1", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
+    parser.add_argument('-dim', '--model_dim', type=int,
+                        default=25)                        
     args = parser.parse_args()
     return args
 
@@ -241,6 +244,8 @@ def train_ibsr():
     parser.add_argument('-b', '--is_bias_correction', type=str,
                         default="0", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
+    parser.add_argument('-dim', '--model_dim', type=int,
+                        default=3)                        
     args = parser.parse_args()
     return args
 
@@ -262,13 +267,15 @@ def train2d_ibsr():
                         default="256-128-1",
                         help="patch shape to train")
     parser.add_argument('-ba', '--batch_size', type=int,
-                        default=1,
+                        default=64,
                         help="train batch size")
     parser.add_argument('-r', '--crop', type=str,
                         default="0", choices=config_dict["crop"])
     parser.add_argument('-b', '--is_bias_correction', type=str,
                         default="0", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
+    parser.add_argument('-dim', '--model_dim', type=int,
+                        default=2)                        
     args = parser.parse_args()
     return args
 
