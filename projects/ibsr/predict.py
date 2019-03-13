@@ -32,22 +32,9 @@ def is_all_cases_predicted(prediction_folder, testing_file):
 
 list_already_predicted = list()
 
-def predict(overwrite=True, crop=True, challenge="brats", year=2018,
-            image_shape="160-192-128", is_bias_correction="1",
-            is_normalize="z", is_denoise="0",
-            is_hist_match="0", is_test="1",
-            depth_unet=4, n_base_filters_unet=16, model_name="unet",
-            patch_shape="128-128-128", is_crf="0",
-            batch_size=1, loss="minh", model_dim=3):
+def predict(args):
 
-    data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
-        brats_dir=BRATS_DIR, overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-        image_shape=image_shape, is_bias_correction=is_bias_correction,
-        is_normalize=is_normalize, is_denoise=is_denoise,
-        is_hist_match=is_hist_match, is_test=is_test,
-        model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape, is_crf=is_crf, loss=loss, model_dim=model_dim,
-        dir_read_write="finetune", is_finetune=True)
+    data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(BRATS_DIR, args)
 
     if not os.path.exists(model_path):
         print("model not exists. Please check")
@@ -57,11 +44,11 @@ def predict(overwrite=True, crop=True, challenge="brats", year=2018,
         config["training_file"] = trainids_path
         config["validation_file"] = validids_path
         config["testing_file"] = testids_path
-        config["patch_shape"] = get_shape_from_string(patch_shape)
+        config["patch_shape"] = get_shape_from_string(args.patch_shape)
         config["input_shape"] = tuple(
             [config["nb_channels"]] + list(config["patch_shape"]))
 
-        prediction_dir = "/mnt/sda/3DUnetCNN_BRATS/brats"
+        prediction_dir = "/mnt/sda/3DUnetCNN_BRATS/projects/ibsr"
         # prediction_dir = BRATS_DIR
         config["prediction_folder"] = os.path.join(
             prediction_dir, "database/prediction", get_filename_without_extension(config["model_file"]))
@@ -88,15 +75,15 @@ def predict(overwrite=True, crop=True, challenge="brats", year=2018,
                 raise ValueError(
                     "can not find model {}. Please check".format(config["model_file"]))
 
-            if model_dim == 3:
+            if args.model_dim == 3:
                 from unet3d.prediction import run_validation_cases
-            elif model_dim == 25:
+            elif args.model_dim == 25:
                 from unet25d.prediction import run_validation_cases
-            elif model_dim == 2:
+            elif args.model_dim == 2:
                 from unet2d.prediction import run_validation_cases
             else:
                 raise ValueError(
-                    "dim {} NotImplemented error. Please check".format(model_dim))
+                    "dim {} NotImplemented error. Please check".format(args.model_dim))
 
             run_validation_cases(validation_keys_file=config["testing_file"],
                                  model_file=config["model_file"],
@@ -108,68 +95,43 @@ def predict(overwrite=True, crop=True, challenge="brats", year=2018,
 
 
 def main():
-    args = get_args.train()
-    overwrite = args.overwrite
-    crop = args.crop
-    challenge = args.challenge
-    year = args.year
-    image_shape = args.image_shape
-    is_bias_correction = args.is_bias_correction
-    is_normalize = args.is_normalize
-    is_denoise = args.is_denoise
-    is_test = args.is_test
-    model_name = args.model
-    depth_unet = args.depth_unet
-    n_base_filters_unet = args.n_base_filters_unet
-    patch_shape = args.patch_shape
-    is_crf = args.is_crf
-    batch_size = args.batch_size
-    is_hist_match = args.is_hist_match
-    loss = args.loss
-    model_dim = args.model_dim
+    args = get_args.train_ibsr()
 
-    for depth_unet in [4]:
-    # for depth_unet in [5, 4]:
-        # for n_base_filters_unet in [32, 16]:
-        for n_base_filters_unet in [16]:
-            for model_dim in [25]:
-            # for model_dim in [2, 3, 25]:                
-                if depth_unet == 5 or n_base_filters_unet == 32:
-                    list_model = config_dict["model_depth"]
-                else:
-                    list_model = config_dict["model"]
-                for model_name in list_model:                    
-                    for is_normalize in config_dict["is_normalize"]:
-                        for is_denoise in config_dict["is_denoise"]:
-                            for is_hist_match in config_dict["hist_match"]:
-                                for patch_shape in config_dict["patch_shape"]:
-                                    for loss in config_dict["loss"]:
-                                        print("="*120)
-                                        print(
-                                            ">> processing model-{}{}, depth-{}, filters-{}, patch_shape-{}, is_denoise-{}, is_normalize-{}, is_hist_match-{}, loss-{}".format(
-                                                model_name,
-                                                model_dim,
-                                                depth_unet,
-                                                n_base_filters_unet,
-                                                patch_shape,
-                                                is_denoise,
-                                                is_normalize,
-                                                is_hist_match,
-                                                loss))
-                                        is_test = "0"
-                                        predict(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-                                                image_shape=image_shape, is_bias_correction=is_bias_correction,
-                                                is_normalize=is_normalize, is_denoise=is_denoise,
-                                                is_hist_match=is_hist_match, is_test=is_test,
-                                                model_name=model_name, depth_unet=depth_unet, n_base_filters_unet=n_base_filters_unet,
-                                                patch_shape=patch_shape, is_crf=is_crf, batch_size=batch_size,
-                                                loss=loss, model_dim=model_dim)
-                                        # print("="*60)
-                                        print(">> finished")
-                                        print("="*120)
-                                        gc.collect()
-                                        from keras import backend as K
-                                        K.clear_session()
+    
+    for model_dim in [2]:
+        args.model_dim = model_dim               
+        for model in ["unet", "isensee"]:
+            args.model = model
+            for is_normalize in config_dict["is_normalize"]:
+                args.is_normalize = is_normalize
+                for is_denoise in config_dict["is_denoise"]:
+                    args.is_denoise = is_denoise
+                    for is_hist_match in config_dict["hist_match"]:
+                        args.is_hist_match = is_hist_match
+                        for patch_shape in ["32-32-1", "256-128-1"]:
+                            args.patch_shape = patch_shape
+                            for loss in ["weighted"]:
+                                args.loss = loss
+                                print("="*120)
+                                print(
+                                    ">> processing model-{}{}, depth-{}, filters-{}, patch_shape-{}, is_denoise-{}, is_normalize-{}, is_hist_match-{}, loss-{}".format(
+                                        args.model,
+                                        args.model_dim,
+                                        args.depth_unet,
+                                        args.n_base_filters_unet,
+                                        args.patch_shape,
+                                        args.is_denoise,
+                                        args.is_normalize,
+                                        args.is_hist_match,
+                                        args.loss))
+                                is_test = "0"
+                                predict(args)
+                                # print("="*60)
+                                print(">> finished")
+                                print("="*120)
+                                gc.collect()
+                                from keras import backend as K
+                                K.clear_session()
 
 
     print(list_already_predicted)

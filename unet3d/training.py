@@ -115,6 +115,8 @@ def train_model(experiment, model, model_file, training_generator, validation_ge
                                           validation_data=validation_generator,
                                           validation_steps=validation_steps,
                                           verbose=1,
+                                        #   workers=6, 
+                                        #   use_multiprocessing=True,
                                           callbacks=get_callbacks(model_file,
                                                                   initial_learning_rate=initial_learning_rate,
                                                                   learning_rate_drop=learning_rate_drop,

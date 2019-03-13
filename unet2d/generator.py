@@ -28,7 +28,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                                          augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                          augment_rotation=False, augment_shift=False, augment_shear=False,
                                                          augment_zoom=False, n_augment=0, skip_blank=False, is_test="1",
-                                                         patch_overlap = [0, 0, -1],
+                                                         patch_overlap=[0, 0, -1],
                                                          project="brats"):
     """
     Creates the training and validation generators that can be used when training the model.
@@ -66,7 +66,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     if not validation_batch_size:
         validation_batch_size = batch_size
 
-    if project=="brats":
+    if project == "brats":
         training_list, validation_list, _ = get_train_valid_test_split(
             data_file, training_file=training_keys_file,
             validation_file=validation_keys_file,
@@ -109,16 +109,26 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                             skip_blank=skip_blank)
 
     # Set the number of training and testing samples per epoch correctly
-    # if overwrite or not os.path.exists(n_steps_file):
-    # print(">> compute number of training and validation steps")
-    # if is_test == "1":
-    #     num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
-    #                                                                      patch_start_offset=training_patch_start_offset,
-    #                                                                      patch_overlap=patch_overlap),
-    #                                              batch_size)
-    #     num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
-    #                                                                        patch_overlap=0),
-    #                                                validation_batch_size)
+    print(">> compute number of training and validation steps")
+
+    if project=="ibsr":
+        if patch_shape==(32,32,1):
+            num_training_steps = get_number_of_steps(20367,batch_size)
+            num_validation_steps = get_number_of_steps(10439,validation_batch_size)
+        elif patch_shape==(64,64,1):
+            num_training_steps = get_number_of_steps(7591,batch_size)
+            num_validation_steps = get_number_of_steps(3850,validation_batch_size)
+        else:
+            num_training_steps = get_number_of_steps(1400,batch_size)
+            num_validation_steps = get_number_of_steps(760,validation_batch_size)
+    else:
+        num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
+                                                                        patch_start_offset=training_patch_start_offset,
+                                                                        patch_overlap=patch_overlap),
+                                                batch_size)
+        num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
+                                                                        patch_overlap=0),
+                                                validation_batch_size)
 
     # else:
     #     # num_training_steps = get_number_of_steps(11137, batch_size)
@@ -128,7 +138,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # print("Number of training steps: ", num_training_steps)
     # print("Number of validation steps: ", num_validation_steps)
 
-    from unet3d.generator import get_number_of_patches
+    # from unet3d.generator import get_number_of_patches
     # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
     #                                                                patch_start_offset=training_patch_start_offset,
     #                                                                patch_overlap=patch_overlap),
@@ -136,11 +146,6 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
     #                                                                  patch_overlap=validation_patch_overlap),
     #                                            validation_batch_size)
-
-    # ibsr
-    num_training_steps = 22
-    num_validation_steps = 12
-
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
@@ -319,14 +324,18 @@ def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overl
                                              patch_start_offset)
         count = 0
         for i, index in enumerate(index_list, 0):
-            print(">> processing {}/{}, added {}/{}".format(i,
-                                                            len(index_list), count, len(index_list)))
+            if i % 100 == 0:
+                print(">> processing {}/{}, added {}/{}".format(i,
+                                                                len(index_list), count, len(index_list)))
             x_list = list()
             y_list = list()
             add_data2d(x_list, y_list, data_file, index,
                        skip_blank=skip_blank, patch_shape=patch_shape)
             if len(x_list) > 0:
                 count += 1
+        print(">> processing {}/{}, added {}/{}".format(i,
+                                                        len(index_list), count, len(index_list)))
+
         return count
     else:
         return len(index_list)
