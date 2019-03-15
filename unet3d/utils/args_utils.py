@@ -14,7 +14,7 @@ def parent_train_parser():
                         default="0", choices=config_dict["is_denoise"],
                         help="what type of denoising")
     parser.add_argument('-t', '--is_test', type=str,
-                        default="1", choices=["0", "1"])
+                        default="0", choices=["0", "1"])
     parser.add_argument('-hi', '--is_hist_match', type=str,
                         default="0")
     parser.add_argument('-m', '--model', type=str,

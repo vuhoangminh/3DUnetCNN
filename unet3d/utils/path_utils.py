@@ -86,7 +86,7 @@ def get_data_dir(brats_dir, data_folder="data_train", dataset="test"):
 
 
 def get_analysis_dir(dataset_dir, data_folder):
-    return os.path.join(dataset_dir, "database", data_folder)
+    return os.path.join(dataset_dir, data_folder)
 
 
 def get_normalize_minh_dir(brats_dir, data_folder="data_train", dataset="test"):

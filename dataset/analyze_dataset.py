@@ -30,12 +30,6 @@ from unet3d.utils.volume import get_shape
 from unet3d.utils.volume import get_size_bounding_box
 from unet3d.utils.volume import get_bounding_box
 
-from brats.config import config
-
-CURRENT_WORKING_DIR = os.path.realpath(__file__)
-PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
-BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
-DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 columns = ["dataset",
            "folder",
@@ -69,9 +63,6 @@ def get_header_info(path):
     return dataset, folder, name, modality
 
 
-
-
-
 def analyze_one_folder(data_folder, dataset, overwrite=False):
 
     analysis_dir = get_analysis_dir(DATASET_DIR, data_folder)
@@ -87,9 +78,8 @@ def analyze_one_folder(data_folder, dataset, overwrite=False):
     if overwrite or not os.path.exists(analysis_file_path):
         writer = pd.ExcelWriter(analysis_file_path)
 
-        data_dir = get_data_dir(brats_dir=BRATS_DIR,
-                                data_folder=data_folder, dataset=dataset)
-        subject_dirs = glob.glob(os.path.join(data_dir, "*", "*", "*.nii.gz"))
+        data_dir = os.path.join(analysis_dir, dataset)
+        subject_dirs = glob.glob(os.path.join(data_dir, "*", "*.nii.gz"))
 
         index = range(0, len(subject_dirs)-1, 1)
         df = pd.DataFrame(index=index, columns=columns)
@@ -140,28 +130,39 @@ def analyze_one_folder(data_folder, dataset, overwrite=False):
 def get_args():
     parser = argparse.ArgumentParser(description='Data preparation')
     parser.add_argument('-d', '--dataset', type=str,
-                        choices=config["dataset"]+config["dataset_minh_normalize"],
-                        default="test",
+                        default="original",
                         help="dataset type")
     parser.add_argument('-f', '--data_folder', type=str,
-                        choices=config["data_folders"],
                         default="data_train",
                         help="data folders")
     parser.add_argument('-o', '--overwrite', type=bool,
                         default=True)
+    parser.add_argument('-c', '--challenge', type=str,
+                        default="ibsr")
 
     args = parser.parse_args()
     return args
 
 
-
-def main():
+def main(): 
     args = get_args()
-    
     dataset = args.dataset
     data_folder = args.data_folder
     overwrite = args.overwrite
+    challenge = args.challenge
 
+    global config, BRATS_DIR, DATASET_DIR, PROJECT_DIR
+
+    if challenge == "brats":
+        from brats.config import config
+    elif challenge == "ibsr":
+        from projects.ibsr.config import config
+
+    CURRENT_WORKING_DIR = os.path.realpath(__file__)
+    PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
+    BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
+    DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
+    
     print(args)
 
     analyze_one_folder(data_folder, dataset, overwrite)
