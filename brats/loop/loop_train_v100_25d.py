@@ -64,7 +64,7 @@ for is_augment in ["1"]:
                             model_filename = get_model_h5_filename(
                                 "model", args)
 
-                            cmd = "python {}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 16 -au {} -du 4".format(
+                            cmd = "python {}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 32 -au {} -du 4".format(
                                 task,
                                 args.is_test,
                                 args.is_normalize,

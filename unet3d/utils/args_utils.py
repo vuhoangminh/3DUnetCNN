@@ -160,7 +160,7 @@ def train25d():
                         default="160-192-128", choices=config_dict["image_shape"],
                         help="image shape to read")
     parser.add_argument('-ps', '--patch_shape', type=str,
-                        default="160-192-7",
+                        default="160-192-17",
                         help="patch shape to train")
     parser.add_argument('-ba', '--batch_size', type=int,
                         default=64,
