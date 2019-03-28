@@ -17,6 +17,7 @@ from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
 
 from unet3d.utils.threadsafe import threadsafe_generator
+
 # from unet3d.generator import get_training_and_validation_and_testing_generators
 
 
@@ -105,26 +106,25 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
 
     print(">> compute number of training and validation steps")
 
-    # if is_test == "1":
-    #     num_training_steps = get_number_of_steps(get_number_of_patches25d(data_file, training_list, patch_shape,
-    #                                                                       patch_start_offset=training_patch_start_offset,
-    #                                                                       patch_overlap=train_patch_overlap),
-    #                                              batch_size)
-    #     num_validation_steps = get_number_of_steps(get_number_of_patches25d(data_file, validation_list, patch_shape,
-    #                                                                         patch_overlap=valid_patch_overlap),
-    #                                                validation_batch_size)
-    # else:
-    #     num_training_steps = get_number_of_steps(5576, batch_size)
-    #     num_validation_steps = get_number_of_steps(2794, validation_batch_size)
+    # num_training_steps = get_number_of_steps(get_number_of_patches25d(data_file, training_list, patch_shape,
+    #                                                                     patch_start_offset=training_patch_start_offset,
+    #                                                                     patch_overlap=train_patch_overlap),
+    #                                             batch_size)
+    # num_validation_steps = get_number_of_steps(get_number_of_patches25d(data_file, validation_list, patch_shape,
+    #                                                                     patch_overlap=valid_patch_overlap),
+    #                                            validation_batch_size)
 
-    from unet3d.generator import get_number_of_patches
-    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-                                                                   patch_start_offset=training_patch_start_offset,
-                                                                   patch_overlap=train_patch_overlap),
-                                             batch_size)
-    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                     patch_overlap=valid_patch_overlap),
-                                               validation_batch_size)
+    num_training_steps = get_number_of_steps(11200, batch_size)
+    num_validation_steps = get_number_of_steps(2794, validation_batch_size)
+
+    # from unet3d.generator import get_number_of_patches
+    # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+    #                                                                patch_start_offset=training_patch_start_offset,
+    #                                                                patch_overlap=train_patch_overlap),
+    #                                          batch_size)
+    # num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+    #                                                                  patch_overlap=valid_patch_overlap),
+    #                                            validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
@@ -189,8 +189,9 @@ def get_number_of_patches25d(data_file, index_list, patch_shape=None, patch_over
                                              patch_start_offset)
         count = 0
         for i, index in enumerate(index_list, 0):
-            print(">> processing {}/{}, added {}/{}".format(i,
-                                                            len(index_list), count, len(index_list)))
+            if i % 50 == 0 and i > 0:
+                print(">> processing {}/{}, added {}/{}".format(i,
+                                                                len(index_list), count, len(index_list)))
             x_list = list()
             y_list = list()
             add_data(x_list, y_list, data_file, index,
