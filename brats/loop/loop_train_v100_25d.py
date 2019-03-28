@@ -36,7 +36,7 @@ def run(model_filename, cmd):
 
 
 args = get_args.train25d()
-task = "brats/train25"
+task = "brats/train25d"
 args.is_test = "0"
 
 model_list = list()
