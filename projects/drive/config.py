@@ -4,7 +4,7 @@ config["env"] = "SERVER"  # change this to "FULL" if you want to run full
 config["mode"] = "FULL"  # change this to "FULL" if you want to run full
 config["data_folders"] = ["data_train", "data_valid"]
 # change this if you want to only use some of the modalities
-config["all_modalities"] = ["t1", "t1ce", "flair", "t2"]
+config["all_modalities"] = ["t1"]
 config["training_modalities"] = config["all_modalities"]
 config["nb_channels"] = len(config["training_modalities"])
 config["truth_old"] = ["seg"]
@@ -24,8 +24,8 @@ config["original_folder"] = ["original_bak"]
 config["project_name"] = "3DUnetCNN_BRATS"
 config["brats_folder"] = "projects/drive"
 config["dataset_folder"] = "projects/drive/database"
-config["template_data_folder"] = "data_train"
-config["template_folder"] = "HGG/Brats18_2013_2_1"
+config["template_data_folder"] = "database/data_train"
+config["template_folder"] = "21"
 
 # config_unet["image_shape"] = (240, 240, 155)  # This determines what shape the images will be cropped/resampled to.
 # This determines what shape the images will be cropped/resampled to.
@@ -34,7 +34,7 @@ config["image_shape"] = (144,144,144)
 # config["is_create_patch_index_list_original"] = False
 
 
-config["labels"] = (1, 2, 4)  # the label numbers on the input image
+config["labels"] = (1, 2, 3)  # the label numbers on the input image
 # config["labels"] = (0, 1, 2, 4)  # the label numbers on the input image
 config["n_labels"] = len(config["labels"])
 

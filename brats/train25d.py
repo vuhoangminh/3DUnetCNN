@@ -31,10 +31,20 @@ BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 
+def fix_learning_rate(config):
+    if config["patch_shape"] in ["160-192-13", "160-192-15", "160-192-17"]:
+        config["initial_learning_rate"] = 1e-4
+    if config["patch_shape"] in ["160-192-3"]:
+        config["initial_learning_rate"] = 1e-2
+    return config
+
+
 def train(args):
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, args=args)
+
+    config = fix_learning_rate(config)
 
     config["data_file"] = data_path
     config["model_file"] = model_path

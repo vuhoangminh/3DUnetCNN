@@ -54,7 +54,8 @@ for is_augment in ["1"]:
                 for is_hist_match in ["0"]:
                     args.is_hist_match = is_hist_match
                     for loss in ["weighted"]:
-                        for patch_shape in ["160-192-3", "160-192-5", "160-192-7", "160-192-9", "160-192-11", "160-192-13", "160-192-15", "160-192-17"]:
+                        # for patch_shape in ["160-192-3", "160-192-5", "160-192-7", "160-192-9", "160-192-11", "160-192-13", "160-192-15", "160-192-17"]:
+                        for patch_shape in ["160-192-3", "160-192-13", "160-192-15", "160-192-17"]:
                             args.patch_shape = patch_shape
                             model_dim = 25
 
