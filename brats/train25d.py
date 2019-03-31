@@ -55,8 +55,10 @@ def train(args):
 
     if args.patch_shape in ["160-192-13", "160-192-15", "160-192-17"]:
         config["initial_learning_rate"] = 1e-4
+        print("lr updated...")
     if args.patch_shape in ["160-192-3"]:
         config["initial_learning_rate"] = 1e-2
+        print("lr updated...")
 
     if args.overwrite or not os.path.exists(data_path):
         prepare_data(args)
