@@ -1,5 +1,13 @@
 from comet_ml import Experiment
 
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.02
+config.gpu_options.visible_device_list = "0"
+set_session(tf.Session(config=config))
+
+
 import os
 
 from unet3d.data import open_data_file
@@ -69,7 +77,7 @@ def train(args):
     print_section("get training and testing generators")
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators25d(
         data_file_opened,
-        batch_size=args.batch_size,
+        batch_size=1,
         data_split=config["validation_split"],
         overwrite=args.overwrite,
         validation_keys_file=config["validation_file"],

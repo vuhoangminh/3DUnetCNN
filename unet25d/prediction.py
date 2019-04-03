@@ -18,16 +18,21 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=64, permute=False):
     :param overlap:
     :return:
     """
-    patch_overlap = [0, 0, 6]
-    patch_overlap = np.asarray(patch_overlap)
-
     patch_shape = model.input_shape[-3:]
+    # if 3D and 2D
+    if patch_shape[-1] == data.shape[-1] or patch_shape[-1] == 1:
+        patch_overlap = 0
+    # if 2.5D
+    if patch_shape[-1] < data.shape[-1] and patch_shape[-1] != 1:
+
+        patch_overlap = [0, 0, patch_shape[-1]-1]
+    patch_overlap = np.asarray(patch_overlap)
     predictions = list()
     indices = compute_patch_indices(data.shape[-3:], patch_size=patch_shape,
                                     overlap=patch_overlap, is_extract_patch_agressive=False,
                                     is_predict=True)
 
-    indices = np.delete(indices, range(128,len(indices)), axis=0)                                    
+    indices = np.delete(indices, range(128, len(indices)), axis=0)
     batch = list()
     i = 0
     while i < len(indices):
@@ -44,7 +49,7 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=64, permute=False):
     output_shape = [model.output_shape[1]] + list(data.shape[-3:])
 
     for i in range(indices.shape[0]):
-        indices[i,2] = indices[i,2] + 3
+        indices[i, 2] = indices[i, 2] + 3
 
     return reconstruct_from_patches25d(predictions, patch_indices=indices, data_shape=output_shape)
 
