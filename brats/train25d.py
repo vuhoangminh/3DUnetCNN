@@ -2,11 +2,10 @@ from comet_ml import Experiment
 
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.02
-config.gpu_options.visible_device_list = "0"
-set_session(tf.Session(config=config))
-
+config_tf = tf.ConfigProto()
+config_tf.gpu_options.per_process_gpu_memory_fraction = 0.02
+config_tf.gpu_options.visible_device_list = "0"
+set_session(tf.Session(config=config_tf))
 
 import os
 
