@@ -21,11 +21,6 @@ import matplotlib.pyplot as plt
 
 numpy_array_saved = "" # path to your .npy file generated with binvox_dataset.py
 
-
-
-
-
-
 class ElapsedTimer(object):
 	def __init__(self):
 		self.start_time = time.time()

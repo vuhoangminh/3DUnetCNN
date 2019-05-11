@@ -1,27 +1,20 @@
 from comet_ml import Experiment
 
 import os
-
 from unet3d.data import open_data_file
 from unet3d.generator import get_training_and_validation_and_testing_generators
-from unet3d.model import unet_model_3d, simple_model_3d, eye_model_3d, mnet_model_3d, multiscale_unet_model_3d
+from unet3d.model import mnet, unet_model_3d
 from unet3d.model import isensee2017_model
-from unet3d.model import densefcn_model_3d
-from unet3d.model import dense_unet_3d, res_unet_3d, se_unet_3d
 from unet3d.training import train_model
 from unet3d.utils.path_utils import get_project_dir
 from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import make_dir
+from unet3d.utils.print_utils import print_section, print_separator
 import unet3d.utils.args_utils as get_args
 import unet3d.utils.path_utils as path_utils
-
 from brats.prepare_data import prepare_data
-
-from unet3d.utils.print_utils import print_section, print_separator
-
 from brats.config import config, config_unet
-
 
 config.update(config_unet)
 
@@ -79,126 +72,37 @@ def train(args):
     print("-"*60)
     print("# Load or init model")
     print("-"*60)
-    if not overwrite and os.path.exists(config["model_file"]):
+    if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
-        model = generate_model(config["model_file"], loss_function=loss)
+        model = generate_model(config["model_file"], loss_function=args.loss)
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
-        if model_name == "unet":
+        if args.model == "unet":
             print("init unet model")
             model = unet_model_3d(input_shape=config["input_shape"],
                                   pool_size=config["pool_size"],
                                   n_labels=config["n_labels"],
                                   initial_learning_rate=config["initial_learning_rate"],
                                   deconvolution=config["deconvolution"],
-                                  depth=depth_unet,
-                                  n_base_filters=n_base_filters_unet,
-                                  loss_function=loss)
+                                  depth=args.depth_unet,
+                                  n_base_filters=args.n_base_filters_unet,
+                                  loss_function=args.loss)
 
-        # elif model_name == "densefcn":
-        #     print("init densenet model")
-        #     # config["initial_learning_rate"] = 1e-5
-        #     model = densefcn_model_3d(input_shape=config["input_shape"],
-        #                               classes=config["n_labels"],
-        #                               initial_learning_rate=config["initial_learning_rate"],
-        #                               nb_dense_block=5,
-        #                               nb_layers_per_block=4,
-        #                               early_transition=True,
-        #                               dropout_rate=0.2,
-        #                               loss_function=loss)
-
-        # elif model_name == "denseunet":
-        #     print("init denseunet model")
-        #     model = dense_unet_3d(input_shape=config["input_shape"],
-        #                           pool_size=config["pool_size"],
-        #                           n_labels=config["n_labels"],
-        #                           initial_learning_rate=config["initial_learning_rate"],
-        #                           deconvolution=config["deconvolution"],
-        #                           depth=depth_unet,
-        #                           n_base_filters=n_base_filters_unet,
-        #                           loss_function=loss)
-
-        # elif model_name == "resunet":
-        #     print("init resunet model")
-        #     model = res_unet_3d(input_shape=config["input_shape"],
-        #                         pool_size=config["pool_size"],
-        #                         n_labels=config["n_labels"],
-        #                         initial_learning_rate=config["initial_learning_rate"],
-        #                         deconvolution=config["deconvolution"],
-        #                         depth=depth_unet,
-        #                         n_base_filters=n_base_filters_unet,
-        #                         loss_function=loss)
-
-        # elif model_name == "seunet":
-        #     print("init seunet model")
-        #     model = se_unet_3d(input_shape=config["input_shape"],
-        #                        pool_size=config["pool_size"],
-        #                        n_labels=config["n_labels"],
-        #                        initial_learning_rate=config["initial_learning_rate"],
-        #                        deconvolution=config["deconvolution"],
-        #                        depth=depth_unet,
-        #                        n_base_filters=n_base_filters_unet,
-        #                        loss_function=loss)
-
-        # elif model_name == "simple":
-        #     print("init simple model")
-        #     model = simple_model_3d(input_shape=config["input_shape"],
-        #                             pool_size=config["pool_size"],
-        #                             n_labels=config["n_labels"],
-        #                             initial_learning_rate=config["initial_learning_rate"],
-        #                             depth=depth_unet,
-        #                             n_base_filters=n_base_filters_unet,
-        #                             loss_function=loss)
-
-        # elif model_name == "eye":
-        #     print("init eye model")
-        #     model = eye_model_3d(input_shape=config["input_shape"],
-        #                          pool_size=config["pool_size"],
-        #                          n_labels=config["n_labels"],
-        #                          initial_learning_rate=config["initial_learning_rate"],
-        #                          depth=depth_unet,
-        #                          n_base_filters=n_base_filters_unet,
-        #                          growth_rate=4,
-        #                          loss_function=loss)
-
-        # elif model_name == "m":
-        #     print("init mnet model")
-        #     model = mnet_model_3d(input_shape=config["input_shape"],
-        #                           pool_size=config["pool_size"],
-        #                           n_labels=config["n_labels"],
-        #                           initial_learning_rate=config["initial_learning_rate"],
-        #                           n_base_filters=32,
-        #                           loss_function=loss)
-
-        # elif model_name == "m2":
-        #     print("init mnet model")
-        #     from unet3d.model.mnet import mnet_model2_3d
-        #     model = mnet_model2_3d(input_shape=config["input_shape"],
-        #                            pool_size=config["pool_size"],
-        #                            n_labels=config["n_labels"],
-        #                            initial_learning_rate=config["initial_learning_rate"],
-        #                            n_base_filters=16,
-        #                            loss_function=loss)
-
-        elif model_name == "multi":
-            print("init multiscale unet model")
-            model = multiscale_unet_model_3d(input_shape=config["input_shape"],
-                                             pool_size=config["pool_size"],
-                                             n_labels=config["n_labels"],
-                                             initial_learning_rate=config["initial_learning_rate"],
-                                             deconvolution=config["deconvolution"],
-                                             depth=depth_unet,
-                                             n_base_filters=n_base_filters_unet,
-                                             loss_function=loss)
+        elif args.model == "mnet":
+            print("init isensee model")
+            model = mnet(input_shape=config["input_shape"],
+                         n_labels=config["n_labels"],
+                         initial_learning_rate=config["initial_learning_rate"],
+                         loss_function=args.loss)
 
         else:
             print("init isensee model")
             model = isensee2017_model(input_shape=config["input_shape"],
                                       n_labels=config["n_labels"],
                                       initial_learning_rate=config["initial_learning_rate"],
-                                      loss_function=loss)
+                                      loss_function=args.loss)
 
     model.summary()
 
@@ -207,7 +111,7 @@ def train(args):
     print("-"*60)
     # run training
 
-    if is_test == "0":
+    if args.is_test == "0":
         experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
                                 project_name="train",
                                 workspace="vuhoangminh")
@@ -221,7 +125,7 @@ def train(args):
     print("validation file:", config["validation_file"])
     print("testing file:", config["testing_file"])
 
-    if is_test == "1":
+    if args.is_test == "1":
         config["n_epochs"] = 5
 
     train_model(experiment=experiment,
@@ -238,7 +142,7 @@ def train(args):
                 n_epochs=config["n_epochs"]
                 )
 
-    if is_test == "0":
+    if args.is_test == "0":
         experiment.log_parameters(config)
 
     data_file_opened.close()

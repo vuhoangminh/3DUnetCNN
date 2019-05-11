@@ -7,6 +7,7 @@ from unet3d.model import unet_model_3d, simple_model_3d, eye_model_3d, multiscal
 from unet3d.model import dense_unet_3d
 from unet3d.model import res_unet_3d
 from unet3d.model import mnet_model_3d
+from unet3d.model import unet_vae
 
 from unet2d.model import densefcn_model_2d
 from unet2d.model import unet_model_2d
@@ -187,10 +188,17 @@ input_shape = (4, 128, 128, 128)
 # model.summary()
 
 
-name = "multi_unet3d"
-model = multiscale_unet_model_3d(input_shape=(4, 160, 192, 128),
-                                 n_labels=3,
-                                 n_base_filters=32,
-                                 depth=3)
+# name = "multi_unet3d"
+# model = multiscale_unet_model_3d(input_shape=(4, 160, 192, 128),
+#                                  n_labels=3,
+#                                  n_base_filters=32,
+#                                  depth=3)
+# model.summary()
+# save_plot(model, get_path(name))
+
+
+name = "unet3d_vae"
+model = unet_vae(input_shape=(4, 160, 192, 128),
+                 n_labels=3)
 model.summary()
 save_plot(model, get_path(name))
