@@ -113,7 +113,7 @@ def mnet_old(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout
 
 def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
          n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
-         weight_decay=1e-10, loss_function="weighted", activation_name="sigmoid",
+         weight_decay=1e-8, loss_function="weighted", activation_name="sigmoid",
          metrics=minh_dice_coef_metric):
     """
     :param input_shape:
