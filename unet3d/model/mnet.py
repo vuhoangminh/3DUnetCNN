@@ -113,7 +113,8 @@ def mnet_old(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout
 
 def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
          n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
-         loss_function="weighted", activation_name="sigmoid", metrics=minh_dice_coef_metric):
+         weight_decay=1e-10, loss_function="weighted", activation_name="sigmoid",
+         metrics=minh_dice_coef_metric):
     """
     :param input_shape:
     :param n_base_filters:
@@ -135,6 +136,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=32,
         kernel_size=(3, 3, 3),
         strides=1,
+        # kernel_regularizer=regularizers.l2(weight_decay),
         padding='same',
         data_format='channels_first',
         name='Input_x1')(inp)
@@ -143,43 +145,46 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
     x = Dropout(0.2)(x)
 
     # Green Block x1 (output filters = 32)
-    x1 = __bottleneck_block(x, 32, 4)
-    x1 = green_block(x, 32, name='x1')
+    # x1 = __bottleneck_block(x, 32, 4)
+    x1 = green_block(x, 32, weight_decay=weight_decay, name='x1')
     x = Conv3D(
         filters=32,
         kernel_size=(3, 3, 3),
         strides=2,
+        # kernel_regularizer=regularizers.l2(weight_decay),
         padding='same',
         data_format='channels_first',
         name='Enc_DownSample_32')(x1)
 
     # Green Block x2 (output filters = 64)
-    x = green_block(x, 64, name='Enc_64_1')
-    x2 = green_block(x, 64, name='x2')
+    x = green_block(x, 64, weight_decay=weight_decay, name='Enc_64_1')
+    x2 = green_block(x, 64, weight_decay=weight_decay, name='x2')
     x = Conv3D(
         filters=64,
         kernel_size=(3, 3, 3),
         strides=2,
+        # kernel_regularizer=regularizers.l2(weight_decay),
         padding='same',
         data_format='channels_first',
         name='Enc_DownSample_64')(x2)
 
     # Green Blocks x2 (output filters = 128)
-    x = green_block(x, 128, name='Enc_128_1')
-    x3 = green_block(x, 128, name='x3')
+    x = green_block(x, 128, weight_decay=weight_decay, name='Enc_128_1')
+    x3 = green_block(x, 128, weight_decay=weight_decay, name='x3')
     x = Conv3D(
         filters=128,
         kernel_size=(3, 3, 3),
         strides=2,
+        # kernel_regularizer=regularizers.l2(weight_decay),
         padding='same',
         data_format='channels_first',
         name='Enc_DownSample_128')(x3)
 
     # Green Blocks x4 (output filters = 256)
-    x = green_block(x, 256, name='Enc_256_1')
-    x = green_block(x, 256, name='Enc_256_2')
-    x = green_block(x, 256, name='Enc_256_3')
-    x4 = green_block(x, 256, name='x4')
+    x = green_block(x, 256, weight_decay=weight_decay, name='Enc_256_1')
+    x = green_block(x, 256, weight_decay=weight_decay, name='Enc_256_2')
+    x = green_block(x, 256, weight_decay=weight_decay, name='Enc_256_3')
+    x4 = green_block(x, 256, weight_decay=weight_decay, name='x4')
 
     # -------------------------------------------------------------------------
     # Decoder
@@ -193,6 +198,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=128,
         kernel_size=(1, 1, 1),
         strides=1,
+        # kernel_regularizer=regularizers.l2(weight_decay),
         data_format='channels_first',
         name='Dec_GT_ReduceDepth_128')(x4)
     x = UpSampling3D(
@@ -200,13 +206,14 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         data_format='channels_first',
         name='Dec_GT_UpSample_128')(x)
     x = Add(name='Input_Dec_GT_128')([x, x3])
-    x = green_block(x, 128, name='Dec_GT_128')
+    x = green_block(x, 128, weight_decay=weight_decay, name='Dec_GT_128')
 
     # Green Block x1 (output filters=64)
     x = Conv3D(
         filters=64,
         kernel_size=(1, 1, 1),
         strides=1,
+        # kernel_regularizer=regularizers.l2(weight_decay),
         data_format='channels_first',
         name='Dec_GT_ReduceDepth_64')(x)
     x = UpSampling3D(
@@ -214,13 +221,14 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         data_format='channels_first',
         name='Dec_GT_UpSample_64')(x)
     x = Add(name='Input_Dec_GT_64')([x, x2])
-    x = green_block(x, 64, name='Dec_GT_64')
+    x = green_block(x, 64, weight_decay=weight_decay, name='Dec_GT_64')
 
     # Green Block x1 (output filters=32)
     x = Conv3D(
         filters=32,
         kernel_size=(1, 1, 1),
         strides=1,
+        # kernel_regularizer=regularizers.l2(weight_decay),
         data_format='channels_first',
         name='Dec_GT_ReduceDepth_32')(x)
     x = UpSampling3D(
@@ -228,13 +236,14 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         data_format='channels_first',
         name='Dec_GT_UpSample_32')(x)
     x = Add(name='Input_Dec_GT_32')([x, x1])
-    x = green_block(x, 32, name='Dec_GT_32')
+    x = green_block(x, 32, weight_decay=weight_decay, name='Dec_GT_32')
 
     # Blue Block x1 (output filters=32)
     x = Conv3D(
         filters=32,
         kernel_size=(3, 3, 3),
         strides=1,
+        # kernel_regularizer=regularizers.l2(weight_decay),
         padding='same',
         data_format='channels_first',
         name='Input_Dec_GT_Output')(x)
@@ -244,6 +253,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=n_labels,  # No. of tumor classes is 3
         kernel_size=(1, 1, 1),
         strides=1,
+        # kernel_regularizer=regularizers.l2(weight_decay),
         data_format='channels_first',
         activation='sigmoid',
         name='Dec_GT_Output')(x)
@@ -274,7 +284,7 @@ def __grouped_convolution_block(input, grouped_channels, cardinality, strides, w
 
     if cardinality == 1:
         # with cardinality 1, it is a standard convolution
-        x = Conv3D(grouped_channels, (3, 3, 3), padding='same', use_bias=False, strides=(strides, strides),
+        x = Conv3D(grouped_channels, (3, 3, 3), padding='same', use_bias=False, strides=(strides, strides, strides),
                    kernel_initializer='he_normal', kernel_regularizer=regularizers.l2(weight_decay))(init)
         x = BatchNormalization(axis=channel_axis)(x)
         x = Activation('relu')(x)
@@ -285,7 +295,7 @@ def __grouped_convolution_block(input, grouped_channels, cardinality, strides, w
                    if K.image_data_format() == 'channels_last' else
                    lambda z: z[:, c * grouped_channels:(c + 1) * grouped_channels, :, :])(input)
 
-        x = Conv3D(grouped_channels, (3, 3, 3), padding='same', use_bias=False, strides=(strides, strides),
+        x = Conv3D(grouped_channels, (3, 3, 3), padding='same', use_bias=False, strides=(strides, strides, strides),
                    kernel_initializer='he_normal', kernel_regularizer=regularizers.l2(weight_decay))(x)
 
         group_list.append(x)
@@ -316,12 +326,12 @@ def __bottleneck_block(input, filters=64, cardinality=8, strides=1, weight_decay
     # Check if input number of filters is same as 16 * k, else create convolution2d for this input
     if K.image_data_format() == 'channels_first':
         if init._keras_shape[1] != 2 * filters:
-            init = Conv3D(filters * 2, (1, 1, 1), padding='same', strides=(strides, strides),
+            init = Conv3D(filters * 2, (1, 1, 1), padding='same', strides=(strides, strides, strides),
                           use_bias=False, kernel_initializer='he_normal', kernel_regularizer=regularizers.l2(weight_decay))(init)
             init = BatchNormalization(axis=channel_axis)(init)
     else:
         if init._keras_shape[-1] != 2 * filters:
-            init = Conv3D(filters * 2, (1, 1, 1), padding='same', strides=(strides, strides),
+            init = Conv3D(filters * 2, (1, 1, 1), padding='same', strides=(strides, strides, strides),
                           use_bias=False, kernel_initializer='he_normal', kernel_regularizer=regularizers.l2(weight_decay))(init)
             init = BatchNormalization(axis=channel_axis)(init)
 
