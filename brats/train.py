@@ -97,6 +97,8 @@ def train(args):
                          initial_learning_rate=config["initial_learning_rate"],
                          loss_function=args.loss)
 
+        # elif args.model
+
 
         else:
             print("init isensee model")

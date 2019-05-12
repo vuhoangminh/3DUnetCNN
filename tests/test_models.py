@@ -1,12 +1,12 @@
-from unet3d.model.mnet import mnet_model2_3d
+# from unet3d.model.mnet import mnet_model2_3d
 from unet25d.model import isensee25d_model
-from unet3d.model import se_unet_3d
-from unet3d.model import densefcn_model_3d
-from unet3d.model import isensee2017_model
-from unet3d.model import unet_model_3d, simple_model_3d, eye_model_3d, multiscale_unet_model_3d
-from unet3d.model import dense_unet_3d
-from unet3d.model import res_unet_3d
-from unet3d.model import mnet_model_3d
+# from unet3d.model import se_unet_3d
+# from unet3d.model import densefcn_model_3d
+from unet3d.model import isensee2017_model, unet_model_3d, mnet
+# from unet3d.model import unet_model_3d, simple_model_3d, eye_model_3d, multiscale_unet_model_3d
+# from unet3d.model import dense_unet_3d
+# from unet3d.model import res_unet_3d
+# from unet3d.model import mnet_model_3d
 from unet3d.model import unet_vae
 
 from unet2d.model import densefcn_model_2d
