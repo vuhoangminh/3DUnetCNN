@@ -91,11 +91,12 @@ def train(args):
                                   loss_function=args.loss)
 
         elif args.model == "mnet":
-            print("init isensee model")
+            print("init mnet model")
             model = mnet(input_shape=config["input_shape"],
                          n_labels=config["n_labels"],
                          initial_learning_rate=config["initial_learning_rate"],
                          loss_function=args.loss)
+
 
         else:
             print("init isensee model")

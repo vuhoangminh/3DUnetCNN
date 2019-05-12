@@ -64,9 +64,9 @@ config_unet["validation_batch_size"] = 2
 config_unet["n_epochs"] = 200  # cutoff the training after this many epochs
 # learning rate will be reduced after this many epochs if the validation loss is not improving
 # config_unet["patience"] = 10
-config_unet["patience"] = 6
+config_unet["patience"] = 10
 # training will be stopped after this many epochs without the validation loss improving
-config_unet["early_stop"] = 15
+config_unet["early_stop"] = 25
 config_unet["initial_learning_rate"] = 1e-3 # factor by which the learning rate will be reduced
 config_unet["learning_rate_drop"] = 0.2 # portion of the data that will be used for training
 # config_unet["learning_rate_epochs"] = 1
@@ -103,7 +103,7 @@ config["skip_blank"] = True
 config_dict = dict()
 config_dict["challenge"] = ["brats"]
 config_dict["year"] = [2018, 2019]
-config_dict["model"] = ["unet", "isensee", "densefcn", "denseunet", "resunet", "seunet", "seisensee", "simple", "eye", "m", "m2", "multi"]
+config_dict["model"] = ["unet", "isensee", "mnet"]
 config_dict["model_depth"] = ["unet", "seunet", "multi", "denseunet", "resunet"]
 # "deepmedic", "maskrcnn", "cascaded", "proposed"]
 config_dict["depth_unet"] = [3, 4, 5, 6]  # depth of unet
