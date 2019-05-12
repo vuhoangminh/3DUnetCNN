@@ -197,8 +197,15 @@ input_shape = (4, 128, 128, 128)
 # save_plot(model, get_path(name))
 
 
-name = "unet3d_vae"
-model = unet_vae(input_shape=(4, 160, 192, 128),
-                 n_labels=3)
+# name = "unet3d_vae"
+# model = unet_vae(input_shape=(4, 160, 192, 128),
+#                  n_labels=3)
+# model.summary()
+# save_plot(model, get_path(name))
+
+
+name = "mnet"
+model = mnet(input_shape=(4, 160, 192, 128),
+             n_labels=3)
 model.summary()
 save_plot(model, get_path(name))
