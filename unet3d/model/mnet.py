@@ -26,15 +26,16 @@ import keras.backend as K
 # # K.__dict__["gradients"] = memory_saving_gradients.gradients_speed
 
 
-def mnet_old(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
-             n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
-             loss_function="weighted", activation_name="sigmoid", metrics=minh_dice_coef_metric):
+def pernet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
+           n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
+           loss_function="weighted", activation_name="sigmoid", metrics=minh_dice_coef_metric):
     """
     This function builds a model proposed by Isensee et al. for the BRATS 2017 challenge:
     https://www.cbica.upenn.edu/sbia/Spyridon.Bakas/MICCAI_BraTS/MICCAI_BraTS_2017_proceedings_shortPapers.pdf
 
     This network is highly similar to the model proposed by Kayalibay et al. "CNN-based Segmentation of Medical
     Imaging Data", 2017: https://arxiv.org/pdf/1701.03056.pdf
+
 
     :param input_shape:
     :param n_base_filters:
@@ -48,22 +49,20 @@ def mnet_old(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout
     :param activation_name:
     :return:
     """
-    inp = Input(input_shape)
+    inputs = Input(input_shape)
 
-    current_layer = inp
+    current_layer = inputs
     level_output_layers = list()
     level_filters = list()
     for level_number in range(depth):
         n_level_filters = (2**level_number) * n_base_filters
         level_filters.append(n_level_filters)
 
-        if current_layer is inp:
+        if current_layer is inputs:
             in_conv = create_convolution_block(current_layer, n_level_filters)
         else:
             in_conv = create_convolution_block(
                 current_layer, n_level_filters, strides=(2, 2, 2))
-            in_conv = SpatialDropout3D(rate=0.3,
-                                       data_format="channels_first")(in_conv)
 
         context_output_layer = create_context_module(
             in_conv, n_level_filters, dropout_rate=dropout_rate)
@@ -98,13 +97,7 @@ def mnet_old(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout
 
     activation_block = Activation(activation_name)(output_layer)
 
-    model = Model(inp=inp, outputs=activation_block)
-
-    # layer_names = [layer.name for layer in model.layers]
-    # [tf.add_to_collection("checkpoints", model.get_layer(l).get_output_at(0))
-    #     for l in [i for i in layer_names if 'conv3d' in i]]
-    # K.__dict__[
-    #     "gradients"] = memory_saving_gradients.gradients_collection
+    model = Model(inputs=inputs, outputs=activation_block)
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
@@ -113,7 +106,7 @@ def mnet_old(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout
 
 def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
          n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
-         weight_decay=1e-8, loss_function="weighted", activation_name="sigmoid",
+         weight_decay=1e-5, loss_function="weighted", activation_name="sigmoid",
          metrics=minh_dice_coef_metric):
     """
     :param input_shape:
@@ -136,7 +129,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=32,
         kernel_size=(3, 3, 3),
         strides=1,
-        # kernel_regularizer=regularizers.l2(weight_decay),
+        kernel_regularizer=regularizers.l2(weight_decay),
         padding='same',
         data_format='channels_first',
         name='Input_x1')(inp)
@@ -151,7 +144,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=32,
         kernel_size=(3, 3, 3),
         strides=2,
-        # kernel_regularizer=regularizers.l2(weight_decay),
+        kernel_regularizer=regularizers.l2(weight_decay),
         padding='same',
         data_format='channels_first',
         name='Enc_DownSample_32')(x1)
@@ -163,7 +156,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=64,
         kernel_size=(3, 3, 3),
         strides=2,
-        # kernel_regularizer=regularizers.l2(weight_decay),
+        kernel_regularizer=regularizers.l2(weight_decay),
         padding='same',
         data_format='channels_first',
         name='Enc_DownSample_64')(x2)
@@ -175,7 +168,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=128,
         kernel_size=(3, 3, 3),
         strides=2,
-        # kernel_regularizer=regularizers.l2(weight_decay),
+        kernel_regularizer=regularizers.l2(weight_decay),
         padding='same',
         data_format='channels_first',
         name='Enc_DownSample_128')(x3)
@@ -198,7 +191,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=128,
         kernel_size=(1, 1, 1),
         strides=1,
-        # kernel_regularizer=regularizers.l2(weight_decay),
+        kernel_regularizer=regularizers.l2(weight_decay),
         data_format='channels_first',
         name='Dec_GT_ReduceDepth_128')(x4)
     x = UpSampling3D(
@@ -213,7 +206,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=64,
         kernel_size=(1, 1, 1),
         strides=1,
-        # kernel_regularizer=regularizers.l2(weight_decay),
+        kernel_regularizer=regularizers.l2(weight_decay),
         data_format='channels_first',
         name='Dec_GT_ReduceDepth_64')(x)
     x = UpSampling3D(
@@ -228,7 +221,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=32,
         kernel_size=(1, 1, 1),
         strides=1,
-        # kernel_regularizer=regularizers.l2(weight_decay),
+        kernel_regularizer=regularizers.l2(weight_decay),
         data_format='channels_first',
         name='Dec_GT_ReduceDepth_32')(x)
     x = UpSampling3D(
@@ -243,7 +236,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=32,
         kernel_size=(3, 3, 3),
         strides=1,
-        # kernel_regularizer=regularizers.l2(weight_decay),
+        kernel_regularizer=regularizers.l2(weight_decay),
         padding='same',
         data_format='channels_first',
         name='Input_Dec_GT_Output')(x)
@@ -253,7 +246,7 @@ def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rat
         filters=n_labels,  # No. of tumor classes is 3
         kernel_size=(1, 1, 1),
         strides=1,
-        # kernel_regularizer=regularizers.l2(weight_decay),
+        kernel_regularizer=regularizers.l2(weight_decay),
         data_format='channels_first',
         activation='sigmoid',
         name='Dec_GT_Output')(x)

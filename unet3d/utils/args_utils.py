@@ -34,7 +34,9 @@ def parent_train_parser():
                         default=0.1,
                         help="weight of total variance comapared to main loss (dice coef etc.)")
     parser.add_argument('-au', '--is_augment', type=str,
-                        default="1")                        
+                        default="1")  
+    parser.add_argument('-name', '--name', type=str,
+                        default="0")      
     return parser
 
 

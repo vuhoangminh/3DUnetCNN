@@ -1,22 +1,22 @@
+from brats.config import config, config_unet
+from brats.prepare_data import prepare_data
+import unet3d.utils.path_utils as path_utils
+import unet3d.utils.args_utils as get_args
+from unet3d.utils.print_utils import print_section, print_separator
+from unet3d.utils.path_utils import make_dir
+from unet3d.utils.path_utils import get_training_h5_paths
+from unet3d.utils.path_utils import get_shape_from_string
+from unet3d.utils.path_utils import get_project_dir
+from unet3d.training import train_model
+from unet3d.model import isensee2017_model
+from unet3d.model import mnet, unet_model_3d, unet_vae
+from unet3d.generator import get_training_and_validation_and_testing_generators
+from unet3d.data import open_data_file
 from comet_ml import Experiment
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]="1" # run on server
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # run on server
 
-from unet3d.data import open_data_file
-from unet3d.generator import get_training_and_validation_and_testing_generators
-from unet3d.model import mnet, unet_model_3d
-from unet3d.model import isensee2017_model
-from unet3d.training import train_model
-from unet3d.utils.path_utils import get_project_dir
-from unet3d.utils.path_utils import get_shape_from_string
-from unet3d.utils.path_utils import get_training_h5_paths
-from unet3d.utils.path_utils import make_dir
-from unet3d.utils.print_utils import print_section, print_separator
-import unet3d.utils.args_utils as get_args
-import unet3d.utils.path_utils as path_utils
-from brats.prepare_data import prepare_data
-from brats.config import config, config_unet
 
 config.update(config_unet)
 
@@ -30,6 +30,9 @@ def train(args):
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, args=args)
+
+    if args.name != "0":
+        model_path = args.name
 
     config["data_file"] = data_path
     config["model_file"] = model_path
@@ -99,8 +102,11 @@ def train(args):
                          initial_learning_rate=config["initial_learning_rate"],
                          loss_function=args.loss)
 
-        # elif args.model
-
+        elif args.model == "unet_vae":
+            print("init unet_vae model")
+            model = unet_vae(input_shape=config["input_shape"],
+                             n_labels=config["n_labels"],
+                             initial_learning_rate=config["initial_learning_rate"])
 
         else:
             print("init isensee model")
