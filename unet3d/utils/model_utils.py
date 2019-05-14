@@ -15,7 +15,6 @@ from unet3d.metrics import tv_weighted_loss
 from unet3d.metrics import minh_dice_coef_metric
 
 
-
 def load_model_multi_gpu(model_file):
 
     print(">> load old model")
@@ -106,8 +105,10 @@ def compile_model(model, loss_function="weighted",
         loss = tv_minh_loss(alpha=alpha)
     elif loss_function == "tv_weighted":
         loss = tv_weighted_loss(alpha=alpha)
-    else:
+    elif loss_function == "weighted":
         loss = weighted_dice_coefficient_loss
+    elif loss_function == "casnet":
+        loss = loss_function
     model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
                   loss=loss, metrics=[metrics])
     return model
