@@ -13,7 +13,7 @@ export PYTHONPATH=${PWD}:$PYTHONPATH
 
 export KERAS_BACKEND="tensorflow"
 
-export command="python brats/loop_finetune_v100_tv.py"
+export command="python brats/loop/loop_finetune_v100_tv.py"
 echo "$command"
 srun $command
 
