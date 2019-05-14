@@ -90,9 +90,8 @@ def casnet(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00
            depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
            batch_normalization=False, activation_name="sigmoid",
            metrics=minh_dice_coef_metric,
-           loss_function="weighted",
+           loss_function="casweighted",
            is_unet_original=True,
-
            ):
 
     inputs = Input(input_shape)

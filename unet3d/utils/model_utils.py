@@ -13,6 +13,7 @@ from unet3d.metrics import minh_dice_coef_loss
 from unet3d.metrics import tv_minh_loss
 from unet3d.metrics import tv_weighted_loss
 from unet3d.metrics import minh_dice_coef_metric
+from unet3d.metrics import dice_coefficient_loss
 
 
 def load_model_multi_gpu(model_file):
@@ -107,8 +108,23 @@ def compile_model(model, loss_function="weighted",
         loss = tv_weighted_loss(alpha=alpha)
     elif loss_function == "weighted":
         loss = weighted_dice_coefficient_loss
-    elif loss_function == "casnet":
-        loss = loss_function
-    model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
-                  loss=loss, metrics=[metrics])
+    elif loss_function == "casweighted":
+        loss = 'binary_crossentropy'
+
+    if loss_function == "casweighted":
+        model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
+                      loss={'out_whole': dice_coefficient_loss,
+                            'out_core': dice_coefficient_loss,
+                            'out_enh': dice_coefficient_loss
+                            },
+                      loss_weights={'out_whole': 1,
+                                    'out_core': 1,
+                                    'out_enh': 1
+                                    }
+                      )
+
+    else:
+        model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
+                      loss=loss, metrics=[metrics])
+
     return model

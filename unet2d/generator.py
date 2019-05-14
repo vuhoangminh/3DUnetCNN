@@ -28,8 +28,10 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                                          augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                          augment_rotation=False, augment_shift=False, augment_shear=False,
                                                          augment_zoom=False, n_augment=0, skip_blank=False, is_test="1",
-                                                         patch_overlap=[0, 0, -1],
-                                                         project="brats"):
+                                                         patch_overlap=[
+                                                             0, 0, -1],
+                                                         project="brats",
+                                                         is_model_cascaded=False):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -98,7 +100,8 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                           augment_shear=augment_shear,
                                           augment_zoom=augment_zoom,
                                           n_augment=n_augment,
-                                          skip_blank=skip_blank)
+                                          skip_blank=skip_blank,
+                                          is_model_cascaded=is_model_cascaded)
     print(">> valid data generator")
     validation_generator = data_generator2d(data_file, validation_list,
                                             batch_size=validation_batch_size,
@@ -106,7 +109,8 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                             labels=labels,
                                             patch_shape=patch_shape,
                                             patch_overlap=0,
-                                            skip_blank=skip_blank)
+                                            skip_blank=skip_blank,
+                                            is_model_cascaded=is_model_cascaded)
 
     # Set the number of training and testing samples per epoch correctly
     print(">> compute number of training and validation steps")
@@ -138,14 +142,14 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # print("Number of training steps: ", num_training_steps)
     # print("Number of validation steps: ", num_validation_steps)
 
-    # from unet3d.generator import get_number_of_patches
-    # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-    #                                                                patch_start_offset=training_patch_start_offset,
-    #                                                                patch_overlap=patch_overlap),
-    #                                          batch_size)
-    # num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-    #                                                                  patch_overlap=validation_patch_overlap),
-    #                                            validation_batch_size)
+    from unet3d.generator import get_number_of_patches
+    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+                                                                   patch_start_offset=training_patch_start_offset,
+                                                                   patch_overlap=patch_overlap),
+                                             batch_size)
+    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+                                                                     patch_overlap=validation_patch_overlap),
+                                               validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
@@ -159,7 +163,8 @@ def data_generator2d(data_file, index_list, batch_size=1, n_labels=1, labels=Non
                      skip_blank=True,
                      augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                      augment_rotation=False, augment_shift=False, augment_shear=False,
-                     augment_zoom=False, n_augment=False):
+                     augment_zoom=False, n_augment=False,
+                     is_model_cascaded=False):
     orig_index_list = index_list
     while True:
         x_list = list()
@@ -178,7 +183,7 @@ def data_generator2d(data_file, index_list, batch_size=1, n_labels=1, labels=Non
                        augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
                        augment_elastic=augment_elastic, augment_rotation=augment_rotation,
                        augment_shift=augment_shift, augment_shear=augment_shear,
-                       augment_zoom=augment_zoom)
+                       augment_zoom=augment_zoom, is_model_cascaded=is_model_cascaded)
 
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
                 yield convert_data2d(x_list, y_list, n_labels=n_labels, labels=labels)
@@ -287,7 +292,7 @@ def augment_data2d(data, augment_flipud=False, augment_fliplr=False, augment_ela
 def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
                augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                augment_rotation=False, augment_shift=False, augment_shear=False,
-               augment_zoom=False, skip_blank=True):
+               augment_zoom=False, skip_blank=True, is_model_cascaded=False):
     """
     Adds data from the data file to the given lists of feature and target data
     :return:
@@ -314,7 +319,19 @@ def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
         is_added = True
     if is_added:
         x_list.append(data)
-        y_list.append(truth)
+        if is_model_cascaded:
+            list_truth = []
+            truth_whole, truth_core, truth_enh = truth
+            truth_whole[truth_whole > 0] = 1
+            truth_core[truth_core == 2] = 0
+            truth_core[truth_core > 0] = 1
+            truth_enh[truth_enh == 1] = 0
+            truth_enh[truth_enh == 2] = 0
+            truth_core[truth_core > 4] = 1
+            list_truth.append()
+            y_list.append(list_truth)
+        else:
+            y_list.append(truth)
 
 
 def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
