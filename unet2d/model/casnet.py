@@ -89,7 +89,7 @@ def baseline(inputs, pool_size=(2, 2), n_labels=1,
 def casnet(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
            depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
            batch_normalization=False, activation_name="sigmoid",
-           metrics=minh_dice_coef_metric,
+        #    metrics=minh_dice_coef_metric,
            loss_function="casweighted",
            is_unet_original=True,
            ):
@@ -107,7 +107,7 @@ def casnet(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                         metrics=metrics,
+                        #  metrics=metrics,
                          initial_learning_rate=initial_learning_rate)
 
 

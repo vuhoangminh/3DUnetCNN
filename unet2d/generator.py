@@ -126,13 +126,15 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     #         num_training_steps = get_number_of_steps(1400,batch_size)
     #         num_validation_steps = get_number_of_steps(760,validation_batch_size)
     # else:
-    #     num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
-    #                                                                     patch_start_offset=training_patch_start_offset,
-    #                                                                     patch_overlap=patch_overlap),
-    #                                             batch_size)
-    #     num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
-    #                                                                     patch_overlap=0),
-    #                                             validation_batch_size)
+    # num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
+    #                                                                  patch_start_offset=training_patch_start_offset,
+    #                                                                  patch_overlap=patch_overlap,
+    #                                                                  is_model_cascaded=is_model_cascaded),
+    #                                          batch_size)
+    # num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
+    #                                                                    patch_overlap=0,
+    #                                                                    is_model_cascaded=is_model_cascaded),
+    #                                            validation_batch_size)
 
     # else:
     #     # num_training_steps = get_number_of_steps(11137, batch_size)
@@ -142,14 +144,14 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # print("Number of training steps: ", num_training_steps)
     # print("Number of validation steps: ", num_validation_steps)
 
-    from unet3d.generator import get_number_of_patches
-    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-                                                                   patch_start_offset=training_patch_start_offset,
-                                                                   patch_overlap=patch_overlap),
-                                             batch_size)
-    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                     patch_overlap=validation_patch_overlap),
-                                               validation_batch_size)
+    # from unet3d.generator import get_number_of_patches
+    # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+    #                                                                patch_start_offset=training_patch_start_offset,
+    #                                                                patch_overlap=patch_overlap),
+    #                                          batch_size)
+    # num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+    #                                                                  patch_overlap=validation_patch_overlap),
+    #                                            validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
@@ -186,7 +188,10 @@ def data_generator2d(data_file, index_list, batch_size=1, n_labels=1, labels=Non
                        augment_zoom=augment_zoom, is_model_cascaded=is_model_cascaded)
 
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
-                yield convert_data2d(x_list, y_list, n_labels=n_labels, labels=labels)
+                if is_model_cascaded:
+                    yield convert_multioutput_data2d(x_list, y_list)
+                else:
+                    yield convert_data2d(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
                 y_list = list()
 
@@ -207,6 +212,27 @@ def convert_data2d(x_list, y_list, n_labels=1, labels=None):
     elif n_labels > 1:
         y = get_multi_class_labels(y, n_labels=n_labels, labels=labels)
     return squeeze_data_from_3d_to_2d(x), squeeze_data_from_3d_to_2d(y)
+
+
+def convert_multioutput_data2d(x_list, y_list):
+    x = squeeze_data_from_3d_to_2d(np.asarray(x_list))
+    count = 0
+    for y in y_list:
+        if count == 0:
+            y_list_whole = [squeeze_data_from_3d_to_2d(y[0])]
+            y_list_core = [squeeze_data_from_3d_to_2d(y[1])]
+            y_list_enh = [squeeze_data_from_3d_to_2d(y[2])]
+        else:
+            y_list_whole.append(y[0])
+            y_list_core.append(y[1])
+            y_list_enh.append(y[2])
+        count += 1
+
+    y_whole = np.asarray(y_list_whole)
+    y_core = np.asarray(y_list_core)
+    y_enh = np.asarray(y_list_enh)
+
+    return x, [y_whole, y_core, y_enh]
 
 
 def elastic_transform_multi2d(x, alpha, sigma, mode="constant", cval=0, is_random=False):
@@ -320,22 +346,20 @@ def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
     if is_added:
         x_list.append(data)
         if is_model_cascaded:
-            list_truth = []
-            truth_whole, truth_core, truth_enh = truth
+            truth_whole, truth_core, truth_enh = truth, truth, truth
             truth_whole[truth_whole > 0] = 1
             truth_core[truth_core == 2] = 0
             truth_core[truth_core > 0] = 1
             truth_enh[truth_enh == 1] = 0
             truth_enh[truth_enh == 2] = 0
             truth_core[truth_core > 4] = 1
-            list_truth.append()
-            y_list.append(list_truth)
+            y_list.append([truth_whole, truth_core, truth_enh])
         else:
             y_list.append(truth)
 
 
 def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                            skip_blank=True):
+                            skip_blank=True, is_model_cascaded=False):
     if patch_shape:
         index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
                                              patch_start_offset)
@@ -347,7 +371,13 @@ def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overl
             x_list = list()
             y_list = list()
             add_data2d(x_list, y_list, data_file, index,
-                       skip_blank=skip_blank, patch_shape=patch_shape)
+                       skip_blank=skip_blank, patch_shape=patch_shape,
+                       is_model_cascaded=is_model_cascaded)
+
+            if count == 8:
+                convert_multioutput_data2d(x_list, y_list)
+
+
             if len(x_list) > 0:
                 count += 1
         print(">> processing {}/{}, added {}/{}".format(i,

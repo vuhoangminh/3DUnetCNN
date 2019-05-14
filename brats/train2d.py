@@ -19,7 +19,7 @@ from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.training import load_old_model, train_model
-from unet2d.model import unet_model_2d, isensee2d_model, densefcn_model_2d
+from unet2d.model import unet_model_2d, isensee2d_model, casnet
 from unet2d.generator import get_training_and_validation_and_testing_generators2d
 from unet3d.data import write_data_to_file, open_data_file
 import numpy as np
@@ -27,6 +27,7 @@ import pprint
 import glob
 import os
 import unet3d.utils.path_utils as path_utils
+from unet3d.utils.utils import str2bool
 
 
 # pp = pprint.PrettyPrinter(indent=4)
@@ -46,6 +47,8 @@ def train(args):
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, args=args)
 
+
+    config["casnet"] = '1' if args.model == "casnet" else '0'
     config["data_file"] = data_path
     config["model_file"] = model_path
     config["training_file"] = trainids_path
@@ -85,7 +88,8 @@ def train(args):
         augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
         skip_blank=config["skip_blank"],
-        is_test=args.is_test)
+        is_test=args.is_test,
+        is_model_cascaded=str2bool(config["casnet"]))
 
     print("-"*60)
     print("# Load or init model")
@@ -99,30 +103,12 @@ def train(args):
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
-        if args.model == "seunet":
-            print("init seunet model")
-            model = unet_model_2d(input_shape=config["input_shape"],
-                                  n_labels=config["n_labels"],
-                                  initial_learning_rate=config["initial_learning_rate"],
-                                  deconvolution=config["deconvolution"],
-                                  #   batch_normalization=True,
-                                  depth=args.depth_unet,
-                                  n_base_filters=args.n_base_filters_unet,
-                                  loss_function=args.loss,
-                                  is_unet_original=False)
-        elif args.model == "isensee":
+        if args.model == "isensee":
             print("init isensee model")
             model = isensee2d_model(input_shape=config["input_shape"],
                                     n_labels=config["n_labels"],
                                     initial_learning_rate=config["initial_learning_rate"],
                                     loss_function=args.loss)
-        elif args.model == "seisensee":
-            print("init isensee model")
-            model = isensee2d_model(input_shape=config["input_shape"],
-                                    n_labels=config["n_labels"],
-                                    initial_learning_rate=config["initial_learning_rate"],
-                                    loss_function=args.loss,
-                                    is_unet_original=False)
         elif args.model == "unet":
             print("init unet model")
             model = unet_model_2d(input_shape=config["input_shape"],
@@ -133,15 +119,14 @@ def train(args):
                                   depth=args.depth_unet,
                                   n_base_filters=args.n_base_filters_unet,
                                   loss_function=args.loss)
-        elif args.model == "densefcn":
-            model = densefcn_model_2d(input_shape=config["input_shape"],
-                                      classes=config["n_labels"],
-                                      initial_learning_rate=config["initial_learning_rate"],
-                                      nb_dense_block=4,
-                                      nb_layers_per_block=4,
-                                      early_transition=True,
-                                      dropout_rate=0.4,
-                                      loss_function=args.loss)
+        elif args.model == "casnet":
+            print("init casnet model")
+            model = casnet(input_shape=config["input_shape"],
+                           n_labels=config["n_labels"],
+                           initial_learning_rate=config["initial_learning_rate"],
+                           deconvolution=config["deconvolution"],
+                           depth=args.depth_unet,
+                           n_base_filters=args.n_base_filters_unet)
 
         else:
             raise ValueError("Model is NotImplemented. Please check")
