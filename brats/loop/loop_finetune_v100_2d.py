@@ -1,17 +1,11 @@
+import unet3d.utils.args_utils as get_args
+from unet3d.utils.path_utils import get_model_h5_filename
 import random
 from unet3d.utils.path_utils import get_project_dir
-from brats.config import config, config_unet, config_dict
-import datetime
-import logging
-import threading
-import subprocess
+from brats.config import config, config_unet
 import os
-import sys
-from subprocess import Popen, PIPE, STDOUT
-
-from unet3d.utils.path_utils import make_dir
-from unet3d.utils.path_utils import get_model_h5_filename
-from unet3d.utils.path_utils import get_filename_without_extension
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 config.update(config_unet)
 
@@ -22,66 +16,59 @@ DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 
 def run(model_filename, cmd):
-
     print("="*120)
-
-    model_path = os.path.join(
-        BRATS_DIR, "database/model/finetune", model_filename)
-    if os.path.exists(model_path):
-        print("{} exists. Will skip!!".format(model_path))
-    else:
+    try:
         print(">> RUNNING:", cmd)
         from keras import backend as K
         os.system(cmd)
         K.clear_session()
+    except:
+        print("something wrong")
 
 
+args = get_args.train2d()
 task = "finetune"
-is_test = "0"
+args.is_test = "0"
 
 model_list = list()
 cmd_list = list()
 out_file_list = list()
 
-for model_name in ["unet", "isensee"]:
-    for is_denoise in config_dict["is_denoise"]:
-        for is_normalize in config_dict["is_normalize"]:
-            for is_hist_match in ["0", "1"]:
-                for loss in ["weighted", "minh"]:
-                    for patch_shape in ["160-192-1"]:
-                        model_dim = 2
+for is_augment in ["0"]:
+    args.is_augment = is_augment
+    for model_name in ["isensee"]:
+        args.model = model_name
+        for is_denoise in ["0", "median", "bm4d"]:
+            args.is_denoise = is_denoise
+            for is_normalize in ["z", "1"]:
+                args.is_normalize = is_normalize
+                for is_hist_match in ["0", "1"]:
+                    args.is_hist_match = is_hist_match
+                    for loss in ["weighted", "minh"]:
+                        for patch_shape in ["160-192-1"]:
+                            args.patch_shape = patch_shape
+                            model_dim = 2
 
-                        if is_normalize == "z" and is_hist_match == "1":
-                            continue
+                            if is_normalize == "z" and is_hist_match == "1":
+                                continue
 
-                        model_filename = get_model_h5_filename(
-                            datatype="model",
-                            is_bias_correction="1",
-                            is_denoise=is_denoise,
-                            is_normalize=is_normalize,
-                            is_hist_match=is_hist_match,
-                            depth_unet=4,
-                            n_base_filters_unet=16,
-                            model_name=model_name,
-                            patch_shape=patch_shape,
-                            is_crf="0",
-                            is_test=is_test,
-                            loss=loss,
-                            model_dim=model_dim)
+                            model_filename = get_model_h5_filename(
+                                "model", args)
 
-                        cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 64 -dim 2".format(
-                            task,
-                            is_test,
-                            is_normalize,
-                            is_denoise,
-                            is_hist_match,
-                            patch_shape,
-                            loss,
-                            model_name
-                        )
+                            cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 64 -au {} -dim 2".format(
+                                task,
+                                args.is_test,
+                                args.is_normalize,
+                                args.is_denoise,
+                                args.is_hist_match,
+                                args.patch_shape,
+                                args.loss,
+                                args.model,
+                                args.is_augment
+                            )
 
-                        model_list.append(model_filename)
-                        cmd_list.append(cmd)
+                            model_list.append(model_filename)
+                            cmd_list.append(cmd)
 
 
 combined = list(zip(model_list, cmd_list))

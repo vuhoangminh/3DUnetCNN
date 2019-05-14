@@ -10,11 +10,10 @@ from unet3d.utils.path_utils import make_dir
 from unet3d.utils.path_utils import get_model_baseline_path
 from unet3d.utils.path_utils import get_training_h5_paths
 import unet3d.utils.args_utils as get_args
+import unet3d.utils.path_utils as path_utils
 
 from brats.prepare_data import prepare_data
-
 from unet3d.utils.print_utils import print_section
-
 from brats.config import config, config_unet, config_finetune
 
 # pp = pprint.PrettyPrinter(indent=4)
@@ -28,59 +27,25 @@ BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 
-def finetune(overwrite=True,
-             crop=True,
-             challenge="brats",
-             year=2018,
-             image_shape="160-192-128",
-             is_bias_correction="1",
-             is_normalize="z",
-             is_denoise="0",
-             is_hist_match="0",
-             is_test="1",
-             depth_unet=4,
-             n_base_filters_unet=16,
-             model_name="isensee",
-             patch_shape="128-128-128",
-             is_crf="0",
-             batch_size=1,
-             loss="weighted",
-             model_dim=3,
-             weight_tv_to_main_loss=0.1
-             ):
+def finetune(args):
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
-        BRATS_DIR,
-        overwrite=overwrite,
-        crop=crop,
-        challenge=challenge,
-        year=year,
-        image_shape=image_shape,
-        is_bias_correction=is_bias_correction,
-        is_normalize=is_normalize,
-        is_denoise=is_denoise,
-        is_hist_match=is_hist_match,
-        is_test=is_test,
-        model_name=model_name,
-        depth_unet=depth_unet,
-        n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape,
-        is_crf=is_crf,
-        is_finetune=True,
-        dir_read_write="base",
-        model_dim=model_dim,
-        weight_tv_to_main_loss=weight_tv_to_main_loss)
+        brats_dir=BRATS_DIR, args=args)
+
+    if args.name != "0":
+        model_path = args.name
 
     config["data_file"] = data_path
     config["model_file"] = model_path
     config["training_file"] = trainids_path
     config["validation_file"] = validids_path
     config["testing_file"] = testids_path
-    config["patch_shape"] = get_shape_from_string(patch_shape)
+    config["patch_shape"] = get_shape_from_string(args.patch_shape)
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
 
-    # update_train_valid_test_config(config, is_test=is_test)
+    if args.overwrite or not os.path.exists(data_path):
+        prepare_data(args)
 
     folder = os.path.join(BRATS_DIR, "database", "model", "base")
 
@@ -91,32 +56,26 @@ def finetune(overwrite=True,
         else:
             config["model_file"] = model_baseline_path
 
-    if overwrite or not os.path.exists(data_path):
-        prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-                     image_shape=image_shape, is_bias_correction=is_bias_correction,
-                     is_normalize=is_normalize, is_denoise=is_denoise,
-                     is_hist_match=is_hist_match, is_test=is_test)
-
     print_section("Open file")
     data_file_opened = open_data_file(config["data_file"])
 
     make_dir(config["training_file"])
 
     print_section("get training and testing generators")
-    if model_dim == 3:
+    if args.model_dim == 3:
         from unet3d.generator import get_training_and_validation_and_testing_generators
         train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators(
             data_file_opened,
-            batch_size=batch_size,
+            batch_size=args.batch_size,
             data_split=config["validation_split"],
-            overwrite=overwrite,
+            overwrite=args.overwrite,
             validation_keys_file=config["validation_file"],
             training_keys_file=config["training_file"],
             testing_keys_file=config["testing_file"],
             n_labels=config["n_labels"],
             labels=config["labels"],
             patch_shape=config["patch_shape"],
-            validation_batch_size=batch_size,
+            validation_batch_size=args.batch_size,
             validation_patch_overlap=config["validation_patch_overlap"],
             training_patch_start_offset=config["training_patch_start_offset"],
             is_create_patch_index_list_original=config["is_create_patch_index_list_original"],
@@ -129,20 +88,20 @@ def finetune(overwrite=True,
             augment_zoom=config["augment_zoom"],
             n_augment=config["n_augment"],
             skip_blank=config["skip_blank"])
-    elif model_dim == 25:
+    elif args.model_dim == 25:
         from unet25d.generator import get_training_and_validation_and_testing_generators25d
         train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators25d(
             data_file_opened,
-            batch_size=batch_size,
+            batch_size=args.batch_size,
             data_split=config["validation_split"],
-            overwrite=overwrite,
+            overwrite=args.overwrite,
             validation_keys_file=config["validation_file"],
             training_keys_file=config["training_file"],
             testing_keys_file=config["testing_file"],
             n_labels=config["n_labels"],
             labels=config["labels"],
             patch_shape=config["patch_shape"],
-            validation_batch_size=batch_size,
+            validation_batch_size=args.batch_size,
             validation_patch_overlap=config["validation_patch_overlap"],
             training_patch_start_offset=config["training_patch_start_offset"],
             augment_flipud=config["augment_flipud"],
@@ -154,21 +113,21 @@ def finetune(overwrite=True,
             augment_zoom=config["augment_zoom"],
             n_augment=config["n_augment"],
             skip_blank=config["skip_blank"],
-            is_test=is_test)
+            is_test=args.is_test)
     else:
         from unet2d.generator import get_training_and_validation_and_testing_generators2d
         train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators2d(
             data_file_opened,
-            batch_size=batch_size,
+            batch_size=args.batch_size,
             data_split=config["validation_split"],
-            overwrite=overwrite,
+            overwrite=args.overwrite,
             validation_keys_file=config["validation_file"],
             training_keys_file=config["training_file"],
             testing_keys_file=config["testing_file"],
             n_labels=config["n_labels"],
             labels=config["labels"],
             patch_shape=config["patch_shape"],
-            validation_batch_size=batch_size,
+            validation_batch_size=args.batch_size,
             validation_patch_overlap=config["validation_patch_overlap"],
             training_patch_start_offset=config["training_patch_start_offset"],
             augment_flipud=config["augment_flipud"],
@@ -180,7 +139,7 @@ def finetune(overwrite=True,
             augment_zoom=config["augment_zoom"],
             n_augment=config["n_augment"],
             skip_blank=config["skip_blank"],
-            is_test=is_test)
+            is_test=args.is_test)
 
     print("-"*60)
     print("# Load or init model")
@@ -195,8 +154,8 @@ def finetune(overwrite=True,
         print(">> load old and generate model")
         model = generate_model(config["model_file"],
                                initial_learning_rate=config["initial_learning_rate"],
-                               loss_function=loss,
-                               weight_tv_to_main_loss=weight_tv_to_main_loss)
+                               loss_function=args.loss,
+                               weight_tv_to_main_loss=args.weight_tv_to_main_loss)
         model.summary()
 
     # run training
@@ -207,29 +166,11 @@ def finetune(overwrite=True,
     print("Number of training steps: ", n_train_steps)
     print("Number of validation steps: ", n_validation_steps)
 
-
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
-        BRATS_DIR,
-        overwrite=overwrite,
-        crop=crop,
-        challenge=challenge,
-        year=year,
-        image_shape=image_shape,
-        is_bias_correction=is_bias_correction,
-        is_normalize=is_normalize,
-        is_denoise=is_denoise,
-        is_hist_match=is_hist_match,
-        is_test=is_test,
-        model_name=model_name,
-        depth_unet=depth_unet,
-        n_base_filters_unet=n_base_filters_unet,
-        patch_shape=patch_shape,
-        is_crf=is_crf,
+        brats_dir=BRATS_DIR,
+        args=args,
         dir_read_write="finetune",
-        is_finetune=True,
-        loss=loss,
-        model_dim=model_dim,
-        weight_tv_to_main_loss=weight_tv_to_main_loss)
+        is_finetune=True)
 
     config["model_file"] = model_path
 
@@ -237,18 +178,18 @@ def finetune(overwrite=True,
         print("{} existed. Will skip!!!".format(config["model_file"]))
     else:
 
-        if is_test == "1":
+        if args.is_test == "1":
             config["n_epochs"] = 5
 
-        if is_test == "0":
+        if args.is_test == "0":
             experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
                                     project_name="finetune",
                                     workspace="vuhoangminh")
         else:
             experiment = None
 
-        # if model_dim==2 and model_name=="isensee":
-        #     config["initial_learning_rate"]=1e-7
+        if args.model_dim == 2 and args.model == "isensee":
+            config["initial_learning_rate"] = 1e-7
 
         print(config["initial_learning_rate"], config["learning_rate_drop"])
         train_model(experiment=experiment,
@@ -265,54 +206,25 @@ def finetune(overwrite=True,
                     n_epochs=config["n_epochs"]
                     )
 
-        if is_test == "0":
+        if args.is_test == "0":
             experiment.log_parameters(config)
 
     data_file_opened.close()
     from keras import backend as K
     K.clear_session()
 
-def main():
-    args = get_args.finetune()
-    overwrite = args.overwrite
-    crop = args.crop
-    challenge = args.challenge
-    year = args.year
-    image_shape = args.image_shape
-    is_bias_correction = args.is_bias_correction
-    is_normalize = args.is_normalize
-    is_denoise = args.is_denoise
-    is_test = args.is_test
-    model_name = args.model
-    depth_unet = args.depth_unet
-    n_base_filters_unet = args.n_base_filters_unet
-    patch_shape = args.patch_shape
-    is_crf = args.is_crf
-    batch_size = args.batch_size
-    is_hist_match = args.is_hist_match
-    loss = args.loss
-    model_dim = args.model_dim
-    weight_tv_to_main_loss = args.weight_tv_to_main_loss
 
-    finetune(overwrite=overwrite,
-             crop=crop,
-             challenge=challenge,
-             year=year,
-             image_shape=image_shape,
-             is_bias_correction=is_bias_correction,
-             is_normalize=is_normalize,
-             is_denoise=is_denoise,
-             is_hist_match=is_hist_match,
-             is_test=is_test,
-             model_name=model_name,
-             depth_unet=depth_unet,
-             n_base_filters_unet=n_base_filters_unet,
-             patch_shape=patch_shape,
-             is_crf=is_crf,
-             batch_size=batch_size,
-             loss=loss,
-             model_dim=model_dim,
-             weight_tv_to_main_loss=weight_tv_to_main_loss)
+def main():
+    global config
+    args = get_args.finetune()
+
+    config = path_utils.update_is_augment(args, config)
+
+    data_path, _, _, _, _ = path_utils.get_training_h5_paths(BRATS_DIR, args)
+    if args.overwrite or not os.path.exists(data_path):
+        prepare_data(args)
+
+    finetune(args)
 
 
 if __name__ == "__main__":

@@ -7,7 +7,6 @@ import os
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
-
 config.update(config_unet)
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)

@@ -1,11 +1,14 @@
 from comet_ml import Experiment
 
-import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session
-config_tf = tf.ConfigProto()
-config_tf.gpu_options.per_process_gpu_memory_fraction = 0.015
-config_tf.gpu_options.visible_device_list = "0"
-set_session(tf.Session(config=config_tf))
+# to compute memory consumption ----------------------------------
+# import tensorflow as tf
+# from keras.backend.tensorflow_backend import set_session
+# config_tf = tf.ConfigProto()
+# config_tf.gpu_options.per_process_gpu_memory_fraction = 0.015
+# config_tf.gpu_options.visible_device_list = "0"
+# set_session(tf.Session(config=config_tf))
+# to compute memory consumption ----------------------------------
+
 
 from brats.config import config, config_unet
 from unet3d.utils.print_utils import print_processing, print_section, print_separator
@@ -24,7 +27,6 @@ import pprint
 import glob
 import os
 import unet3d.utils.path_utils as path_utils
-
 
 
 # pp = pprint.PrettyPrinter(indent=4)

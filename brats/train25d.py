@@ -1,11 +1,13 @@
 from comet_ml import Experiment
 
-import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session
-config_tf = tf.ConfigProto()
-config_tf.gpu_options.per_process_gpu_memory_fraction = 0.02
-config_tf.gpu_options.visible_device_list = "0"
-set_session(tf.Session(config=config_tf))
+# to compute memory consumption ----------------------------------
+# import tensorflow as tf
+# from keras.backend.tensorflow_backend import set_session
+# config_tf = tf.ConfigProto()
+# config_tf.gpu_options.per_process_gpu_memory_fraction = 0.015
+# config_tf.gpu_options.visible_device_list = "0"
+# set_session(tf.Session(config=config_tf))
+# to compute memory consumption ----------------------------------
 
 import os
 
