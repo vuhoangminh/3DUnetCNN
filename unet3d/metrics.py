@@ -277,39 +277,39 @@ def tv_weighted_loss(alpha=0.1):
     return loss
 
 
-def loss(out_whole, out_core, out_enh):
+# def loss(out_whole, out_core, out_enh):
 
-    loss_whole = 
+#     loss_whole = 
 
-    loss_L2 = mse(inp, out_VAE)
+#     loss_L2 = mse(inp, out_VAE)
 
-    loss_KL = (1 / n) * K.sum(
-        K.square(z_mean) + z_var - K.log(z_var) - 1,
-        axis=-1
-    )
+#     loss_KL = (1 / n) * K.sum(
+#         K.square(z_mean) + z_var - K.log(z_var) - 1,
+#         axis=-1
+#     )
 
-    def loss_(y_true, y_pred):
-        y_true_f = K.flatten(y_true)
-        y_pred_f = K.flatten(y_pred)
-        intersection = K.sum(K.abs(y_true_f * y_pred_f), axis=-1)
-        loss_dice = (2. * intersection) / (
-            K.sum(K.square(y_true_f), -1) + K.sum(K.square(y_pred_f), -1) + e)
+#     def loss_(y_true, y_pred):
+#         y_true_f = K.flatten(y_true)
+#         y_pred_f = K.flatten(y_pred)
+#         intersection = K.sum(K.abs(y_true_f * y_pred_f), axis=-1)
+#         loss_dice = (2. * intersection) / (
+#             K.sum(K.square(y_true_f), -1) + K.sum(K.square(y_pred_f), -1) + e)
 
-        return loss_dice + 0.1 * loss_L2 + 0.1 * loss_KL
+#         return loss_dice + 0.1 * loss_L2 + 0.1 * loss_KL
 
-    return loss_
+#     return loss_
 
 
-    ndim = len(y_true._keras_shape)
-    if K.image_data_format() == "channels_first":
-        axis = (-3, -2, -1) if ndim == 5 else (-2, -1)
-    else:
-        axis = (-4, -3, -2) if ndim == 5 else (-3, -2)
+#     ndim = len(y_true._keras_shape)
+#     if K.image_data_format() == "channels_first":
+#         axis = (-3, -2, -1) if ndim == 5 else (-2, -1)
+#     else:
+#         axis = (-4, -3, -2) if ndim == 5 else (-3, -2)
 
-    return K.mean(2. * (K.sum(y_true * y_pred,
-                              axis=axis) + smooth/2)/(K.sum(y_true,
-                                                            axis=axis) + K.sum(y_pred,
-                                                                               axis=axis) + smooth))
+#     return K.mean(2. * (K.sum(y_true * y_pred,
+#                               axis=axis) + smooth/2)/(K.sum(y_true,
+#                                                             axis=axis) + K.sum(y_pred,
+#                                                                                axis=axis) + smooth))
 
 
 

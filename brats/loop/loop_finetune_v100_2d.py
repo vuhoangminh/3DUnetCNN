@@ -40,7 +40,7 @@ for is_augment in ["0"]:
         args.model = model_name
         for is_denoise in ["0", "median", "bm4d"]:
             args.is_denoise = is_denoise
-            for is_normalize in ["z", "1"]:
+            for is_normalize in ["z", "01"]:
                 args.is_normalize = is_normalize
                 for is_hist_match in ["0", "1"]:
                     args.is_hist_match = is_hist_match

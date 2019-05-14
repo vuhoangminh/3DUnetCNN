@@ -102,7 +102,7 @@ def casnet(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00
     inp_core = concatenate([out_whole, inp_whole], axis=1)
     out_core = baseline(inp_core, name="out_core")
 
-    inp_enh = concatenate([out_core, inp_whole], axis=1)
+    inp_enh = concatenate([out_core, inp_core], axis=1)
     out_enh = baseline(inp_enh, name="out_enh")
 
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
