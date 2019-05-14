@@ -192,6 +192,12 @@ def finetune(args):
             config["initial_learning_rate"] = 1e-7
 
         print(config["initial_learning_rate"], config["learning_rate_drop"])
+        print("data file:", config["data_file"])
+        print("model file:", config["model_file"])
+        print("training file:", config["training_file"])
+        print("validation file:", config["validation_file"])
+        print("testing file:", config["testing_file"])
+
         train_model(experiment=experiment,
                     model=model,
                     model_file=config["model_file"],

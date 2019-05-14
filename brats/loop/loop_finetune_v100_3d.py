@@ -59,7 +59,7 @@ for is_augment in ["0"]:
                             model_filename = get_model_h5_filename(
                                 "model", args)
 
-                            cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 64 -au {} -dim 2".format(
+                            cmd = "python brats/{}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba 1 -au {} -dim 3".format(
                                 task,
                                 args.is_test,
                                 args.is_normalize,
