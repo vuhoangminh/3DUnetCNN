@@ -126,6 +126,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     #         num_training_steps = get_number_of_steps(1400,batch_size)
     #         num_validation_steps = get_number_of_steps(760,validation_batch_size)
     # else:
+    
     # num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
     #                                                                  patch_start_offset=training_patch_start_offset,
     #                                                                  patch_overlap=patch_overlap,
@@ -223,9 +224,9 @@ def convert_multioutput_data2d(x_list, y_list):
             y_list_core = [squeeze_data_from_3d_to_2d(y[1])]
             y_list_enh = [squeeze_data_from_3d_to_2d(y[2])]
         else:
-            y_list_whole.append(y[0])
-            y_list_core.append(y[1])
-            y_list_enh.append(y[2])
+            y_list_whole.append(squeeze_data_from_3d_to_2d(y[0]))
+            y_list_core.append(squeeze_data_from_3d_to_2d(y[1]))
+            y_list_enh.append(squeeze_data_from_3d_to_2d(y[2]))
         count += 1
 
     y_whole = np.asarray(y_list_whole)
@@ -346,14 +347,17 @@ def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
     if is_added:
         x_list.append(data)
         if is_model_cascaded:
-            truth_whole, truth_core, truth_enh = truth, truth, truth
+            truth_whole, truth_core, truth_enh = np.copy(truth), np.copy(truth), np.copy(truth)
             truth_whole[truth_whole > 0] = 1
             truth_core[truth_core == 2] = 0
             truth_core[truth_core > 0] = 1
             truth_enh[truth_enh == 1] = 0
             truth_enh[truth_enh == 2] = 0
-            truth_core[truth_core > 4] = 1
+            truth_enh[truth_enh == 4] = 1
             y_list.append([truth_whole, truth_core, truth_enh])
+
+            # if truth_enh.max() == 1 or truth_core.max() == 1:
+            #     a=2
         else:
             y_list.append(truth)
 
@@ -374,8 +378,10 @@ def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overl
                        skip_blank=skip_blank, patch_shape=patch_shape,
                        is_model_cascaded=is_model_cascaded)
 
-            if count == 8:
-                convert_multioutput_data2d(x_list, y_list)
+            # if count == 1 and is_model_cascaded:
+            #     convert_multioutput_data2d(x_list, y_list)
+            # if count == 1 and not is_model_cascaded:
+            #     convert_data2d(x_list, y_list, n_labels=3, labels=[1,2,4])
 
 
             if len(x_list) > 0:
