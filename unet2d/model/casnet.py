@@ -11,6 +11,9 @@ from keras.optimizers import Adam
 from unet3d.metrics import minh_dice_coef_metric
 from keras.utils import multi_gpu_model
 from unet3d.utils.model_utils import compile_model
+from unet3d.model.unet_vae import GroupNormalization
+from keras import regularizers
+
 
 try:
     from keras.engine import merge
@@ -21,7 +24,7 @@ except ImportError:
 def baseline(inputs, pool_size=(2, 2), n_labels=1,
              deconvolution=False,
              depth=4, n_base_filters=32,
-             batch_normalization=False,
+             batch_normalization=True,
              activation_name="sigmoid",
              is_unet_original=True,
              weight_decay=1e-5,
@@ -54,11 +57,13 @@ def baseline(inputs, pool_size=(2, 2), n_labels=1,
         layer1 = create_convolution_block2d(input_layer=current_layer,
                                             n_filters=n_base_filters *
                                             (2**layer_depth),
-                                            batch_normalization=batch_normalization)
+                                            batch_normalization=batch_normalization,
+                                            weight_decay=weight_decay)
         layer2 = create_convolution_block2d(input_layer=layer1,
                                             n_filters=n_base_filters *
                                             (2**layer_depth)*2,
-                                            batch_normalization=batch_normalization)
+                                            batch_normalization=batch_normalization,
+                                            weight_decay=weight_decay)
         if layer_depth < depth - 1:
             current_layer = MaxPooling2D(pool_size=pool_size)(layer2)
             levels.append([layer1, layer2, current_layer])
@@ -75,10 +80,12 @@ def baseline(inputs, pool_size=(2, 2), n_labels=1,
             concat = squeeze_excite_block2d(concat)
         current_layer = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
                                                    input_layer=concat,
-                                                   batch_normalization=batch_normalization)
+                                                   batch_normalization=batch_normalization,
+                                                   weight_decay=weight_decay)
         current_layer = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
                                                    input_layer=current_layer,
-                                                   batch_normalization=batch_normalization)
+                                                   batch_normalization=batch_normalization,
+                                                   weight_decay=weight_decay)
 
     final_convolution = Conv2D(n_labels, (1, 1))(current_layer)
     output = Activation(activation_name, name=name)(final_convolution)
@@ -86,34 +93,218 @@ def baseline(inputs, pool_size=(2, 2), n_labels=1,
     return output
 
 
-def casnet(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
-           depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
-           batch_normalization=False, activation_name="sigmoid",
-        #    metrics=minh_dice_coef_metric,
-           loss_function="casweighted",
-           is_unet_original=True,
-           ):
+def casnet_v4(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+              depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
+              batch_normalization=True, activation_name="sigmoid",
+              loss_function="casweighted",
+              is_unet_original=True,
+              weight_decay=1e-5
+              ):
 
+    # instead of concat, we multiply the output of previous mask
     inputs = Input(input_shape)
     inp_whole = inputs
-    out_whole = baseline(inp_whole, name="out_whole")
+    out_whole = baseline(inp_whole, depth=depth, n_base_filters=n_base_filters,
+                         weight_decay=weight_decay, name="out_whole")
 
-    inp_core = concatenate([out_whole, inp_whole], axis=1)
-    out_core = baseline(inp_core, name="out_core")
+    for i in range(inputs.shape[1]):
+        if i < 1: 
+            mask_whole = out_whole
+        else:
+            mask_whole = concatenate([mask_whole, out_whole], axis=1)
+    inp_core = multiply([mask_whole, inputs])
+    out_core = baseline(inp_core, depth=depth, n_base_filters=n_base_filters,
+                        weight_decay=weight_decay, name="out_core")
 
+    for i in range(inputs.shape[1]):
+        if i < 1: 
+            mask_core = out_core
+        else:
+            mask_core = concatenate([mask_core, out_core], axis=1)
+    inp_core = multiply([mask_core, inputs])
     inp_enh = concatenate([out_core, inp_core], axis=1)
-    out_enh = baseline(inp_enh, name="out_enh")
+    out_enh = baseline(inp_enh, depth=depth, n_base_filters=n_base_filters,
+                       weight_decay=weight_decay, name="out_enh")
 
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                        #  metrics=metrics,
+                         initial_learning_rate=initial_learning_rate)
+
+
+def casnet_v3(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+              depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
+              batch_normalization=False, activation_name="sigmoid",
+              loss_function="casweighted",
+              is_unet_original=True,
+              weight_decay=1e-5
+              ):
+
+    # each class (whole, core, enhance) is fed into different decoder branch
+    inputs = Input(input_shape)
+
+    current_layer = inputs
+    levels = list()
+
+    # add levels with max pooling
+    for layer_depth in range(depth):
+        layer1 = create_convolution_block2d(input_layer=current_layer,
+                                            n_filters=n_base_filters *
+                                            (2**layer_depth),
+                                            batch_normalization=batch_normalization,
+                                            weight_decay=weight_decay)
+        layer2 = create_convolution_block2d(input_layer=layer1,
+                                            n_filters=n_base_filters *
+                                            (2**layer_depth)*2,
+                                            batch_normalization=batch_normalization,
+                                            weight_decay=weight_decay)
+        if layer_depth < depth - 1:
+            current_layer = MaxPooling2D(pool_size=pool_size)(layer2)
+            levels.append([layer1, layer2, current_layer])
+        else:
+            current_layer = layer2
+            levels.append([layer1, layer2])
+
+    # add levels with up-convolution or up-sampling
+    current_layer_whole = current_layer
+    for layer_depth in range(depth-2, -1, -1):
+        up_convolution_whole = get_up_convolution2d(pool_size=pool_size, deconvolution=deconvolution,
+                                                    n_filters=current_layer_whole._keras_shape[1])(current_layer_whole)
+        concat_whole = concatenate(
+            [up_convolution_whole, levels[layer_depth][1]], axis=1)
+        if not is_unet_original:
+            concat_whole = squeeze_excite_block2d(concat_whole)
+        current_layer_whole = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                         input_layer=concat_whole,
+                                                         batch_normalization=batch_normalization,
+                                                         weight_decay=weight_decay)
+        current_layer_whole = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                         input_layer=current_layer_whole,
+                                                         batch_normalization=batch_normalization,
+                                                         weight_decay=weight_decay)
+
+    final_convolution_whole = Conv2D(n_labels, (1, 1))(current_layer_whole)
+    out_whole = Activation(activation_name, name="out_whole")(
+        final_convolution_whole)
+
+    # add levels with up-convolution or up-sampling
+    current_layer_core = current_layer
+    for layer_depth in range(depth-2, -1, -1):
+        up_convolution_core = get_up_convolution2d(pool_size=pool_size, deconvolution=deconvolution,
+                                                   n_filters=current_layer_core._keras_shape[1])(current_layer_core)
+
+        if layer_depth == 0:
+            concat_core = concatenate(
+                [out_whole, up_convolution_core, levels[layer_depth][1]], axis=1)
+        else:
+            concat_core = concatenate(
+                [up_convolution_core, levels[layer_depth][1]], axis=1)
+        if not is_unet_original:
+            concat_core = squeeze_excite_block2d(concat_core)
+        current_layer_core = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                        input_layer=concat_core,
+                                                        batch_normalization=batch_normalization,
+                                                        weight_decay=weight_decay)
+        current_layer_core = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                        input_layer=current_layer_core,
+                                                        batch_normalization=batch_normalization,
+                                                        weight_decay=weight_decay)
+
+    final_convolution_core = Conv2D(n_labels, (1, 1))(current_layer_core)
+    out_core = Activation(activation_name, name="out_core")(
+        final_convolution_core)
+
+    # add levels with up-convolution or up-sampling
+    current_layer_enh = current_layer
+    for layer_depth in range(depth-2, -1, -1):
+        up_convolution_enh = get_up_convolution2d(pool_size=pool_size, deconvolution=deconvolution,
+                                                  n_filters=current_layer_enh._keras_shape[1])(current_layer_enh)
+
+        if layer_depth == 0:
+            concat_enh = concatenate(
+                [out_whole, out_core, up_convolution_core, levels[layer_depth][1]], axis=1)
+        else:
+            concat_enh = concatenate(
+                [up_convolution_enh, levels[layer_depth][1]], axis=1)
+        if not is_unet_original:
+            concat_enh = squeeze_excite_block2d(concat_enh)
+        current_layer_enh = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                       input_layer=concat_enh,
+                                                       batch_normalization=batch_normalization,
+                                                       weight_decay=weight_decay)
+        current_layer_enh = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                       input_layer=current_layer_enh,
+                                                       batch_normalization=batch_normalization,
+                                                       weight_decay=weight_decay)
+
+    final_convolution_enh = Conv2D(n_labels, (1, 1))(current_layer_enh)
+    out_enh = Activation(activation_name, name="out_enh")(
+        final_convolution_enh)
+
+    model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
+
+    return compile_model(model, loss_function=loss_function,
+                         initial_learning_rate=initial_learning_rate)
+
+
+def casnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+              depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
+              batch_normalization=True, activation_name="sigmoid",
+              loss_function="casweighted",
+              is_unet_original=True,
+              weight_decay=1e-5
+              ):
+
+    inputs = Input(input_shape)
+    inp_whole = inputs
+    out_whole = baseline(inp_whole, depth=depth, n_base_filters=n_base_filters,
+                         weight_decay=weight_decay, name="out_whole")
+
+    inp_core = concatenate([out_whole, inp_whole], axis=1)
+    out_core = baseline(inp_core, depth=depth, n_base_filters=n_base_filters,
+                        weight_decay=weight_decay, name="out_core")
+
+    inp_enh = concatenate([out_core, inp_core], axis=1)
+    out_enh = baseline(inp_enh, depth=depth, n_base_filters=n_base_filters,
+                       weight_decay=weight_decay, name="out_enh")
+
+    model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
+
+    return compile_model(model, loss_function=loss_function,
+                         initial_learning_rate=initial_learning_rate)
+
+
+def casnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+              depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
+              batch_normalization=False, activation_name="sigmoid",
+              loss_function="casweighted",
+              is_unet_original=True,
+              weight_decay=1e-5
+              ):
+
+    inputs = Input(input_shape)
+    inp_whole = inputs
+    out_whole = baseline(inp_whole, depth=4, n_base_filters=16,
+                         weight_decay=weight_decay, name="out_whole")
+
+    inp_core = concatenate([out_whole, inp_whole], axis=1)
+    out_core = baseline(inp_core, depth=3, n_base_filters=16,
+                        weight_decay=weight_decay, name="out_core")
+
+    inp_enh = concatenate([out_core, inp_core], axis=1)
+    out_enh = baseline(inp_enh, depth=2, n_base_filters=16,
+                       weight_decay=weight_decay, name="out_enh")
+
+    model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
+
+    return compile_model(model, loss_function=loss_function,
+                         #  metrics=metrics,
                          initial_learning_rate=initial_learning_rate)
 
 
 def create_convolution_block2d(input_layer, n_filters, batch_normalization=False, kernel=(3, 3), activation=None,
                                padding='same', strides=(1, 1), instance_normalization=False,
-                               is_unet_original=True):
+                               is_unet_original=True, weight_decay=0):
     """
     :param strides:
     :param input_layer:
@@ -124,10 +315,13 @@ def create_convolution_block2d(input_layer, n_filters, batch_normalization=False
     :param padding:
     :return:
     """
-    layer = Conv2D(n_filters, kernel, padding=padding,
-                   strides=strides)(input_layer)
+    layer = Conv2D(n_filters, kernel,
+                   padding=padding,
+                   strides=strides,
+                   kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
     if batch_normalization:
-        layer = BatchNormalization(axis=1)(layer)
+        # layer = BatchNormalization(axis=1)(layer)
+        layer = GroupNormalization(groups=16, axis=1)(layer)
     elif instance_normalization:
         try:
             from keras_contrib.layers.normalization import InstanceNormalization
@@ -190,7 +384,7 @@ def squeeze_excite_block2d(input, ratio=16):
 
 
 def main():
-    model = casnet(input_shape=(4, 160, 192))
+    model = casnet_v4(input_shape=(4, 160, 192))
     model.summary()
 
 

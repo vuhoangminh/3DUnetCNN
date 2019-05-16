@@ -59,7 +59,7 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
     if not validation_batch_size:
         validation_batch_size = batch_size
 
-    if project=="brats":
+    if project == "brats":
         training_list, validation_list, _ = get_train_valid_test_split(
             data_file, training_file=training_keys_file,
             validation_file=validation_keys_file,
@@ -145,9 +145,9 @@ def get_train_valid_test_split_isbr(data_file, training_file, validation_file,
         nb_samples = data_file.root.data.shape[0]
         sample_list = list(range(nb_samples))
 
-        testing_list = [1,9,14]
-        validation_list = [10,11,12,13,16]
-        training_list = [0,2,3,4,5,6,7,8,15,17]         
+        testing_list = [1, 9, 14]
+        validation_list = [10, 11, 12, 13, 16]
+        training_list = [0, 2, 3, 4, 5, 6, 7, 8, 15, 17]
 
         pickle_dump(training_list, training_file)
         pickle_dump(validation_list, validation_file)
@@ -241,7 +241,9 @@ def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap
         return len(index_list)
 
 
-def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap, patch_start_offset=None):
+def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
+                            patch_start_offset=None,
+                            is_extract_patch_agressive=False):
     patch_index = list()
     for index in index_list:
         if patch_start_offset is not None:
@@ -249,11 +251,11 @@ def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
                 get_random_nd_index(patch_start_offset))
             patches = compute_patch_indices(image_shape, patch_shape,
                                             overlap=patch_overlap, start=random_start_offset,
-                                            is_extract_patch_agressive=False)
+                                            is_extract_patch_agressive=is_extract_patch_agressive)
         else:
             patches = compute_patch_indices(image_shape, patch_shape,
                                             overlap=patch_overlap,
-                                            is_extract_patch_agressive=False)
+                                            is_extract_patch_agressive=is_extract_patch_agressive)
         patch_index.extend(itertools.product([index], patches))
     return patch_index
 
@@ -414,7 +416,7 @@ def add_data(x_list, y_list, data_file, index, patch_shape=None,
     if model_dim == 25:
         truth_slice = truth[..., int((patch_shape[-1]-1)/2)]
         if np.any(truth_slice != 0):
-        # if np.any(data != 0):
+            # if np.any(data != 0):
             is_added = True
     # if model_dim == 2 and np.any(truth != 0):
     # if model_dim==2 and np.any(data != 0):

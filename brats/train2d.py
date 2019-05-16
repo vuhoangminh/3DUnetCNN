@@ -19,7 +19,7 @@ from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.training import load_old_model, train_model
-from unet2d.model import unet_model_2d, isensee2d_model, casnet
+from unet2d.model import unet_model_2d, isensee2d_model, casnet_v1, casnet_v2, casnet_v3, casnet_v4
 from unet2d.generator import get_training_and_validation_and_testing_generators2d
 from unet3d.data import write_data_to_file, open_data_file
 import numpy as np
@@ -47,8 +47,7 @@ def train(args):
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, args=args)
 
-
-    config["casnet"] = '1' if args.model == "casnet" else '0'
+    config["casnet"] = '1' if "casnet" in args.model else '0'
     config["data_file"] = data_path
     config["model_file"] = model_path
     config["training_file"] = trainids_path
@@ -67,7 +66,7 @@ def train(args):
     print_section("get training and testing generators")
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators2d(
         data_file_opened,
-        batch_size=1,
+        batch_size=args.batch_size,
         data_split=config["validation_split"],
         overwrite=args.overwrite,
         validation_keys_file=config["validation_file"],
@@ -115,18 +114,37 @@ def train(args):
                                   n_labels=config["n_labels"],
                                   initial_learning_rate=config["initial_learning_rate"],
                                   deconvolution=config["deconvolution"],
-                                  #   batch_normalization=True,
                                   depth=args.depth_unet,
                                   n_base_filters=args.n_base_filters_unet,
                                   loss_function=args.loss)
-        elif args.model == "casnet":
-            print("init casnet model")
-            model = casnet(input_shape=config["input_shape"],
-                           n_labels=config["n_labels"],
-                           initial_learning_rate=config["initial_learning_rate"],
-                           deconvolution=config["deconvolution"],
-                           depth=args.depth_unet,
-                           n_base_filters=args.n_base_filters_unet)
+        elif args.model == "casnet_v1":
+            print("init casnet_v1 model")
+            model = casnet_v1(input_shape=config["input_shape"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet)
+        elif args.model == "casnet_v2":
+            print("init casnet_v2 model")
+            model = casnet_v2(input_shape=config["input_shape"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet)
+        elif args.model == "casnet_v3":
+            print("init casnet_v3 model")
+            model = casnet_v3(input_shape=config["input_shape"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet)
+        elif args.model == "casnet_v4":
+            print("init casnet_v4 model")
+            model = casnet_v4(input_shape=config["input_shape"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet)
 
         else:
             raise ValueError("Model is NotImplemented. Please check")
