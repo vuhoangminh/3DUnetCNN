@@ -98,8 +98,9 @@ def train(args):
     if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
+        if "casnet" in args.model:
+            args.loss = "casweighted" 
         model = generate_model(config["model_file"], loss_function=args.loss)
-        # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
         if args.model == "isensee":
@@ -123,21 +124,24 @@ def train(args):
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
+                              n_base_filters=args.n_base_filters_unet,
+                              loss_function="casweighted")
         elif args.model == "casnet_v2":
             print("init casnet_v2 model")
             model = casnet_v2(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
+                              n_base_filters=args.n_base_filters_unet,
+                              loss_function="casweighted")
         elif args.model == "casnet_v3":
             print("init casnet_v3 model")
             model = casnet_v3(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
+                              n_base_filters=args.n_base_filters_unet,
+                              loss_function="casweighted")
         elif args.model == "casnet_v4":
             print("init casnet_v4 model")
             model = casnet_v4(input_shape=config["input_shape"],
