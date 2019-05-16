@@ -114,20 +114,26 @@ def compile_model(model, loss_function="weighted",
                             'out_core': dice_coefficient_loss,
                             'out_enh': dice_coefficient_loss
                             },
-                    #   loss={'out_whole': 'binary_crossentropy',
-                    #         'out_core': 'binary_crossentropy',
-                    #         'out_enh': 'binary_crossentropy'
-                    #         },
-                      #   metrics={'out_whole': dice_coefficient_loss,
-                      #            'out_core': dice_coefficient_loss,
-                      #            'out_enh': dice_coefficient_loss
-                      #            },
+                      #   loss={'out_whole': 'binary_crossentropy',
+                      #         'out_core': 'binary_crossentropy',
+                      #         'out_enh': 'binary_crossentropy'
+                      #         },
                       loss_weights={'out_whole': 1,
                                     'out_core': 1,
                                     'out_enh': 1
                                     }
                       )
-
+    elif loss_function == "sepweighted":
+        model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
+                      loss={'out_1': dice_coefficient_loss,
+                            'out_2': dice_coefficient_loss,
+                            'out_4': dice_coefficient_loss
+                            },
+                      loss_weights={'out_1': 1,
+                                    'out_2': 1,
+                                    'out_4': 1
+                                    }
+                      )
     else:
         model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
                       loss=loss, metrics=[metrics])

@@ -31,7 +31,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                                          patch_overlap=[
                                                              0, 0, -1],
                                                          project="brats",
-                                                         is_model_cascaded=False):
+                                                         data_type_generator="combined"):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -62,6 +62,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     :param overwrite: If set to True, previous files will be overwritten. The default mode is false, so that the
     training and validation splits won't be overwritten when rerunning model training.
     :param permute: will randomly permute the data (data must be 3D cube)
+    :param data_type_generator: "combined", "cascaded", "separated"
     :return: Training data generator, validation data generator, number of training steps, number of validation steps
     """
 
@@ -101,7 +102,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                           augment_zoom=augment_zoom,
                                           n_augment=n_augment,
                                           skip_blank=skip_blank,
-                                          is_model_cascaded=is_model_cascaded)
+                                          data_type_generator=data_type_generator)
     print(">> valid data generator")
     validation_generator = data_generator2d(data_file, validation_list,
                                             batch_size=validation_batch_size,
@@ -110,7 +111,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                             patch_shape=patch_shape,
                                             patch_overlap=0,
                                             skip_blank=skip_blank,
-                                            is_model_cascaded=is_model_cascaded)
+                                            data_type_generator=data_type_generator)
 
     # Set the number of training and testing samples per epoch correctly
     print(">> compute number of training and validation steps")
@@ -130,11 +131,11 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
     #                                                                  patch_start_offset=training_patch_start_offset,
     #                                                                  patch_overlap=patch_overlap,
-    #                                                                  is_model_cascaded=is_model_cascaded),
+    #                                                                  data_type_generator=data_type_generator),
     #                                          batch_size)
     # num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
     #                                                                    patch_overlap=0,
-    #                                                                    is_model_cascaded=is_model_cascaded),
+    #                                                                    data_type_generator=data_type_generator),
     #                                            validation_batch_size)
 
     # else:
@@ -168,7 +169,7 @@ def data_generator2d(data_file, index_list, batch_size=1, n_labels=1, labels=Non
                      augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                      augment_rotation=False, augment_shift=False, augment_shear=False,
                      augment_zoom=False, n_augment=False,
-                     is_model_cascaded=False,
+                     data_type_generator="combined",
                      is_extract_patch_agressive=False):
     orig_index_list = index_list
     while True:
@@ -189,10 +190,10 @@ def data_generator2d(data_file, index_list, batch_size=1, n_labels=1, labels=Non
                        augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
                        augment_elastic=augment_elastic, augment_rotation=augment_rotation,
                        augment_shift=augment_shift, augment_shear=augment_shear,
-                       augment_zoom=augment_zoom, is_model_cascaded=is_model_cascaded)
+                       augment_zoom=augment_zoom, data_type_generator=data_type_generator)
 
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
-                if is_model_cascaded:
+                if data_type_generator != "combined":
                     yield convert_multioutput_data2d(x_list, y_list)
                 else:
                     yield convert_data2d(x_list, y_list, n_labels=n_labels, labels=labels)
@@ -322,7 +323,7 @@ def augment_data2d(data, augment_flipud=False, augment_fliplr=False, augment_ela
 def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
                augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                augment_rotation=False, augment_shift=False, augment_shear=False,
-               augment_zoom=False, skip_blank=True, is_model_cascaded=False):
+               augment_zoom=False, skip_blank=True, data_type_generator="combined"):
     """
     Adds data from the data file to the given lists of feature and target data
     :return:
@@ -355,7 +356,7 @@ def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
 
     if is_added:
         x_list.append(data)
-        if is_model_cascaded:
+        if data_type_generator == "cascaded":
             truth_whole, truth_core, truth_enh = np.copy(
                 truth), np.copy(truth), np.copy(truth)
             truth_whole[truth_whole > 0] = 1
@@ -365,12 +366,27 @@ def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
             truth_enh[truth_enh == 2] = 0
             truth_enh[truth_enh == 4] = 1
             y_list.append([truth_whole, truth_core, truth_enh])
+        elif data_type_generator == "separated":
+            truth_1, truth_2, truth_4 = np.copy(
+                truth), np.copy(truth), np.copy(truth)
+            truth_1[truth_1 == 2] = 0
+            truth_1[truth_1 == 4] = 0
+
+            truth_2[truth_2 == 1] = 0
+            truth_2[truth_2 == 4] = 0
+            truth_2[truth_2 == 2] = 1
+
+            truth_4[truth_4 == 1] = 0
+            truth_4[truth_4 == 2] = 0
+            truth_4[truth_4 == 4] = 1
+            y_list.append([truth_1, truth_2, truth_4])
+
         else:
             y_list.append(truth)
 
 
 def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                            skip_blank=True, is_model_cascaded=False):
+                            skip_blank=True, data_type_generator=False):
     if patch_shape:
         index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
                                              patch_start_offset)
@@ -383,12 +399,7 @@ def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overl
             y_list = list()
             add_data2d(x_list, y_list, data_file, index,
                        skip_blank=skip_blank, patch_shape=patch_shape,
-                       is_model_cascaded=is_model_cascaded)
-
-            # if count == 1 and is_model_cascaded:
-            #     convert_multioutput_data2d(x_list, y_list)
-            # if count == 1 and not is_model_cascaded:
-            #     convert_data2d(x_list, y_list, n_labels=3, labels=[1,2,4])
+                       data_type_generator=data_type_generator)
 
             if len(x_list) > 0:
                 count += 1

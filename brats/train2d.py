@@ -19,7 +19,7 @@ from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.training import load_old_model, train_model
-from unet2d.model import unet_model_2d, isensee2d_model, casnet_v1, casnet_v2, casnet_v3, casnet_v4
+from unet2d.model import unet_model_2d, isensee2d_model, casnet_v1, casnet_v2, casnet_v3, casnet_v4, sepnet_v1
 from unet2d.generator import get_training_and_validation_and_testing_generators2d
 from unet3d.data import write_data_to_file, open_data_file
 import numpy as np
@@ -47,7 +47,6 @@ def train(args):
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, args=args)
 
-    config["casnet"] = '1' if "casnet" in args.model else '0'
     config["data_file"] = data_path
     config["model_file"] = model_path
     config["training_file"] = trainids_path
@@ -56,6 +55,13 @@ def train(args):
     config["patch_shape"] = get_shape_from_string(args.patch_shape)
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
+
+    if "casnet" in args.model:
+        config["data_type_generator"] = 'cascaded'
+    elif "sepnet" in args.model:
+        config["data_type_generator"] = 'separated'
+    else:
+        config["data_type_generator"] = 'combined'
 
     if args.overwrite or not os.path.exists(data_path):
         prepare_data(args)
@@ -88,7 +94,7 @@ def train(args):
         n_augment=config["n_augment"],
         skip_blank=config["skip_blank"],
         is_test=args.is_test,
-        is_model_cascaded=str2bool(config["casnet"]))
+        data_type_generator=config["data_type_generator"])
 
     print("-"*60)
     print("# Load or init model")
@@ -99,7 +105,7 @@ def train(args):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
         if "casnet" in args.model:
-            args.loss = "casweighted" 
+            args.loss = "casweighted"
         model = generate_model(config["model_file"], loss_function=args.loss)
     else:
         # instantiate new model
@@ -145,6 +151,13 @@ def train(args):
         elif args.model == "casnet_v4":
             print("init casnet_v4 model")
             model = casnet_v4(input_shape=config["input_shape"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet)
+        elif args.model == "sepnet_v1":
+            print("init sepnet_v1 model")
+            model = sepnet_v1(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
