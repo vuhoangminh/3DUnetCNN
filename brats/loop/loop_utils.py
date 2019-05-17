@@ -50,9 +50,9 @@ def run(model_filename, cmd, model_path="database/model/finetune", mode_run=2):
     if is_run:
         try:
             print(">> RUNNING:", cmd)
-            # from keras import backend as K
-            # os.system(cmd)
-            # K.clear_session()
+            from keras import backend as K
+            os.system(cmd)
+            K.clear_session()
         except:
             print("something wrong")
     else:
