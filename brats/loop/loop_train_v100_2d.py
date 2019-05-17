@@ -26,7 +26,7 @@ out_file_list = list()
 
 for is_augment in ["1"]:
     args.is_augment = is_augment
-    for model_name in ["casnet_v1", "casnet_v2", "casnet_v3", "casnet_v4", "casnet_v5", "casnet_v5", "casnet_v6"]:
+    for model_name in ["casnet_v1", "casnet_v2", "casnet_v3", "casnet_v4", "casnet_v5", "sepnet_v1", "sepnet_v2"]:
         args.model = model_name
         for is_denoise in ["0", "median", "bm4d"]:
             args.is_denoise = is_denoise
