@@ -19,7 +19,7 @@ from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.training import load_old_model, train_model
-from unet2d.model import unet_model_2d, isensee2d_model, casnet_v1, casnet_v2, casnet_v3, casnet_v4, sepnet_v1
+from unet2d.model import unet_model_2d, isensee2d_model, casnet_v1, casnet_v2, casnet_v3, casnet_v4, sepnet_v1, casnet_v5, sepnet_v2
 from unet2d.generator import get_training_and_validation_and_testing_generators2d
 from unet3d.data import write_data_to_file, open_data_file
 import numpy as np
@@ -155,9 +155,31 @@ def train(args):
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
                               n_base_filters=args.n_base_filters_unet)
+        elif args.model == "casnet_v5":
+            print("init casnet_v5 model")
+            model = casnet_v5(input_shape=config["input_shape"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet,
+                              loss_function="casweighted")
+        elif args.model == "casnet_v6":
+            print("init casnet_v6 model")
+            model = casnet_v6(input_shape=config["input_shape"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet)
         elif args.model == "sepnet_v1":
             print("init sepnet_v1 model")
             model = sepnet_v1(input_shape=config["input_shape"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet)
+        elif args.model == "sepnet_v2":
+            print("init sepnet_v2 model")
+            model = sepnet_v2(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,

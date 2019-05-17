@@ -1,3 +1,4 @@
+from brats.loop.loop_utils import run
 import unet3d.utils.args_utils as get_args
 from unet3d.utils.path_utils import get_model_h5_filename
 import random
@@ -15,17 +16,6 @@ BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 
-def run(model_filename, cmd):
-    print("="*120)
-    try:
-        print(">> RUNNING:", cmd)
-        from keras import backend as K
-        os.system(cmd)
-        K.clear_session()
-    except:
-        print("something wrong")
-
-
 args = get_args.train2d()
 task = "train2d"
 args.is_test = "0"
@@ -36,7 +26,7 @@ out_file_list = list()
 
 for is_augment in ["1"]:
     args.is_augment = is_augment
-    for model_name in ["casnet_v1", "casnet_v2", "casnet_v3", "casnet_v4"]:
+    for model_name in ["casnet_v1", "casnet_v2", "casnet_v3", "casnet_v4", "casnet_v5", "casnet_v5", "casnet_v6"]:
         args.model = model_name
         for is_denoise in ["0", "median", "bm4d"]:
             args.is_denoise = is_denoise
@@ -79,4 +69,4 @@ model_list[:], cmd_list = zip(*combined)
 for i in range(len(model_list)):
     model_filename = model_list[i]
     cmd = cmd_list[i]
-    run(model_filename, cmd)
+    run(model_filename, cmd, model_path="database/model", mode_run=2)

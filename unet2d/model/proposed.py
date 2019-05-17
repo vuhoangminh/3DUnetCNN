@@ -93,6 +93,33 @@ def baseline(inputs, pool_size=(2, 2), n_labels=1,
     return output
 
 
+def casnet_v5(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+              depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
+              batch_normalization=True, activation_name="sigmoid",
+              loss_function="casweighted",
+              is_unet_original=True,
+              weight_decay=1e-5
+              ):
+
+    inputs = Input(input_shape)
+    inp_whole = inputs
+    out_whole = baseline(inp_whole, depth=5, n_base_filters=16,
+                         weight_decay=weight_decay, name="out_whole")
+
+    inp_core = concatenate([out_whole, inp_whole], axis=1)
+    out_core = baseline(inp_core, depth=5, n_base_filters=16,
+                        weight_decay=weight_decay, name="out_core")
+
+    inp_enh = concatenate([out_core, inp_core], axis=1)
+    out_enh = baseline(inp_enh, depth=5, n_base_filters=16,
+                       weight_decay=weight_decay, name="out_enh")
+
+    model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
+
+    return compile_model(model, loss_function=loss_function,
+                         initial_learning_rate=initial_learning_rate)
+
+
 def casnet_v4(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
               batch_normalization=True, activation_name="sigmoid",
@@ -363,13 +390,8 @@ def sepnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     for layer_depth in range(depth-2, -1, -1):
         up_convolution_2 = get_up_convolution2d(pool_size=pool_size, deconvolution=deconvolution,
                                                 n_filters=current_layer_2._keras_shape[1])(current_layer_2)
-
-        if layer_depth == 0:
-            concat_2 = concatenate(
-                [up_convolution_2, levels[layer_depth][1]], axis=1)
-        else:
-            concat_2 = concatenate(
-                [up_convolution_2, levels[layer_depth][1]], axis=1)
+        concat_2 = concatenate(
+            [up_convolution_2, levels[layer_depth][1]], axis=1)
         concat_2 = squeeze_excite_block2d(concat_2)
         current_layer_2 = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
                                                      input_layer=concat_2,
@@ -389,14 +411,109 @@ def sepnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     for layer_depth in range(depth-2, -1, -1):
         up_convolution_4 = get_up_convolution2d(pool_size=pool_size, deconvolution=deconvolution,
                                                 n_filters=current_layer_4._keras_shape[1])(current_layer_4)
-
-        if layer_depth == 0:
-            concat_4 = concatenate(
-                [up_convolution_2, levels[layer_depth][1]], axis=1)
-        else:
-            concat_4 = concatenate(
-                [up_convolution_4, levels[layer_depth][1]], axis=1)
+        concat_4 = concatenate(
+            [up_convolution_4, levels[layer_depth][1]], axis=1)
         concat_4 = squeeze_excite_block2d(concat_4)
+        current_layer_4 = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                     input_layer=concat_4,
+                                                     batch_normalization=batch_normalization,
+                                                     weight_decay=weight_decay)
+        current_layer_4 = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                     input_layer=current_layer_4,
+                                                     batch_normalization=batch_normalization,
+                                                     weight_decay=weight_decay)
+
+    final_convolution_4 = Conv2D(n_labels, (1, 1))(current_layer_4)
+    out_4 = Activation(activation_name, name="out_4")(
+        final_convolution_4)
+
+    model = Model(inputs=inputs, outputs=[out_1, out_2, out_4])
+
+    return compile_model(model, loss_function=loss_function,
+                         initial_learning_rate=initial_learning_rate)
+
+
+def sepnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+              depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
+              batch_normalization=False, activation_name="sigmoid",
+              loss_function="sepweighted",
+              is_unet_original=True,
+              weight_decay=1e-5
+              ):
+
+    # each class (whole, core, enhance) is fed into different decoder branch
+    inputs = Input(input_shape)
+
+    current_layer = inputs
+
+    levels = list()
+
+    # add levels with max pooling
+    for layer_depth in range(depth):
+        layer1 = create_convolution_block2d(input_layer=current_layer,
+                                            n_filters=n_base_filters *
+                                            (2**layer_depth),
+                                            batch_normalization=batch_normalization,
+                                            weight_decay=weight_decay)
+        layer2 = create_convolution_block2d(input_layer=layer1,
+                                            n_filters=n_base_filters *
+                                            (2**layer_depth)*2,
+                                            batch_normalization=batch_normalization,
+                                            weight_decay=weight_decay)
+        if layer_depth < depth - 1:
+            current_layer = MaxPooling2D(pool_size=pool_size)(layer2)
+            levels.append([layer1, layer2, current_layer])
+        else:
+            current_layer = layer2
+            levels.append([layer1, layer2])
+
+    # add levels with up-convolution or up-sampling
+    current_layer_1 = current_layer
+    for layer_depth in range(depth-2, -1, -1):
+        up_convolution_1 = get_up_convolution2d(pool_size=pool_size, deconvolution=deconvolution,
+                                                n_filters=current_layer_1._keras_shape[1])(current_layer_1)
+        concat_1 = concatenate(
+            [up_convolution_1, levels[layer_depth][1]], axis=1)
+        current_layer_1 = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                     input_layer=concat_1,
+                                                     batch_normalization=batch_normalization,
+                                                     weight_decay=weight_decay)
+        current_layer_1 = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                     input_layer=current_layer_1,
+                                                     batch_normalization=batch_normalization,
+                                                     weight_decay=weight_decay)
+
+    final_convolution_1 = Conv2D(n_labels, (1, 1))(current_layer_1)
+    out_1 = Activation(activation_name, name="out_1")(
+        final_convolution_1)
+
+    # add levels with up-convolution or up-sampling
+    current_layer_2 = current_layer
+    for layer_depth in range(depth-2, -1, -1):
+        up_convolution_2 = get_up_convolution2d(pool_size=pool_size, deconvolution=deconvolution,
+                                                n_filters=current_layer_2._keras_shape[1])(current_layer_2)
+        concat_2 = concatenate(
+            [up_convolution_2, levels[layer_depth][1]], axis=1)
+        current_layer_2 = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                     input_layer=concat_2,
+                                                     batch_normalization=batch_normalization,
+                                                     weight_decay=weight_decay)
+        current_layer_2 = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
+                                                     input_layer=current_layer_2,
+                                                     batch_normalization=batch_normalization,
+                                                     weight_decay=weight_decay)
+
+    final_convolution_2 = Conv2D(n_labels, (1, 1))(current_layer_2)
+    out_2 = Activation(activation_name, name="out_2")(
+        final_convolution_2)
+
+    # add levels with up-convolution or up-sampling
+    current_layer_4 = current_layer
+    for layer_depth in range(depth-2, -1, -1):
+        up_convolution_4 = get_up_convolution2d(pool_size=pool_size, deconvolution=deconvolution,
+                                                n_filters=current_layer_4._keras_shape[1])(current_layer_4)
+        concat_4 = concatenate(
+            [up_convolution_4, levels[layer_depth][1]], axis=1)
         current_layer_4 = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
                                                      input_layer=concat_4,
                                                      batch_normalization=batch_normalization,

@@ -103,7 +103,7 @@ config["skip_blank"] = True
 config_dict = dict()
 config_dict["challenge"] = ["brats"]
 config_dict["year"] = [2018, 2019]
-config_dict["model"] = ["unet", "isensee", "mnet", "unet_vae", "casnet_v1", "casnet_v2", "casnet_v3", "casnet_v4"]
+config_dict["model"] = ["unet", "isensee", "mnet", "unet_vae", "casnet_v1", "casnet_v2", "casnet_v3", "casnet_v4", "casnet_v5", "casnet_v6", "sepnet_v1", "sepnet_v2"]
 config_dict["model_depth"] = ["unet", "seunet", "multi", "denseunet", "resunet"]
 # "deepmedic", "maskrcnn", "cascaded", "proposed"]
 config_dict["depth_unet"] = [3, 4, 5, 6]  # depth of unet
