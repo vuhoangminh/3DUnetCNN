@@ -6,7 +6,7 @@ from keras.engine import Input, Model
 from keras.layers import (Activation, BatchNormalization, Conv2D,
                           Deconvolution2D, Dense, GlobalAveragePooling2D,
                           MaxPooling2D, Permute, PReLU, Reshape, UpSampling2D,
-                          multiply)
+                          multiply, Add)
 from keras.optimizers import Adam
 from unet3d.metrics import minh_dice_coef_metric
 from keras.utils import multi_gpu_model
@@ -21,15 +21,15 @@ except ImportError:
     from keras.layers.merge import concatenate
 
 
-def baseline(inputs, pool_size=(2, 2), n_labels=1,
-             deconvolution=False,
-             depth=4, n_base_filters=32,
-             batch_normalization=True,
-             activation_name="sigmoid",
-             is_unet_original=True,
-             weight_decay=1e-5,
-             name=None
-             ):
+def baseline_unet(inputs, pool_size=(2, 2), n_labels=1,
+                  deconvolution=False,
+                  depth=4, n_base_filters=32,
+                  batch_normalization=True,
+                  activation_name="sigmoid",
+                  is_unet_original=True,
+                  weight_decay=1e-5,
+                  name=None
+                  ):
     """
     Builds the 3D UNet Keras model.f
     :param metrics: List metrics to be calculated during model training (default is dice coefficient).
@@ -93,6 +93,119 @@ def baseline(inputs, pool_size=(2, 2), n_labels=1,
     return output
 
 
+def baseline_resnet(inputs, pool_size=(2, 2), n_labels=1,
+                    deconvolution=False,
+                    depth=4, n_base_filters=16,
+                    batch_normalization=True,
+                    activation_name="sigmoid",
+                    is_unet_original=True,
+                    weight_decay=1e-5,
+                    name=None
+                    ):
+    """
+    Builds the 3D UNet Keras model.f
+    :param metrics: List metrics to be calculated during model training (default is dice coefficient).
+    :param include_label_wise_dice_coefficients: If True and n_labels is greater than 1, model will report the dice
+    coefficient for each label as metric.
+    :param n_base_filters: The number of filters that the first layer in the convolution network will have. Following
+    layers will contain a multiple of this number. Lowering this number will likely reduce the amount of memory required
+    to train the model.
+    :param depth: indicates the depth of the U-shape for the model. The greater the depth, the more max pooling
+    layers will be added to the model. Lowering the depth may reduce the amount of memory required for training.
+    :param input_shape: Shape of the input data (n_chanels, x_size, y_size, z_size). The x, y, and z sizes must be
+    divisible by the pool size to the power of the depth of the UNet, that is pool_size^depth.
+    :param pool_size: Pool size for the max pooling operations.
+    :param n_labels: Number of binary labels that the model is learning.
+    :param initial_learning_rate: Initial learning rate for the model. This will be decayed during training.
+    :param deconvolution: If set to True, will use transpose convolution(deconvolution) instead of up-sampling. This
+    increases the amount memory required during training.
+    :return: Untrained 3D UNet Model
+    """
+    current_layer = inputs
+    levels = list()
+
+    # add levels with max pooling
+    for layer_depth in range(depth):
+        n_filters = n_base_filters * (2**layer_depth)
+        layer1 = conv_block_resnet(input_layer=current_layer,
+                                   kernel_size=3,
+                                   n_filters=[n_filters, n_filters, n_filters],
+                                   stage=layer_depth,
+                                   block=name+"_en_a",
+                                   weight_decay=weight_decay
+                                   )
+        layer2 = conv_block_resnet(input_layer=layer1,
+                                   kernel_size=3,
+                                   n_filters=[n_filters, n_filters, n_filters],
+                                   stage=layer_depth,
+                                   block=name+"_en_b",
+                                   weight_decay=weight_decay
+                                   )
+        if layer_depth < depth - 1:
+            current_layer = MaxPooling2D(pool_size=pool_size)(layer2)
+            levels.append([layer1, layer2, current_layer])
+        else:
+            current_layer = layer2
+            levels.append([layer1, layer2])
+
+    # add levels with up-convolution or up-sampling
+    for layer_depth in range(depth-2, -1, -1):
+        n_filters = levels[layer_depth][1]._keras_shape[1]
+        up_convolution = get_up_convolution2d(pool_size=pool_size, deconvolution=deconvolution,
+                                              n_filters=current_layer._keras_shape[1])(current_layer)
+        concat = concatenate([up_convolution, levels[layer_depth][1]], axis=1)
+
+        current_layer = conv_block_resnet(input_layer=concat,
+                                          kernel_size=3,
+                                          n_filters=[n_filters,
+                                                     n_filters, n_filters],
+                                          stage=layer_depth,
+                                          block=name+"_de_a",
+                                          weight_decay=weight_decay
+                                          )
+
+        current_layer = conv_block_resnet(input_layer=current_layer,
+                                          kernel_size=3,
+                                          n_filters=[n_filters,
+                                                     n_filters, n_filters],
+                                          stage=layer_depth,
+                                          block=name+"_de_b",
+                                          weight_decay=weight_decay
+                                          )
+
+    final_convolution = Conv2D(n_labels, (1, 1))(current_layer)
+    output = Activation(activation_name, name=name)(final_convolution)
+
+    return output
+
+
+def casnet_v6(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+              depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
+              batch_normalization=False, activation_name="sigmoid",
+              loss_function="casweighted",
+              is_unet_original=True,
+              weight_decay=1e-5
+              ):
+
+    inputs = Input(input_shape)
+    inp_whole = inputs
+    out_whole = baseline_resnet(inp_whole, depth=depth, n_base_filters=n_base_filters,
+                                weight_decay=weight_decay, name="out_whole")
+
+    inp_core = concatenate([out_whole, inp_whole], axis=1)
+    out_core = baseline_resnet(inp_core, depth=depth, n_base_filters=n_base_filters,
+                               weight_decay=weight_decay, name="out_core")
+
+    inp_enh = concatenate([out_core, inp_core], axis=1)
+    out_enh = baseline_resnet(inp_enh, depth=depth, n_base_filters=n_base_filters,
+                              weight_decay=weight_decay, name="out_enh")
+
+    model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
+
+    return compile_model(model, loss_function=loss_function,
+                         initial_learning_rate=initial_learning_rate)
+
+
 def casnet_v5(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
               batch_normalization=True, activation_name="sigmoid",
@@ -103,16 +216,16 @@ def casnet_v5(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
 
     inputs = Input(input_shape)
     inp_whole = inputs
-    out_whole = baseline(inp_whole, depth=5, n_base_filters=16,
-                         weight_decay=weight_decay, name="out_whole")
+    out_whole = baseline_unet(inp_whole, depth=5, n_base_filters=16,
+                              weight_decay=weight_decay, name="out_whole")
 
     inp_core = concatenate([out_whole, inp_whole], axis=1)
-    out_core = baseline(inp_core, depth=5, n_base_filters=16,
-                        weight_decay=weight_decay, name="out_core")
+    out_core = baseline_unet(inp_core, depth=5, n_base_filters=16,
+                             weight_decay=weight_decay, name="out_core")
 
     inp_enh = concatenate([out_core, inp_core], axis=1)
-    out_enh = baseline(inp_enh, depth=5, n_base_filters=16,
-                       weight_decay=weight_decay, name="out_enh")
+    out_enh = baseline_unet(inp_enh, depth=5, n_base_filters=16,
+                            weight_decay=weight_decay, name="out_enh")
 
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
@@ -131,8 +244,8 @@ def casnet_v4(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     # instead of concat, we multiply the output of previous mask
     inputs = Input(input_shape)
     inp_whole = inputs
-    out_whole = baseline(inp_whole, depth=depth, n_base_filters=n_base_filters,
-                         weight_decay=weight_decay, name="out_whole")
+    out_whole = baseline_unet(inp_whole, depth=depth, n_base_filters=n_base_filters,
+                              weight_decay=weight_decay, name="out_whole")
 
     for i in range(inputs.shape[1]):
         if i < 1:
@@ -140,8 +253,8 @@ def casnet_v4(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
         else:
             mask_whole = concatenate([mask_whole, out_whole], axis=1)
     inp_core = multiply([mask_whole, inputs])
-    out_core = baseline(inp_core, depth=depth, n_base_filters=n_base_filters,
-                        weight_decay=weight_decay, name="out_core")
+    out_core = baseline_unet(inp_core, depth=depth, n_base_filters=n_base_filters,
+                             weight_decay=weight_decay, name="out_core")
 
     for i in range(inputs.shape[1]):
         if i < 1:
@@ -150,8 +263,8 @@ def casnet_v4(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
             mask_core = concatenate([mask_core, out_core], axis=1)
     inp_core = multiply([mask_core, inputs])
     inp_enh = concatenate([out_core, inp_core], axis=1)
-    out_enh = baseline(inp_enh, depth=depth, n_base_filters=n_base_filters,
-                       weight_decay=weight_decay, name="out_enh")
+    out_enh = baseline_unet(inp_enh, depth=depth, n_base_filters=n_base_filters,
+                            weight_decay=weight_decay, name="out_enh")
 
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
@@ -284,16 +397,16 @@ def casnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
 
     inputs = Input(input_shape)
     inp_whole = inputs
-    out_whole = baseline(inp_whole, depth=depth, n_base_filters=n_base_filters,
-                         weight_decay=weight_decay, name="out_whole")
+    out_whole = baseline_unet(inp_whole, depth=depth, n_base_filters=n_base_filters,
+                              weight_decay=weight_decay, name="out_whole")
 
     inp_core = concatenate([out_whole, inp_whole], axis=1)
-    out_core = baseline(inp_core, depth=depth, n_base_filters=n_base_filters,
-                        weight_decay=weight_decay, name="out_core")
+    out_core = baseline_unet(inp_core, depth=depth, n_base_filters=n_base_filters,
+                             weight_decay=weight_decay, name="out_core")
 
     inp_enh = concatenate([out_core, inp_core], axis=1)
-    out_enh = baseline(inp_enh, depth=depth, n_base_filters=n_base_filters,
-                       weight_decay=weight_decay, name="out_enh")
+    out_enh = baseline_unet(inp_enh, depth=depth, n_base_filters=n_base_filters,
+                            weight_decay=weight_decay, name="out_enh")
 
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
@@ -311,16 +424,16 @@ def casnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
 
     inputs = Input(input_shape)
     inp_whole = inputs
-    out_whole = baseline(inp_whole, depth=4, n_base_filters=16,
-                         weight_decay=weight_decay, name="out_whole")
+    out_whole = baseline_unet(inp_whole, depth=4, n_base_filters=16,
+                              weight_decay=weight_decay, name="out_whole")
 
     inp_core = concatenate([out_whole, inp_whole], axis=1)
-    out_core = baseline(inp_core, depth=3, n_base_filters=16,
-                        weight_decay=weight_decay, name="out_core")
+    out_core = baseline_unet(inp_core, depth=3, n_base_filters=16,
+                             weight_decay=weight_decay, name="out_core")
 
     inp_enh = concatenate([out_core, inp_core], axis=1)
-    out_enh = baseline(inp_enh, depth=2, n_base_filters=16,
-                       weight_decay=weight_decay, name="out_enh")
+    out_enh = baseline_unet(inp_enh, depth=2, n_base_filters=16,
+                            weight_decay=weight_decay, name="out_enh")
 
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
@@ -614,8 +727,77 @@ def squeeze_excite_block2d(input, ratio=16):
     return x
 
 
+class BatchNorm(KL.BatchNormalization):
+    """Extends the Keras BatchNormalization class to allow a central place
+    to make changes if needed.
+    Batch normalization has a negative effect on training if batches are small
+    so this layer is often frozen (via setting in Config class) and functions
+    as linear layer.
+    """
+
+    def call(self, inputs, training=None):
+        """
+        Note about training values:
+            None: Train BN layers. This is the normal mode
+            False: Freeze BN layers. Good when batch size is small
+            True: (don't use). Set layer in training mode even when making inferences
+        """
+        return super(self.__class__, self).call(inputs, training=training)
+
+
+def conv_block_resnet(input_layer, kernel_size, n_filters, stage, block,
+                      use_bias=True, train_bn=True,
+                      padding='same', strides=(1, 1),
+                      weight_decay=1e-5):
+    """conv_block is the block that has a conv layer at shortcut
+    # Arguments
+        input_layer: input tensor
+        kernel_size: default 3, the kernel size of middle conv layer at main path
+        n_filters: list of integers, the nb_filters of 3 conv layer at main path
+        stage: integer, current stage label, used for generating layer names
+        block: 'a','b'..., current block label, used for generating layer names
+        use_bias: Boolean. To use or not use a bias in conv layers.
+        train_bn: Boolean. Train or freeze Batch Norm layers
+    Note that from stage 3, the first conv layer at main path is with subsample=(2,2)
+    And the shortcut should have subsample=(2,2) as well
+    """
+    nb_filter1, nb_filter2, nb_filter3 = n_filters
+    conv_name_base = 'res' + str(stage) + block + '_branch'
+    bn_name_base = 'bn' + str(stage) + block + '_branch'
+
+    x = Conv2D(nb_filter1, (1, 1), strides=strides,
+               name=conv_name_base + '2a', use_bias=use_bias,
+               padding=padding,
+               kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
+    x = BatchNorm(name=bn_name_base + '2a')(x, training=train_bn)
+    x = Activation('relu')(x)
+
+    x = Conv2D(nb_filter2, (kernel_size, kernel_size),
+               name=conv_name_base + '2b', use_bias=use_bias,
+               padding=padding,
+               kernel_regularizer=regularizers.l2(l=weight_decay))(x)
+    x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
+    x = Activation('relu')(x)
+
+    x = Conv2D(nb_filter3, (1, 1), name=conv_name_base +
+               '2c', use_bias=use_bias,
+               padding=padding,
+               kernel_regularizer=regularizers.l2(l=weight_decay))(x)
+    x = BatchNorm(name=bn_name_base + '2c')(x, training=train_bn)
+
+    shortcut = Conv2D(nb_filter3, (1, 1), strides=strides,
+                      name=conv_name_base + '1', use_bias=use_bias,
+                      padding=padding,
+                      kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
+    shortcut = BatchNorm(name=bn_name_base + '1')(shortcut, training=train_bn)
+
+    x = Add()([x, shortcut])
+    x = Activation('relu', name='res' + str(stage) + block + '_out')(x)
+    return x
+
+
 def main():
-    model = sepnet_v1(input_shape=(4, 160, 192))
+    model = casnet_v4(input_shape=(4, 160, 192))
     model.summary()
 
 

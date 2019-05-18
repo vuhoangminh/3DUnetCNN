@@ -19,7 +19,9 @@ from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.training import load_old_model, train_model
-from unet2d.model import unet_model_2d, isensee2d_model, casnet_v1, casnet_v2, casnet_v3, casnet_v4, sepnet_v1, casnet_v5, sepnet_v2
+from unet2d.model import unet_model_2d, isensee2d_model
+from unet2d.model import casnet_v1, casnet_v2, casnet_v3, casnet_v4, casnet_v5, casnet_v6
+from unet2d.model import sepnet_v1, sepnet_v2
 from unet2d.generator import get_training_and_validation_and_testing_generators2d
 from unet3d.data import write_data_to_file, open_data_file
 import numpy as np
