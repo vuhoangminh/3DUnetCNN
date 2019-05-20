@@ -11,7 +11,7 @@ from keras.optimizers import Adam
 
 from unet3d.metrics import minh_dice_coef_metric
 from unet3d.utils.model_utils import compile_model
-
+from unet25d.model.unet25d import create_transition_3d_to_2d
 from brats.config import config, config_unet
 
 
@@ -29,11 +29,17 @@ def create_convolution_block(input_layer, n_filters, batch_normalization=True, k
     return layer
 
 
-def segnet2d(input_shape, n_labels, n_base_filters=16, depth=4, pool_size=(2, 2), loss_function="weighted",
-             metrics=minh_dice_coef_metric, initial_learning_rate=1e-4):
+def segnet25d(input_shape, n_labels, n_base_filters=16, depth=4, pool_size=(2, 2), loss_function="weighted",
+              metrics=minh_dice_coef_metric, initial_learning_rate=1e-4):
 
     inputs = Input(input_shape)
     current_layer = inputs
+
+    current_layer = create_transition_3d_to_2d(input_layer=inputs,
+                                               n_filters=n_base_filters,
+                                               is_unet_original=True,
+                                               batch_normalization=False,
+                                               instance_normalization=True)
 
     for layer_depth in range(depth):
         if layer_depth < (depth/2):
@@ -78,8 +84,8 @@ def segnet2d(input_shape, n_labels, n_base_filters=16, depth=4, pool_size=(2, 2)
 
 def main():
 
-    model = segnet2d(input_shape=(1, 128, 128),
-                     n_labels=3)
+    model = segnet25d(input_shape=(1, 128, 128),
+                      n_labels=3)
     model.summary()
 
 

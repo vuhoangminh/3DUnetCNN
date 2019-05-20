@@ -13,8 +13,7 @@ import os
 
 from unet3d.data import open_data_file
 from unet25d.generator import get_training_and_validation_and_testing_generators25d
-from unet25d.model import unet_model_25d
-from unet25d.model import isensee25d_model
+from unet25d.model import *
 from unet3d.training import train_model
 from unet3d.utils.path_utils import get_project_dir
 from unet3d.utils.path_utils import get_shape_from_string
@@ -78,7 +77,7 @@ def train(args):
     print_section("get training and testing generators")
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators25d(
         data_file_opened,
-        batch_size=1,
+        batch_size=args.batch_size,
         data_split=config["validation_split"],
         overwrite=args.overwrite,
         validation_keys_file=config["validation_file"],
@@ -133,19 +132,20 @@ def train(args):
                                    depth=args.depth_unet,
                                    n_base_filters=args.n_base_filters_unet,
                                    loss_function=args.loss)
+        elif args.model == "segnet":
+            print("init segnet model")
+            model = segnet25d(input_shape=config["input_shape"],
+                              n_labels=config["n_labels"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet,
+                              loss_function=args.loss)
         elif args.model == "isensee":
             print("init isensee model")
             model = isensee25d_model(input_shape=config["input_shape"],
                                      n_labels=config["n_labels"],
                                      initial_learning_rate=config["initial_learning_rate"],
                                      loss_function=args.loss)
-        elif args.model == "seisensee":
-            print("init seisensee model")
-            model = isensee25d_model(input_shape=config["input_shape"],
-                                     n_labels=config["n_labels"],
-                                     initial_learning_rate=config["initial_learning_rate"],
-                                     loss_function=args.loss,
-                                     is_unet_original=False)
 
     model.summary()
 

@@ -1,3 +1,4 @@
+from comet_ml import Experiment
 from brats.config import config, config_unet
 from brats.prepare_data import prepare_data
 import unet3d.utils.path_utils as path_utils
@@ -8,11 +9,9 @@ from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir
 from unet3d.training import train_model
-from unet3d.model import isensee2017_model
-from unet3d.model import mnet, unet_model_3d, unet_vae
+from unet3d.model import *
 from unet3d.generator import get_training_and_validation_and_testing_generators
 from unet3d.data import open_data_file
-from comet_ml import Experiment
 
 import os
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # run on server
@@ -94,14 +93,15 @@ def train(args):
                                   depth=args.depth_unet,
                                   n_base_filters=args.n_base_filters_unet,
                                   loss_function=args.loss)
-
-        elif args.model == "mnet":
-            print("init mnet model")
-            model = mnet(input_shape=config["input_shape"],
-                         n_labels=config["n_labels"],
-                         initial_learning_rate=config["initial_learning_rate"],
-                         loss_function=args.loss)
-
+        elif args.model == "segnet":
+            print("init segnet model")
+            model = segnet3d(input_shape=config["input_shape"],
+                             pool_size=config["pool_size"],
+                             n_labels=config["n_labels"],
+                             initial_learning_rate=config["initial_learning_rate"],
+                             depth=args.depth_unet,
+                             n_base_filters=args.n_base_filters_unet,
+                             loss_function=args.loss)
         elif args.model == "unet_vae":
             print("init unet_vae model")
             model = unet_vae(input_shape=config["input_shape"],

@@ -124,6 +124,14 @@ def train(args):
                                   depth=args.depth_unet,
                                   n_base_filters=args.n_base_filters_unet,
                                   loss_function=args.loss)
+        elif args.model == "segnet":
+            print("init segnet model")
+            model = segnet2d(input_shape=config["input_shape"],
+                             n_labels=config["n_labels"],
+                             initial_learning_rate=config["initial_learning_rate"],
+                             depth=args.depth_unet,
+                             n_base_filters=args.n_base_filters_unet,
+                             loss_function=args.loss)
         elif args.model == "casnet_v1":
             print("init casnet_v1 model")
             model = casnet_v1(input_shape=config["input_shape"],

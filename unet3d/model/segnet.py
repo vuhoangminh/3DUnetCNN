@@ -29,7 +29,7 @@ def create_3d_convolution_block(input_layer, n_filters, batch_normalization=True
     return layer
 
 
-def SegNet3D(input_shape, n_labels, n_base_filters=16, depth=4, pool_size=(2, 2, 2), loss_function="weighted",
+def segnet3d(input_shape, n_labels, n_base_filters=16, depth=4, pool_size=(2, 2, 2), loss_function="weighted",
              metrics=minh_dice_coef_metric, initial_learning_rate=1e-4):
 
     img_input = Input(input_shape)
