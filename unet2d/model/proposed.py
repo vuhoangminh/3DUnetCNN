@@ -21,6 +21,7 @@ except ImportError:
     from keras.layers.merge import concatenate
 
 
+# U-Net 2D with conv_blockC
 def baseline_unet(inputs, pool_size=(2, 2), n_labels=1,
                   deconvolution=False,
                   depth=4, n_base_filters=32,
@@ -93,6 +94,7 @@ def baseline_unet(inputs, pool_size=(2, 2), n_labels=1,
     return output
 
 
+# U-Net 2D with resnet_blockC
 def baseline_resnet(inputs, pool_size=(2, 2), n_labels=1,
                     deconvolution=False,
                     depth=4, n_base_filters=16,
@@ -179,6 +181,63 @@ def baseline_resnet(inputs, pool_size=(2, 2), n_labels=1,
     return output
 
 
+# casnet_v8 (similar to v2): replace regularizer 1e-5 to 1e-4
+def casnet_v8(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+              depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
+              batch_normalization=True, activation_name="sigmoid",
+              loss_function="casweighted",
+              is_unet_original=True,
+              weight_decay=1e-4
+              ):
+
+    inputs = Input(input_shape)
+    inp_whole = inputs
+    out_whole = baseline_unet(inp_whole, depth=depth, n_base_filters=n_base_filters,
+                              weight_decay=weight_decay, name="out_whole")
+
+    inp_core = concatenate([out_whole, inp_whole], axis=1)
+    out_core = baseline_unet(inp_core, depth=depth, n_base_filters=n_base_filters,
+                             weight_decay=weight_decay, name="out_core")
+
+    inp_enh = concatenate([out_core, inp_core], axis=1)
+    out_enh = baseline_unet(inp_enh, depth=depth, n_base_filters=n_base_filters,
+                            weight_decay=weight_decay, name="out_enh")
+
+    model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
+
+    return compile_model(model, loss_function=loss_function,
+                         initial_learning_rate=initial_learning_rate)
+
+
+# casnet_v7 (similar to v2): replace regularizer 1e-5 to 1e-3
+def casnet_v7(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+              depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
+              batch_normalization=True, activation_name="sigmoid",
+              loss_function="casweighted",
+              is_unet_original=True,
+              weight_decay=1e-3
+              ):
+
+    inputs = Input(input_shape)
+    inp_whole = inputs
+    out_whole = baseline_unet(inp_whole, depth=depth, n_base_filters=n_base_filters,
+                              weight_decay=weight_decay, name="out_whole")
+
+    inp_core = concatenate([out_whole, inp_whole], axis=1)
+    out_core = baseline_unet(inp_core, depth=depth, n_base_filters=n_base_filters,
+                             weight_decay=weight_decay, name="out_core")
+
+    inp_enh = concatenate([out_core, inp_core], axis=1)
+    out_enh = baseline_unet(inp_enh, depth=depth, n_base_filters=n_base_filters,
+                            weight_decay=weight_decay, name="out_enh")
+
+    model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
+
+    return compile_model(model, loss_function=loss_function,
+                         initial_learning_rate=initial_learning_rate)
+
+
+# casnet_v6 (similar to v2): replace conv_block by resnet_block
 def casnet_v6(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
               batch_normalization=False, activation_name="sigmoid",
@@ -206,6 +265,7 @@ def casnet_v6(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
                          initial_learning_rate=initial_learning_rate)
 
 
+# casnet_v5: 3 2D U-Net: whole_d5_n16, core_d5_n16, enh_d5_n16
 def casnet_v5(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
               batch_normalization=True, activation_name="sigmoid",
@@ -233,6 +293,7 @@ def casnet_v5(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
                          initial_learning_rate=initial_learning_rate)
 
 
+# casnet_v4 (similar to v2): inputs of core and enh = multiplication of inputs and "masks"
 def casnet_v4(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
               batch_normalization=True, activation_name="sigmoid",
@@ -272,6 +333,7 @@ def casnet_v4(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
                          initial_learning_rate=initial_learning_rate)
 
 
+# casnet_v3: 1 encoder, 3 decoders
 def casnet_v3(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
               batch_normalization=False, activation_name="sigmoid",
@@ -387,6 +449,7 @@ def casnet_v3(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
                          initial_learning_rate=initial_learning_rate)
 
 
+# casnet_v2: 3 2D U-Net: whole_d4_n16, core_d4_n16, enh_d4_n16
 def casnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
               batch_normalization=True, activation_name="sigmoid",
@@ -414,6 +477,7 @@ def casnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
                          initial_learning_rate=initial_learning_rate)
 
 
+# casnet_v1: 3 2D U-Net: whole_d4_n16, core_d3_n16, enh_d2_n16
 def casnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
               batch_normalization=False, activation_name="sigmoid",
@@ -442,6 +506,7 @@ def casnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
                          initial_learning_rate=initial_learning_rate)
 
 
+# sepnet_v1: 1 encoder, 3 decoders for 3 classes (1, 2 ,4) + w/ squeeze_excite_block2d after concat
 def sepnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
               batch_normalization=False, activation_name="sigmoid",
@@ -546,6 +611,7 @@ def sepnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
                          initial_learning_rate=initial_learning_rate)
 
 
+# sepnet_v1: 1 encoder, 3 decoders for 3 classes (1, 2 ,4) + wo/ squeeze_excite_block2d after concat
 def sepnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
               batch_normalization=False, activation_name="sigmoid",

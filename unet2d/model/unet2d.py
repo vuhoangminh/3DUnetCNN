@@ -24,7 +24,7 @@ except ImportError:
 
 
 def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
-                  depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
+                  depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
                   batch_normalization=False, activation_name="sigmoid",
                   metrics=minh_dice_coef_metric,
                   loss_function="weighted",
@@ -91,17 +91,6 @@ def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_ra
     final_convolution = Conv2D(n_labels, (1, 1))(current_layer)
     act = Activation(activation_name)(final_convolution)
     model = Model(inputs=inputs, outputs=act)
-
-    # if not isinstance(metrics, list):
-    #     metrics = [metrics]
-
-    # if include_label_wise_dice_coefficients and n_labels > 1:
-    #     label_wise_dice_metrics = [get_label_dice_coefficient_function(
-    #         index) for index in range(n_labels)]
-    #     if metrics:
-    #         metrics = metrics + label_wise_dice_metrics
-    #     else:
-    #         metrics = label_wise_dice_metrics
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
@@ -184,3 +173,15 @@ def squeeze_excite_block2d(input, ratio=16):
 
     x = multiply([init, se])
     return x
+
+
+def main():
+
+    model = unet_model_2d(input_shape=(1, 128, 128),
+                          n_labels=3)
+    model.summary()
+    print("done")
+
+
+if __name__ == "__main__":
+    main()

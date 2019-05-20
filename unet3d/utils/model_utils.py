@@ -114,10 +114,6 @@ def compile_model(model, loss_function="weighted",
                             'out_core': dice_coefficient_loss,
                             'out_enh': dice_coefficient_loss
                             },
-                      #   loss={'out_whole': 'binary_crossentropy',
-                      #         'out_core': 'binary_crossentropy',
-                      #         'out_enh': 'binary_crossentropy'
-                      #         },
                       loss_weights={'out_whole': 1,
                                     'out_core': 1,
                                     'out_enh': 1
