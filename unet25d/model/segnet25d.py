@@ -36,7 +36,7 @@ def segnet25d(input_shape, n_labels, n_base_filters=16, depth=4, pool_size=(2, 2
     current_layer = inputs
 
     current_layer = create_transition_3d_to_2d(input_layer=inputs,
-                                               n_filters=n_base_filters,
+                                               n_filters=int(n_base_filters/2),
                                                is_unet_original=True,
                                                batch_normalization=False,
                                                instance_normalization=True)
