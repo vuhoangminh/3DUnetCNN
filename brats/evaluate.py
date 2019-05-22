@@ -88,23 +88,16 @@ def evaluate(args):
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
 
-    config["data_file"] = data_path
-    config["model_file"] = model_path
-    config["training_file"] = trainids_path
-    config["validation_file"] = validids_path
-    config["testing_file"] = testids_path
-    config["patch_shape"] = get_shape_from_string(args.patch_shape)
-    config["input_shape"] = tuple(
-        [config["nb_channels"]] + list(config["patch_shape"]))
-
     prediction_dir = "/mnt/sda/3DUnetCNN_BRATS/brats"
     # prediction_dir = BRATS_DIR
     config["prediction_folder"] = os.path.join(
         prediction_dir, "database/prediction", get_filename_without_extension(config["model_file"]))
 
-    name = get_filename_without_extension(config["model_file"]).replace("_aug-0", "")
-    config["prediction_folder"] = os.path.join(
-        prediction_dir, "database/prediction/wo_augmentation", name)
+    name = get_filename_without_extension(
+        config["model_file"]).replace("_aug-0", "")
+        
+    # config["prediction_folder"] = os.path.join(
+    #     prediction_dir, "database/prediction/wo_augmentation", name)
 
     if not os.path.exists(config["prediction_folder"]):
         print("model not exists. Please check")
@@ -122,10 +115,10 @@ def evaluate(args):
             df1 = df.dice_WholeTumor.T._values
             df2 = df.dice_TumorCore.T._values
             df3 = df.dice_EnhancingTumor.T._values
-            rows = np.zeros((df1.size,3))
-            rows[:,0] = df1
-            rows[:,1] = df2
-            rows[:,2] = df3
+            rows = np.zeros((df1.size, 3))
+            rows[:, 0] = df1
+            rows[:, 1] = df2
+            rows[:, 2] = df3
 
             subject_ids = list()
             for case_folder in glob.glob(os.path.join(config["prediction_folder"], "*")):
@@ -133,13 +126,13 @@ def evaluate(args):
                     continue
                 subject_ids.append(os.path.basename(case_folder))
 
-            df = pd.DataFrame.from_records(rows, columns=header, index=subject_ids)
+            df = pd.DataFrame.from_records(
+                rows, columns=header, index=subject_ids)
 
             scores = dict()
             for index, score in enumerate(df.columns):
                 values = df.values.T[index]
                 scores[score] = values[np.isnan(values) == False]
-
 
         else:
 
@@ -160,13 +153,15 @@ def evaluate(args):
                 truth_file = os.path.join(case_folder, "truth.nii.gz")
                 truth_image = nib.load(truth_file)
                 truth = truth_image.get_data()
-                prediction_file = os.path.join(case_folder, "prediction.nii.gz")
+                prediction_file = os.path.join(
+                    case_folder, "prediction.nii.gz")
                 prediction_image = nib.load(prediction_file)
                 prediction = prediction_image.get_data()
                 score_case = get_score(truth, prediction, masking_functions)
                 rows.append(score_case)
 
-            df = pd.DataFrame.from_records(rows, columns=header, index=subject_ids)
+            df = pd.DataFrame.from_records(
+                rows, columns=header, index=subject_ids)
             df.to_csv(config["prediction_df_csv"])
 
             scores = dict()
@@ -220,35 +215,57 @@ def main():
     is_hist_match = args.is_hist_match
     loss = args.loss
 
-
     args.is_augment = "0"
 
     header = ("dice_WholeTumor", "dice_TumorCore", "dice_EnhancingTumor")
     model_scores = list()
     model_ids = list()
 
-    for depth_unet in [4, 5]:
+    # for depth_unet in [4, 5]:
+    #     args.depth_unet = depth_unet
+    #     for n_base_filters_unet in [16, 32]:
+    #         args.n_base_filters_unet = n_base_filters_unet
+    #         for model_dim in [2, 3, 25]:
+    #             args.model_dim = model_dim
+    #             # if depth_unet == 5 or n_base_filters_unet == 32:
+    #             #     list_model = config_dict["model_depth"]
+    #             # else:
+    #             list_model = config_dict["model"]
+    #             for model_name in list_model:
+    #                 args.model_name = model_name
+    #                 for is_normalize in config_dict["is_normalize"]:
+    #                     args.is_normalize = is_normalize
+    #                     for is_denoise in config_dict["is_denoise"]:
+    #                         args.is_denoise = is_denoise
+    #                         for is_hist_match in config_dict["hist_match"]:
+    #                             args.is_hist_match = is_hist_match
+    #                             for patch_shape in config_dict["patch_shape"]:
+    #                                 args.patch_shape = patch_shape
+    #                                 for loss in config_dict["loss"]:
+    #                                     args.loss = loss
+
+    for depth_unet in [4]:
         args.depth_unet = depth_unet
-        for n_base_filters_unet in [16, 32]:
+        for n_base_filters_unet in [16]:
             args.n_base_filters_unet = n_base_filters_unet
-            for model_dim in [2, 3, 25]:
+            for model_dim in [2]:
                 args.model_dim = model_dim
-                # if depth_unet == 5 or n_base_filters_unet == 32:
-                #     list_model = config_dict["model_depth"]
-                # else:
-                list_model = config_dict["model"]
-                for model_name in list_model:
-                    args.model_name = model_name
-                    for is_normalize in config_dict["is_normalize"]:
-                        args.is_normalize = is_normalize
-                        for is_denoise in config_dict["is_denoise"]:
+                for is_augment in ["1"]:
+                    args.is_augment = is_augment
+                    for model_name in ["casnet_v2"]:
+                    # for model_name in ["unet"]:            
+                        args.model = model_name
+                        for is_denoise in ["0"]:
                             args.is_denoise = is_denoise
-                            for is_hist_match in config_dict["hist_match"]:
-                                args.is_hist_match = is_hist_match
-                                for patch_shape in config_dict["patch_shape"]:
-                                    args.patch_shape = patch_shape
-                                    for loss in config_dict["loss"]:
+                            for is_normalize in ["z"]:
+                                args.is_normalize = is_normalize
+                                for is_hist_match in ["0"]:
+                                    args.is_hist_match = is_hist_match
+                                    for loss in ["weighted"]:
                                         args.loss = loss
+                                        for patch_shape in ["160-192-1"]:
+                                            args.patch_shape = patch_shape
+
                                         print("="*120)
                                         print(
                                             ">> processing model-{}{}, depth-{}, filters-{}, patch_shape-{}, is_denoise-{}, is_normalize-{}, is_hist_match-{}, loss-{}".format(

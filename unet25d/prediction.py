@@ -120,7 +120,8 @@ def multi_class_prediction(prediction, affine):
 
 
 def run_validation_case(data_index, output_dir, model, data_file, training_modalities,
-                        output_label_map=False, threshold=0.5, labels=None, overlap=0, permute=False):
+                        output_label_map=False, threshold=0.5, labels=None, overlap=0, permute=False,
+                        data_type_generator="combined"):
     """
     Runs a test case and writes predicted images to file.
     :param data_index: Index from of the list of test cases to get an image prediction from.
@@ -166,7 +167,8 @@ def run_validation_case(data_index, output_dir, model, data_file, training_modal
 
 
 def run_validation_cases(validation_keys_file, model_file, training_modalities, labels, hdf5_file,
-                         output_label_map=False, output_dir=".", threshold=0.5, overlap=0, permute=False):
+                         output_label_map=False, output_dir=".", threshold=0.5, overlap=0, permute=False,
+                         data_type_generator="combined"):
     validation_indices = pickle_load(validation_keys_file)
 
     from unet3d.utils.model_utils import load_model_multi_gpu
@@ -183,7 +185,7 @@ def run_validation_cases(validation_keys_file, model_file, training_modalities, 
                 output_dir, "validation_case_{}".format(index))
         run_validation_case(data_index=index, output_dir=case_directory, model=model, data_file=data_file,
                             training_modalities=training_modalities, output_label_map=output_label_map, labels=labels,
-                            threshold=threshold, overlap=overlap, permute=permute)
+                            threshold=threshold, overlap=overlap, permute=permute, data_type_generator=data_type_generator)
     data_file.close()
 
 

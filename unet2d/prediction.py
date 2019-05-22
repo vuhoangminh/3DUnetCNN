@@ -9,7 +9,9 @@ from unet3d.utils.patches import reconstruct_from_patches2d, get_patch_from_3d_d
 from unet3d.augment import permute_data, generate_permutation_keys, reverse_permute_data
 from unet3d.training import load_old_model
 
-def patch_wise_prediction(model, data, overlap=0, batch_size=64, permute=False):
+
+def patch_wise_prediction(model, data, overlap=0, batch_size=64,
+                          permute=False, data_type_generator="combined"):
     """
     :param batch_size:
     :param model:
@@ -33,23 +35,71 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=64, permute=False):
             i += 1
         prediction = predict(model, np.asarray(batch), permute=permute)
         batch = list()
+
+        if data_type_generator != "combined":
+            for j in range(len(prediction)):
+                if j == 0:
+                    prediction_temp = prediction[j]
+                else:
+                    prediction_temp = np.concatenate(
+                        (prediction_temp, prediction[j]), axis=1)
+            prediction = prediction_temp
+
         for predicted_patch in prediction:
             predictions.append(predicted_patch)
-    # output_shape = [int(model.output.shape[1])] + list(data.shape[-3:])
-    output_shape = [model.output_shape[1]] + list(data.shape[-3:])
+
+    if data_type_generator == "combined":
+        output_shape = [model.output_shape[1]] + list(data.shape[-3:])
+    else:
+        output_shape = [len(model.output_shape)] + list(data.shape[-3:])
+
     return reconstruct_from_patches2d(predictions, patch_indices=indices, data_shape=output_shape)
 
 
-def get_prediction_labels(prediction, threshold=0.5, labels=None):
+def get_prediction_labels(prediction, threshold=0.5, labels=None,
+                          data_type_generator="combined",
+                          is_cascaded_overlap=True):
+    # is_cascaded_overlap=True: consider only overlapping regions
     n_samples = prediction.shape[0]
     label_arrays = []
-    for sample_number in range(n_samples):
-        label_data = np.argmax(prediction[sample_number], axis=0) + 1
-        label_data[np.max(prediction[sample_number], axis=0) < threshold] = 0
-        if labels:
-            for value in np.unique(label_data).tolist()[1:]:
-                label_data[label_data == value] = labels[value - 1]
-        label_arrays.append(np.array(label_data, dtype=np.uint8))
+    if data_type_generator == "combined" or data_type_generator == "separated":
+        for sample_number in range(n_samples):
+            label_data = np.argmax(prediction[sample_number], axis=0) + 1
+            label_data[np.max(prediction[sample_number],
+                              axis=0) < threshold] = 0
+            if labels:
+                for value in np.unique(label_data).tolist()[1:]:
+                    label_data[label_data == value] = labels[value - 1]
+            label_arrays.append(np.array(label_data, dtype=np.uint8))
+
+    else:
+        for sample_number in range(n_samples):
+            label_data = np.zeros(prediction.shape[-3:])
+            for i in range(prediction.shape[-3]):
+                for j in range(prediction.shape[-2]):
+                    for k in range(prediction.shape[-1]):
+                        if prediction[sample_number][2, i, j, k] >= threshold:
+                            label_data[i, j, k] = 4
+                        elif prediction[sample_number][1, i, j, k] >= threshold and \
+                                label_data[i, j, k] == 0:
+                            label_data[i, j, k] = 1
+                        elif prediction[sample_number][0, i, j, k] >= threshold and \
+                                label_data[i, j, k] == 0:
+                            label_data[i, j, k] = 2
+                        # if prediction[sample_number][0, i, j, k] >= threshold and \
+                        #         prediction[sample_number][1, i, j, k] >= threshold and \
+                        #         prediction[sample_number][2, i, j, k] >= threshold:
+                        #     label_data[i,j,k] = 4
+                        # elif prediction[sample_number][0, i, j, k] >= threshold and \
+                        #         prediction[sample_number][1, i, j, k] >= threshold and \
+                        #         prediction[sample_number][2, i, j, k] < threshold:
+                        #     label_data[i,j,k] = 1
+                        # elif prediction[sample_number][0, i, j, k] >= threshold and \
+                        #         prediction[sample_number][1, i, j, k] < threshold and \
+                        #         prediction[sample_number][2, i, j, k] < threshold:
+                        #     label_data[i,j,k] = 2
+            label_arrays.append(np.array(label_data, dtype=np.uint8))
+
     return label_arrays
 
 
@@ -74,7 +124,8 @@ def predict_from_data_file_and_write_image(model, open_data_file, index, out_fil
     image.to_filename(out_file)
 
 
-def prediction_to_image(prediction, affine, label_map=False, threshold=0.5, labels=None):
+def prediction_to_image(prediction, affine, label_map=False, threshold=0.5,
+                        labels=None, data_type_generator="combined"):
     if prediction.shape[1] == 1:
         data = prediction[0, 0]
         if label_map:
@@ -88,7 +139,8 @@ def prediction_to_image(prediction, affine, label_map=False, threshold=0.5, labe
     elif prediction.shape[1] > 1:
         if label_map:
             label_map_data = get_prediction_labels(
-                prediction, threshold=threshold, labels=labels)
+                prediction, threshold=threshold, labels=labels,
+                data_type_generator=data_type_generator)
             data = label_map_data[0]
         else:
             return multi_class_prediction(prediction, affine)
@@ -106,7 +158,8 @@ def multi_class_prediction(prediction, affine):
 
 
 def run_validation_case(data_index, output_dir, model, data_file, training_modalities,
-                        output_label_map=False, threshold=0.5, labels=None, overlap=0, permute=False):
+                        output_label_map=False, threshold=0.5, labels=None, overlap=0, permute=False,
+                        data_type_generator="combined"):
     """
     Runs a test case and writes predicted images to file.
     :param data_index: Index from of the list of test cases to get an image prediction from.
@@ -136,13 +189,16 @@ def run_validation_case(data_index, output_dir, model, data_file, training_modal
     # patch_shape = tuple([int(dim) for dim in model.input.shape[-3:]])
     patch_shape = model.input_shape[-2:]
     patch_shape = (*patch_shape, 1)
+
     if patch_shape == test_data.shape[-3:]:
         prediction = predict(model, test_data, permute=permute)
     else:
-        prediction = patch_wise_prediction(
-            model=model, data=test_data, overlap=overlap, permute=permute)[np.newaxis]
+        prediction = patch_wise_prediction(model=model, data=test_data,
+                                           overlap=overlap, permute=permute,
+                                           data_type_generator=data_type_generator)[np.newaxis]
+
     prediction_image = prediction_to_image(prediction, affine, label_map=output_label_map, threshold=threshold,
-                                           labels=labels)
+                                           labels=labels, data_type_generator=data_type_generator)
     if isinstance(prediction_image, list):
         for i, image in enumerate(prediction_image):
             image.to_filename(os.path.join(
@@ -153,7 +209,8 @@ def run_validation_case(data_index, output_dir, model, data_file, training_modal
 
 
 def run_validation_cases(validation_keys_file, model_file, training_modalities, labels, hdf5_file,
-                         output_label_map=False, output_dir=".", threshold=0.5, overlap=0, permute=False):
+                         output_label_map=False, output_dir=".", threshold=0.5, overlap=0, permute=False,
+                         data_type_generator="both"):
     validation_indices = pickle_load(validation_keys_file)
 
     from unet3d.utils.model_utils import load_model_multi_gpu
@@ -170,7 +227,7 @@ def run_validation_cases(validation_keys_file, model_file, training_modalities, 
                 output_dir, "validation_case_{}".format(index))
         run_validation_case(data_index=index, output_dir=case_directory, model=model, data_file=data_file,
                             training_modalities=training_modalities, output_label_map=output_label_map, labels=labels,
-                            threshold=threshold, overlap=overlap, permute=permute)
+                            threshold=threshold, overlap=overlap, permute=permute, data_type_generator=data_type_generator)
     data_file.close()
 
 

@@ -1,27 +1,17 @@
-import numpy as np
-from functools import partial
-from keras import backend as K
-import keras.layers as KL
 from keras.engine import Input, Model
 from keras.layers import (Activation, BatchNormalization, Conv2D,
                           Deconvolution2D, Dense, GlobalAveragePooling2D,
                           MaxPooling2D, Permute, PReLU, Reshape, UpSampling2D,
                           multiply, Add)
-from keras.optimizers import Adam
-from unet3d.metrics import minh_dice_coef_metric
-from keras.utils import multi_gpu_model
 from unet3d.utils.model_utils import compile_model
-from unet3d.model.unet_vae import GroupNormalization
-from keras import regularizers
+from unet2d.model.blocks import get_up_convolution2d
+from unet2d.model.blocks import squeeze_excite_block2d
+from unet2d.model.blocks import create_convolution_block2d, conv_block_resnet2d
+
+from keras.layers.merge import concatenate
 
 
-try:
-    from keras.engine import merge
-except ImportError:
-    from keras.layers.merge import concatenate
-
-
-# U-Net 2D with conv_blockC
+# U-Net 2D with conv_block
 def baseline_unet(inputs, pool_size=(2, 2), n_labels=1,
                   deconvolution=False,
                   depth=4, n_base_filters=32,
@@ -94,7 +84,72 @@ def baseline_unet(inputs, pool_size=(2, 2), n_labels=1,
     return output
 
 
-# U-Net 2D with resnet_blockC
+# Isensee 2D with conv_block
+def baseline_isensee(inputs, n_base_filters=16, depth=5,
+                     dropout_rate=0.3, n_segmentation_levels=3, n_labels=1,
+                     weight_decay=1e-5,
+                     activation_name="sigmoid",
+                     name=None):
+
+    from unet2d.model.isensee2d import create_context_module
+    from unet2d.model.isensee2d import create_up_sampling_module
+    from unet2d.model.isensee2d import create_localization_module
+
+    current_layer = inputs
+    level_output_layers = list()
+    level_filters = list()
+    for level_number in range(depth):
+        n_level_filters = (2**level_number) * n_base_filters
+        level_filters.append(n_level_filters)
+
+        if current_layer is inputs:
+            in_conv = create_convolution_block2d(
+                current_layer, n_level_filters,
+                weight_decay=weight_decay)
+        else:
+            in_conv = create_convolution_block2d(
+                current_layer, n_level_filters, strides=(2, 2),
+                weight_decay=weight_decay)
+
+        context_output_layer = create_context_module(
+            in_conv, n_level_filters, dropout_rate=dropout_rate,
+            weight_decay=weight_decay)
+
+        summation_layer = Add()([in_conv, context_output_layer])
+        level_output_layers.append(summation_layer)
+        current_layer = summation_layer
+
+    segmentation_layers = list()
+    for level_number in range(depth - 2, -1, -1):
+        up_sampling = create_up_sampling_module(
+            current_layer, level_filters[level_number],
+            weight_decay=weight_decay)
+        concatenation_layer = concatenate(
+            [level_output_layers[level_number], up_sampling], axis=1)
+        localization_output = create_localization_module(
+            concatenation_layer, level_filters[level_number],
+            weight_decay=weight_decay)
+        current_layer = localization_output
+        if level_number < n_segmentation_levels:
+            segmentation_layers.insert(
+                0, Conv2D(n_labels, (1, 1))(current_layer))
+
+    output_layer = None
+    for level_number in reversed(range(n_segmentation_levels)):
+        segmentation_layer = segmentation_layers[level_number]
+        if output_layer is None:
+            output_layer = segmentation_layer
+        else:
+            output_layer = Add()([output_layer, segmentation_layer])
+
+        if level_number > 0:
+            output_layer = UpSampling2D(size=(2, 2))(output_layer)
+
+    output = Activation(activation_name, name=name)(output_layer)
+    return output
+
+
+# U-Net 2D with resnet_block
 def baseline_resnet(inputs, pool_size=(2, 2), n_labels=1,
                     deconvolution=False,
                     depth=4, n_base_filters=16,
@@ -129,20 +184,22 @@ def baseline_resnet(inputs, pool_size=(2, 2), n_labels=1,
     # add levels with max pooling
     for layer_depth in range(depth):
         n_filters = n_base_filters * (2**layer_depth)
-        layer1 = conv_block_resnet(input_layer=current_layer,
-                                   kernel_size=3,
-                                   n_filters=[n_filters, n_filters, n_filters],
-                                   stage=layer_depth,
-                                   block=name+"_en_a",
-                                   weight_decay=weight_decay
-                                   )
-        layer2 = conv_block_resnet(input_layer=layer1,
-                                   kernel_size=3,
-                                   n_filters=[n_filters, n_filters, n_filters],
-                                   stage=layer_depth,
-                                   block=name+"_en_b",
-                                   weight_decay=weight_decay
-                                   )
+        layer1 = conv_block_resnet2d(input_layer=current_layer,
+                                     kernel_size=3,
+                                     n_filters=[n_filters,
+                                                n_filters, n_filters],
+                                     stage=layer_depth,
+                                     block=name+"_en_a",
+                                     weight_decay=weight_decay
+                                     )
+        layer2 = conv_block_resnet2d(input_layer=layer1,
+                                     kernel_size=3,
+                                     n_filters=[n_filters,
+                                                n_filters, n_filters],
+                                     stage=layer_depth,
+                                     block=name+"_en_b",
+                                     weight_decay=weight_decay
+                                     )
         if layer_depth < depth - 1:
             current_layer = MaxPooling2D(pool_size=pool_size)(layer2)
             levels.append([layer1, layer2, current_layer])
@@ -157,28 +214,56 @@ def baseline_resnet(inputs, pool_size=(2, 2), n_labels=1,
                                               n_filters=current_layer._keras_shape[1])(current_layer)
         concat = concatenate([up_convolution, levels[layer_depth][1]], axis=1)
 
-        current_layer = conv_block_resnet(input_layer=concat,
-                                          kernel_size=3,
-                                          n_filters=[n_filters,
-                                                     n_filters, n_filters],
-                                          stage=layer_depth,
-                                          block=name+"_de_a",
-                                          weight_decay=weight_decay
-                                          )
+        current_layer = conv_block_resnet2d(input_layer=concat,
+                                            kernel_size=3,
+                                            n_filters=[n_filters,
+                                                       n_filters, n_filters],
+                                            stage=layer_depth,
+                                            block=name+"_de_a",
+                                            weight_decay=weight_decay
+                                            )
 
-        current_layer = conv_block_resnet(input_layer=current_layer,
-                                          kernel_size=3,
-                                          n_filters=[n_filters,
-                                                     n_filters, n_filters],
-                                          stage=layer_depth,
-                                          block=name+"_de_b",
-                                          weight_decay=weight_decay
-                                          )
+        current_layer = conv_block_resnet2d(input_layer=current_layer,
+                                            kernel_size=3,
+                                            n_filters=[n_filters,
+                                                       n_filters, n_filters],
+                                            stage=layer_depth,
+                                            block=name+"_de_b",
+                                            weight_decay=weight_decay
+                                            )
 
     final_convolution = Conv2D(n_labels, (1, 1))(current_layer)
     output = Activation(activation_name, name=name)(final_convolution)
 
     return output
+
+
+# casnet_v9 (similar to v2): replace conv_block by baseline_isensee
+def casnet_v9(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+              depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
+              batch_normalization=True, activation_name="sigmoid",
+              loss_function="casweighted",
+              is_unet_original=True,
+              weight_decay=1e-4
+              ):
+
+    inputs = Input(input_shape)
+    inp_whole = inputs
+    out_whole = baseline_isensee(inp_whole, depth=depth, n_base_filters=n_base_filters,
+                                 weight_decay=weight_decay, name="out_whole")
+
+    inp_core = concatenate([out_whole, inp_whole], axis=1)
+    out_core = baseline_isensee(inp_core, depth=depth, n_base_filters=n_base_filters,
+                                weight_decay=weight_decay, name="out_core")
+
+    inp_enh = concatenate([out_core, inp_core], axis=1)
+    out_enh = baseline_isensee(inp_enh, depth=depth, n_base_filters=n_base_filters,
+                               weight_decay=weight_decay, name="out_enh")
+
+    model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
+
+    return compile_model(model, loss_function=loss_function,
+                         initial_learning_rate=initial_learning_rate)
 
 
 # casnet_v8 (similar to v2): replace regularizer 1e-5 to 1e-4
@@ -712,158 +797,8 @@ def sepnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
                          initial_learning_rate=initial_learning_rate)
 
 
-def create_convolution_block2d(input_layer, n_filters, batch_normalization=False, kernel=(3, 3), activation=None,
-                               padding='same', strides=(1, 1), instance_normalization=False,
-                               is_unet_original=True, weight_decay=0):
-    """
-    :param strides:
-    :param input_layer:
-    :param n_filters:
-    :param batch_normalization:
-    :param kernel:
-    :param activation: Keras activation layer to use. (default is 'relu')
-    :param padding:
-    :return:
-    """
-    layer = Conv2D(n_filters, kernel,
-                   padding=padding,
-                   strides=strides,
-                   kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
-    if batch_normalization:
-        # layer = BatchNormalization(axis=1)(layer)
-        layer = GroupNormalization(groups=16, axis=1)(layer)
-    elif instance_normalization:
-        try:
-            from keras_contrib.layers.normalization import InstanceNormalization
-        except ImportError:
-            raise ImportError("Install keras_contrib in order to use instance normalization."
-                              "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
-        layer = InstanceNormalization(axis=1)(layer)
-    if activation is None:
-        layer = Activation('relu')(layer)
-    else:
-        layer = activation()(layer)
-    if not is_unet_original:
-        layer = squeeze_excite_block2d(layer)
-    return layer
-
-
-def compute_level_output_shape2d(n_filters, depth, pool_size, image_shape):
-    """
-    Each level has a particular output shape based on the number of filters used in that level and the depth or number 
-    of max pooling operations that have been done on the data at that point.
-    :param image_shape: shape of the 2d image.
-    :param pool_size: the pool_size parameter used in the max pooling operation.
-    :param n_filters: Number of filters used by the last node in a given level.
-    :param depth: The number of levels down in the U-shaped model a given node is.
-    :return: 5D vector of the shape of the output node 
-    """
-    output_image_shape = np.asarray(
-        np.divide(image_shape, np.power(pool_size, depth)), dtype=np.int32).tolist()
-    return tuple([None, n_filters] + output_image_shape)
-
-
-def get_up_convolution2d(n_filters, pool_size, kernel_size=(2, 2), strides=(2, 2),
-                         deconvolution=False):
-    if deconvolution:
-        return Deconvolution2D(filters=n_filters, kernel_size=kernel_size,
-                               strides=strides)
-    else:
-        return UpSampling2D(size=pool_size)
-
-
-def squeeze_excite_block2d(input, ratio=16):
-    init = input
-    channel_axis = 1 if K.image_data_format() == "channels_first" else -1
-    filters = init._keras_shape[channel_axis]
-
-    se_shape = (1, 1, filters)
-
-    se = GlobalAveragePooling2D()(init)
-    se = Reshape(se_shape)(se)
-    se = Dense(max(filters//ratio, 1), activation='relu',
-               kernel_initializer='he_normal', use_bias=False)(se)
-    se = Dense(filters, activation='sigmoid',
-               kernel_initializer='he_normal', use_bias=False)(se)
-
-    if K.image_data_format() == 'channels_first':
-        se = Permute((3, 1, 2))(se)
-
-    x = multiply([init, se])
-    return x
-
-
-class BatchNorm(KL.BatchNormalization):
-    """Extends the Keras BatchNormalization class to allow a central place
-    to make changes if needed.
-    Batch normalization has a negative effect on training if batches are small
-    so this layer is often frozen (via setting in Config class) and functions
-    as linear layer.
-    """
-
-    def call(self, inputs, training=None):
-        """
-        Note about training values:
-            None: Train BN layers. This is the normal mode
-            False: Freeze BN layers. Good when batch size is small
-            True: (don't use). Set layer in training mode even when making inferences
-        """
-        return super(self.__class__, self).call(inputs, training=training)
-
-
-def conv_block_resnet(input_layer, kernel_size, n_filters, stage, block,
-                      use_bias=True, train_bn=True,
-                      padding='same', strides=(1, 1),
-                      weight_decay=1e-5):
-    """conv_block is the block that has a conv layer at shortcut
-    # Arguments
-        input_layer: input tensor
-        kernel_size: default 3, the kernel size of middle conv layer at main path
-        n_filters: list of integers, the nb_filters of 3 conv layer at main path
-        stage: integer, current stage label, used for generating layer names
-        block: 'a','b'..., current block label, used for generating layer names
-        use_bias: Boolean. To use or not use a bias in conv layers.
-        train_bn: Boolean. Train or freeze Batch Norm layers
-    Note that from stage 3, the first conv layer at main path is with subsample=(2,2)
-    And the shortcut should have subsample=(2,2) as well
-    """
-    nb_filter1, nb_filter2, nb_filter3 = n_filters
-    conv_name_base = 'res' + str(stage) + block + '_branch'
-    bn_name_base = 'bn' + str(stage) + block + '_branch'
-
-    x = Conv2D(nb_filter1, (1, 1), strides=strides,
-               name=conv_name_base + '2a', use_bias=use_bias,
-               padding=padding,
-               kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
-    x = BatchNorm(name=bn_name_base + '2a')(x, training=train_bn)
-    x = Activation('relu')(x)
-
-    x = Conv2D(nb_filter2, (kernel_size, kernel_size),
-               name=conv_name_base + '2b', use_bias=use_bias,
-               padding=padding,
-               kernel_regularizer=regularizers.l2(l=weight_decay))(x)
-    x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
-    x = Activation('relu')(x)
-
-    x = Conv2D(nb_filter3, (1, 1), name=conv_name_base +
-               '2c', use_bias=use_bias,
-               padding=padding,
-               kernel_regularizer=regularizers.l2(l=weight_decay))(x)
-    x = BatchNorm(name=bn_name_base + '2c')(x, training=train_bn)
-
-    shortcut = Conv2D(nb_filter3, (1, 1), strides=strides,
-                      name=conv_name_base + '1', use_bias=use_bias,
-                      padding=padding,
-                      kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
-    shortcut = BatchNorm(name=bn_name_base + '1')(shortcut, training=train_bn)
-
-    x = Add()([x, shortcut])
-    x = Activation('relu', name='res' + str(stage) + block + '_out')(x)
-    return x
-
-
 def main():
-    model = casnet_v4(input_shape=(4, 160, 192))
+    model = casnet_v9(input_shape=(4, 160, 192))
     model.summary()
 
 

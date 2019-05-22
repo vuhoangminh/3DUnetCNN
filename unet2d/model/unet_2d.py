@@ -1,12 +1,10 @@
-import numpy as np
 from keras import backend as K
 from keras.engine import Input, Model
 from keras.layers import (Activation, BatchNormalization, Conv2D,
                           Deconvolution2D, Dense, GlobalAveragePooling2D,
                           MaxPooling2D, Permute, PReLU, Reshape, UpSampling2D,
                           multiply)
-from keras.optimizers import Adam
-from keras.utils import multi_gpu_model
+from keras.layers.merge import concatenate
 
 from unet3d.metrics import (dice_coefficient, dice_coefficient_loss,
                             get_label_dice_coefficient_function,
@@ -15,12 +13,12 @@ from unet3d.metrics import (dice_coefficient, dice_coefficient_loss,
                             tversky_loss, weighted_dice_coefficient_loss)
 from unet3d.utils.model_utils import compile_model
 
-K.set_image_data_format("channels_first")
+from unet2d.model.blocks import get_up_convolution2d
+from unet2d.model.blocks import squeeze_excite_block2d
+from unet2d.model.blocks import create_convolution_block2d
 
-try:
-    from keras.engine import merge
-except ImportError:
-    from keras.layers.merge import concatenate
+
+K.set_image_data_format("channels_first")
 
 
 def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
@@ -95,84 +93,6 @@ def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_ra
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
                          initial_learning_rate=initial_learning_rate)
-
-
-def create_convolution_block2d(input_layer, n_filters, batch_normalization=False, kernel=(3, 3), activation=None,
-                               padding='same', strides=(1, 1), instance_normalization=False,
-                               is_unet_original=True):
-    """
-    :param strides:
-    :param input_layer:
-    :param n_filters:
-    :param batch_normalization:
-    :param kernel:
-    :param activation: Keras activation layer to use. (default is 'relu')
-    :param padding:
-    :return:
-    """
-    layer = Conv2D(n_filters, kernel, padding=padding,
-                   strides=strides)(input_layer)
-    if batch_normalization:
-        layer = BatchNormalization(axis=1)(layer)
-    elif instance_normalization:
-        try:
-            from keras_contrib.layers.normalization import InstanceNormalization
-        except ImportError:
-            raise ImportError("Install keras_contrib in order to use instance normalization."
-                              "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
-        layer = InstanceNormalization(axis=1)(layer)
-    if activation is None:
-        layer = Activation('relu')(layer)
-    else:
-        layer = activation()(layer)
-    if not is_unet_original:
-        layer = squeeze_excite_block2d(layer)
-    return layer
-
-
-def compute_level_output_shape2d(n_filters, depth, pool_size, image_shape):
-    """
-    Each level has a particular output shape based on the number of filters used in that level and the depth or number 
-    of max pooling operations that have been done on the data at that point.
-    :param image_shape: shape of the 2d image.
-    :param pool_size: the pool_size parameter used in the max pooling operation.
-    :param n_filters: Number of filters used by the last node in a given level.
-    :param depth: The number of levels down in the U-shaped model a given node is.
-    :return: 5D vector of the shape of the output node 
-    """
-    output_image_shape = np.asarray(
-        np.divide(image_shape, np.power(pool_size, depth)), dtype=np.int32).tolist()
-    return tuple([None, n_filters] + output_image_shape)
-
-
-def get_up_convolution2d(n_filters, pool_size, kernel_size=(2, 2), strides=(2, 2),
-                         deconvolution=False):
-    if deconvolution:
-        return Deconvolution2D(filters=n_filters, kernel_size=kernel_size,
-                               strides=strides)
-    else:
-        return UpSampling2D(size=pool_size)
-
-
-def squeeze_excite_block2d(input, ratio=16):
-    init = input
-    channel_axis = 1 if K.image_data_format() == "channels_first" else -1
-    filters = init._keras_shape[channel_axis]
-
-    se_shape = (1, 1, filters)
-
-    se = GlobalAveragePooling2D()(init)
-    se = Reshape(se_shape)(se)
-    se = Dense(max(filters//ratio, 1), activation='relu',
-               kernel_initializer='he_normal', use_bias=False)(se)
-    se = Dense(filters, activation='sigmoid',
-               kernel_initializer='he_normal', use_bias=False)(se)
-
-    if K.image_data_format() == 'channels_first':
-        se = Permute((3, 1, 2))(se)
-
-    x = multiply([init, se])
-    return x
 
 
 def main():

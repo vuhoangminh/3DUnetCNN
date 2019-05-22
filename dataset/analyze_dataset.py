@@ -29,6 +29,7 @@ from unet3d.utils.volume import get_non_zeros_pixel, get_zeros_pixel
 from unet3d.utils.volume import get_shape
 from unet3d.utils.volume import get_size_bounding_box
 from unet3d.utils.volume import get_bounding_box
+import unet3d.utils.args_utils as get_args
 
 
 columns = ["dataset",
@@ -63,7 +64,7 @@ def get_header_info(path):
     return dataset, folder, name, modality
 
 
-def analyze_one_folder(data_folder, dataset, overwrite=False):
+def analyze_one_folder(data_folder, dataset, config, overwrite=False):
 
     analysis_dir = get_analysis_dir(DATASET_DIR, data_folder)
     analysis_file_path = os.path.join(analysis_dir, dataset + ".xlsx")
@@ -110,8 +111,9 @@ def analyze_one_folder(data_folder, dataset, overwrite=False):
                 volume)
 
             if "valid" not in data_folder:
-                if not is_truth_path(subject_dir):
-                    truth_path = get_truth_path(subject_dir)
+                if not is_truth_path(subject_dir, truth_name=config["truth"][0]):
+                    truth_path = get_truth_path(
+                        subject_dir, truth_name=config["truth"][0])
                     truth = nib.load(truth_path)
                     truth = truth.get_fdata()
                     df["n_non_zeros_background"][i] = count_non_zeros_background(
@@ -127,45 +129,31 @@ def analyze_one_folder(data_folder, dataset, overwrite=False):
         writer.save()
 
 
-def get_args():
-    parser = argparse.ArgumentParser(description='Data preparation')
-    parser.add_argument('-d', '--dataset', type=str,
-                        default="original",
-                        help="dataset type")
-    parser.add_argument('-f', '--data_folder', type=str,
-                        default="data_train",
-                        help="data folders")
-    parser.add_argument('-o', '--overwrite', type=bool,
-                        default=True)
-    parser.add_argument('-c', '--challenge', type=str,
-                        default="ibsr")
-
-    args = parser.parse_args()
-    return args
-
-
-def main(): 
-    args = get_args()
-    dataset = args.dataset
-    data_folder = args.data_folder
-    overwrite = args.overwrite
+def main():
+    args = get_args.train_kits()
+    dataset = "original"
+    data_folder = "data_train"
+    overwrite = True
     challenge = args.challenge
 
-    global config, BRATS_DIR, DATASET_DIR, PROJECT_DIR
+    global BRATS_DIR, DATASET_DIR, PROJECT_DIR
 
     if challenge == "brats":
         from brats.config import config
     elif challenge == "ibsr":
         from projects.ibsr.config import config
+    elif challenge == "kits":
+        from projects.kits.config import config
 
     CURRENT_WORKING_DIR = os.path.realpath(__file__)
     PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
     BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
     DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
-    
+
     print(args)
 
-    analyze_one_folder(data_folder, dataset, overwrite)
+    analyze_one_folder(data_folder, dataset,
+                       config=config, overwrite=overwrite)
 
 
 if __name__ == "__main__":

@@ -3,21 +3,21 @@ from functools import partial
 from keras.layers import Input, LeakyReLU, Add, UpSampling2D, Activation, SpatialDropout2D, Conv2D
 from keras.engine import Model
 from keras.optimizers import Adam
-
-from unet2d.model.unet2d import create_convolution_block2d, concatenate
 from unet3d.metrics import minh_dice_coef_metric
-
-from keras.utils import multi_gpu_model
 from unet3d.utils.model_utils import compile_model
+from unet2d.model.blocks import create_convolution_block2d
+
+from keras.layers.merge import concatenate
+
 
 create_convolution_block2d = partial(
     create_convolution_block2d, activation=LeakyReLU, instance_normalization=True)
 
 
-def isensee2d_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
+def isensee2d_model(input_shape=(4, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
                     n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
                     loss_function="weighted", activation_name="sigmoid", metrics=minh_dice_coef_metric,
-                    is_unet_original=True):
+                    is_unet_original=True, weight_decay=0):
     """
     This function builds a model proposed by Isensee et al. for the BRATS 2017 challenge:
     https://www.cbica.upenn.edu/sbia/Spyridon.Bakas/MICCAI_BraTS/MICCAI_BraTS_2017_proceedings_shortPapers.pdf
@@ -50,11 +50,13 @@ def isensee2d_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, 
         if current_layer is inputs:
             in_conv = create_convolution_block2d(
                 current_layer, n_level_filters,
-                is_unet_original=is_unet_original)
+                is_unet_original=is_unet_original,
+                weight_decay=weight_decay)
         else:
             in_conv = create_convolution_block2d(
                 current_layer, n_level_filters, strides=(2, 2),
-                is_unet_original=is_unet_original)
+                is_unet_original=is_unet_original,
+                weight_decay=weight_decay)
 
         context_output_layer = create_context_module(
             in_conv, n_level_filters, dropout_rate=dropout_rate,
@@ -97,26 +99,33 @@ def isensee2d_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, 
                          initial_learning_rate=initial_learning_rate)
 
 
-def create_localization_module(input_layer, n_filters, is_unet_original=True):
+def create_localization_module(input_layer, n_filters, is_unet_original=True, weight_decay=0):
     convolution1 = create_convolution_block2d(
-        input_layer, n_filters, is_unet_original=is_unet_original)
+        input_layer, n_filters, is_unet_original=is_unet_original,
+        weight_decay=weight_decay)
     convolution2 = create_convolution_block2d(
         convolution1, n_filters, kernel=(1, 1),
-        is_unet_original=is_unet_original)
+        is_unet_original=is_unet_original,
+        weight_decay=weight_decay)
     return convolution2
 
 
-def create_up_sampling_module(input_layer, n_filters, size=(2, 2), is_unet_original=True):
+def create_up_sampling_module(input_layer, n_filters, size=(2, 2), is_unet_original=True, weight_decay=0):
     up_sample = UpSampling2D(size=size)(input_layer)
-    convolution = create_convolution_block2d(up_sample, n_filters, is_unet_original=is_unet_original)
+    convolution = create_convolution_block2d(
+        up_sample, n_filters, is_unet_original=is_unet_original,
+        weight_decay=weight_decay)
     return convolution
 
 
-def create_context_module(input_layer, n_level_filters, dropout_rate=0.3, data_format="channels_first", is_unet_original=True):
+def create_context_module(input_layer, n_level_filters, dropout_rate=0.3, data_format="channels_first",
+                          is_unet_original=True, weight_decay=0):
     convolution1 = create_convolution_block2d(
-        input_layer=input_layer, n_filters=n_level_filters, is_unet_original=is_unet_original)
+        input_layer=input_layer, n_filters=n_level_filters, is_unet_original=is_unet_original,
+        weight_decay=weight_decay)
     dropout = SpatialDropout2D(
         rate=dropout_rate, data_format=data_format)(convolution1)
     convolution2 = create_convolution_block2d(
-        input_layer=dropout, n_filters=n_level_filters, is_unet_original=is_unet_original)
+        input_layer=dropout, n_filters=n_level_filters, is_unet_original=is_unet_original,
+        weight_decay=weight_decay)
     return convolution2

@@ -4,11 +4,11 @@ config["env"] = "SERVER"  # change this to "FULL" if you want to run full
 config["mode"] = "FULL"  # change this to "FULL" if you want to run full
 config["data_folders"] = ["data_train", "data_valid"]
 # change this if you want to only use some of the modalities
-config["all_modalities"] = ["t1", "t1ce", "flair", "t2"]
+config["all_modalities"] = ["imaging"]
 config["training_modalities"] = config["all_modalities"]
 config["nb_channels"] = len(config["training_modalities"])
-config["truth_old"] = ["seg"]
-config["truth"] = ["truth"]
+config["truth_old"] = ["segmentation"]
+config["truth"] = ["segmentation"]
 config["groundtruth_modalities"] = config["truth_old"] + config["truth"]
 config["mask"] = ["mask"]
 if config["mode"] == "TEST":
@@ -22,19 +22,14 @@ config["dataset_minh_normalize"] = ["original_minh_normalize", "preprocessed_min
                                     "test_minh_normalize"]
 config["original_folder"] = ["original_bak"]
 config["project_name"] = "3DUnetCNN_BRATS"
-config["brats_folder"] = "brats"
-config["dataset_folder"] = "dataset"
-config["template_data_folder"] = "data_train"
-config["template_folder"] = "HGG/Brats18_2013_2_1"
+config["brats_folder"] = "projects/kits"
+config["dataset_folder"] = "projects/kits/database"
+config["template_data_folder"] = "database/data_train"
+config["template_folder"] = "case_00000"
 
-# config_unet["image_shape"] = (240, 240, 155)  # This determines what shape the images will be cropped/resampled to.
-# This determines what shape the images will be cropped/resampled to.
-# config["image_shape"] = (160, 192, 128)
 config["image_shape"] = (144,144,144)
-# config["is_create_patch_index_list_original"] = False
 
-
-config["labels"] = (1, 2, 4)  # the label numbers on the input image
+config["labels"] = (1, 2, 3)  # the label numbers on the input image
 # config["labels"] = (0, 1, 2, 4)  # the label numbers on the input image
 config["n_labels"] = len(config["labels"])
 
@@ -103,9 +98,7 @@ config["skip_blank"] = True
 config_dict = dict()
 config_dict["challenge"] = ["brats"]
 config_dict["year"] = [2018, 2019]
-config_dict["model"] = ["unet", "isensee", "mnet", "unet_vae", "segnet"]
-config_dict["model"] = config_dict["model"] + ["casnet_v1", "casnet_v2", "casnet_v3", "casnet_v4", "casnet_v5", "casnet_v6", "casnet_v7", "casnet_v8", "casnet_v9"]
-config_dict["model"] = config_dict["model"] + ["sepnet_v1", "sepnet_v2"]
+config_dict["model"] = ["unet", "isensee", "densefcn", "denseunet", "resunet", "seunet", "seisensee", "simple", "eye", "m", "m2", "multi"]
 config_dict["model_depth"] = ["unet", "seunet", "multi", "denseunet", "resunet"]
 # "deepmedic", "maskrcnn", "cascaded", "proposed"]
 config_dict["depth_unet"] = [3, 4, 5, 6]  # depth of unet
@@ -113,7 +106,7 @@ config_dict["n_base_filters_unet"] = [4, 8, 16, 32]  # number of base filters of
 config_dict["image_shape"] = ["160-192-128", "144-144-144", "240-240-155"]
 config_dict["patch_shape"] = ["16-16-16", "32-32-32", "64-64-64", "128-128-128", "160-192-128", "160-192-1", "160-192-7"]
 config_dict["is_bias_correction"] = ["0","1"]
-config_dict["is_denoise"] = ["0", "bm4d", "gaussian", "median"]
+config_dict["is_denoise"] = ["0", "bm4d", "median"]
 config_dict["is_normalize"] = ["z", "01"]
 config_dict["is_crf"] = ["0", "post", "cnn", "rnn"]
 config_dict["crop"] = ["0", "1"]

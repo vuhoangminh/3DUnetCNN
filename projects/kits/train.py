@@ -3,7 +3,8 @@ from brats.config import config, config_unet
 from brats.prepare_data import prepare_data
 import unet3d.utils.path_utils as path_utils
 import unet3d.utils.args_utils as get_args
-from unet3d.utils.print_utils import print_section
+from unet3d.utils.print_utils import print_section, print_separator
+from unet3d.utils.path_utils import make_dir
 from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir

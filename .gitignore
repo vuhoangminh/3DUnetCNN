@@ -23,5 +23,6 @@ test_dir
 *.gif
 *.tif
 *.xlsx
+*.txt
 !compile.csv
 raw/

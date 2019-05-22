@@ -96,17 +96,16 @@ def predict(args, prediction_dir="desktop"):
                                  labels=config["labels"],
                                  hdf5_file=config["data_file"],
                                  output_label_map=True,
-                                 output_dir=config["prediction_folder"])
+                                 output_dir=config["prediction_folder"],
+                                 data_type_generator=args.data_type_generator)
 
 
 def main():
-    args = get_args.train25d()
+    args = get_args.train()
 
     depth_unet = args.depth_unet
     n_base_filters_unet = args.n_base_filters_unet
     patch_shape = args.patch_shape
-    is_crf = args.is_crf
-    batch_size = args.batch_size
     is_hist_match = args.is_hist_match
     loss = args.loss
 
@@ -117,6 +116,7 @@ def main():
     for is_augment in ["1"]:
         args.is_augment = is_augment
         for model_name in ["casnet_v2"]:
+        # for model_name in ["unet"]:            
             args.model = model_name
             for is_denoise in ["0"]:
                 args.is_denoise = is_denoise
@@ -129,6 +129,13 @@ def main():
                             for patch_shape in ["160-192-1"]:
                                 args.patch_shape = patch_shape
                                 args.model_dim = 2
+
+                                if "casnet" in args.model:
+                                    args.data_type_generator = 'cascaded'
+                                elif "sepnet" in args.model:
+                                    args.data_type_generator = 'separated'
+                                else:
+                                    args.data_type_generator = 'combined'
 
                                 print("="*120)
                                 print(

@@ -1,9 +1,10 @@
 from comet_ml import Experiment
-from brats.config import config, config_unet
-from brats.prepare_data import prepare_data
+from projects.headneck.prepare_data import prepare_data
+from projects.headneck.config import config, config_dict, config_unet
 import unet3d.utils.path_utils as path_utils
 import unet3d.utils.args_utils as get_args
-from unet3d.utils.print_utils import print_section
+from unet3d.utils.print_utils import print_section, print_separator
+from unet3d.utils.path_utils import make_dir
 from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir
@@ -70,7 +71,8 @@ def train(args):
         augment_shear=config["augment_shear"],
         augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
-        skip_blank=config["skip_blank"])
+        skip_blank=config["skip_blank"],
+        project="headneck")
 
     print("-"*60)
     print("# Load or init model")
@@ -122,9 +124,9 @@ def train(args):
     # run training
 
     if args.is_test == "0":
-        experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
+        experiment = Experiment(api_key="34T3kJ5CkXUtKAbhI6foGNFBL",
                                 project_name="train",
-                                workspace="vuhoangminh")
+                                workspace="guusgrimbergen")
     else:
         experiment = None
 
@@ -162,7 +164,7 @@ def train(args):
 
 def main():
     global config
-    args = get_args.train()
+    args = get_args.train_headneck()
 
     config = path_utils.update_is_augment(args, config)
 

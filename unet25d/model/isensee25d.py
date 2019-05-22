@@ -4,7 +4,7 @@ from keras.layers import Input, LeakyReLU, Add, UpSampling2D, Activation, Spatia
 from keras.engine import Model
 from keras.optimizers import Adam
 
-from unet2d.model.unet2d import create_convolution_block2d, concatenate
+from unet2d.model.unet_2d import create_convolution_block2d, concatenate
 from unet2d.model.isensee2d import create_localization_module
 from unet2d.model.isensee2d import create_context_module
 from unet2d.model.isensee2d import create_up_sampling_module

@@ -6,7 +6,7 @@ from keras.layers import (Activation, BatchNormalization, Conv2D, Conv3D,
                           MaxPooling2D, Permute, PReLU, Reshape, ZeroPadding3D,
                           multiply)
 
-from unet2d.model.unet2d import (compute_level_output_shape2d,
+from unet2d.model.blocks import (compute_level_output_shape2d,
                                  create_convolution_block2d,
                                  get_up_convolution2d, squeeze_excite_block2d)
 from unet3d.metrics import minh_dice_coef_metric
@@ -137,6 +137,6 @@ def create_transition_3d_to_2d(input_layer, n_filters, batch_normalization=False
 
     shape = current_layer._keras_shape
     to_shape = shape[1:len(shape)-1]
-    
+
     current_layer = Reshape(to_shape)(current_layer)
     return current_layer

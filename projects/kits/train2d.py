@@ -11,18 +11,23 @@ from comet_ml import Experiment
 
 
 from brats.config import config, config_unet
-from unet3d.utils.print_utils import print_section
+from unet3d.utils.print_utils import print_processing, print_section, print_separator
 from brats.prepare_data import prepare_data
 import unet3d.utils.args_utils as get_args
+from unet3d.utils.path_utils import make_dir
 from unet3d.utils.path_utils import get_training_h5_paths
-from unet3d.utils.path_utils import get_shape_from_string
-from unet3d.utils.path_utils import get_project_dir
-from unet3d.training import train_model
+from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
+from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
+from unet3d.training import load_old_model, train_model
 from unet2d.model import *
 from unet2d.generator import get_training_and_validation_and_testing_generators2d
-from unet3d.data import open_data_file
+from unet3d.data import write_data_to_file, open_data_file
+import numpy as np
+import pprint
+import glob
 import os
 import unet3d.utils.path_utils as path_utils
+from unet3d.utils.utils import str2bool
 
 
 # pp = pprint.PrettyPrinter(indent=4)
@@ -187,12 +192,6 @@ def train(args):
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
                               n_base_filters=args.n_base_filters_unet)
-        elif args.model == "casnet_v9":
-            print("init casnet_v9 model")
-            model = casnet_v9(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              n_base_filters=args.n_base_filters_unet)                              
         elif args.model == "sepnet_v1":
             print("init sepnet_v1 model")
             model = sepnet_v1(input_shape=config["input_shape"],
