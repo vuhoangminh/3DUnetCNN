@@ -16,7 +16,6 @@ from unet3d.data import open_data_file
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
 
-
 config.update(config_unet)
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
@@ -104,8 +103,7 @@ def train(args):
                              n_base_filters=args.n_base_filters_unet,
                              loss_function=args.loss)
         else:
-            raise ValueError("Model is NotImplemented. Please check")                             
-
+            raise ValueError("Model is NotImplemented. Please check")
 
     model.summary()
 
