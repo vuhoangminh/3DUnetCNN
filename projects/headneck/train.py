@@ -14,7 +14,7 @@ from unet3d.generator import get_training_and_validation_and_testing_generators
 from unet3d.data import open_data_file
 
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # run on server
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
 
 
 config.update(config_unet)
