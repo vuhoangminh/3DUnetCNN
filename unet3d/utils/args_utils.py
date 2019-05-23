@@ -34,9 +34,9 @@ def parent_train_parser():
                         default=0.1,
                         help="weight of total variance comapared to main loss (dice coef etc.)")
     parser.add_argument('-au', '--is_augment', type=str,
-                        default="1")  
+                        default="1")
     parser.add_argument('-name', '--name', type=str,
-                        default="0")      
+                        default="0")
     return parser
 
 
@@ -113,7 +113,7 @@ def train():
                         default="1", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
-                        default=3)                        
+                        default=3)
     args = parser.parse_args()
     return args
 
@@ -143,7 +143,7 @@ def train2d():
                         default="1", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
-                        default=2)                        
+                        default=2)
     args = parser.parse_args()
     return args
 
@@ -173,7 +173,7 @@ def train25d():
                         default="1", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
-                        default=25)                        
+                        default=25)
     args = parser.parse_args()
     return args
 
@@ -247,7 +247,7 @@ def train_ibsr():
                         default="0", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
-                        default=3)                        
+                        default=3)
     args = parser.parse_args()
     return args
 
@@ -277,7 +277,7 @@ def train2d_ibsr():
                         default="0", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
-                        default=2)                        
+                        default=2)
     args = parser.parse_args()
     return args
 
@@ -329,7 +329,7 @@ def train_kits():
                         default="0", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
-                        default=3)                        
+                        default=3)
     args = parser.parse_args()
     return args
 
@@ -359,16 +359,17 @@ def train2d_kits():
                         default="0", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
-                        default=2)                        
+                        default=2)
     args = parser.parse_args()
     return args
+
 
 def prepare_data_headneck():
     parent_parser = parent_prepare_parser()
     parser = argparse.ArgumentParser(
         parents=[parent_parser], description='Data preparation')
     parser.add_argument('-c', '--challenge', type=str,
-                        default="heackneck",
+                        default="headneck",
                         help="challenge name")
     parser.add_argument('-y', '--year', type=str,
                         default=2018, choices=config_dict["year"],
@@ -396,10 +397,10 @@ def train_headneck():
                         default=2018, choices=config_dict["year"],
                         help="year of challenge")
     parser.add_argument('-is', '--image_shape', type=str,
-                        default="256-256-128", choices=config_dict["image_shape"],
+                        default="256-256-64", choices=config_dict["image_shape"],
                         help="image shape to read")
     parser.add_argument('-ps', '--patch_shape', type=str,
-                        default="128-128-128",
+                        default="128-128-64",
                         help="patch shape to train")
     parser.add_argument('-ba', '--batch_size', type=int,
                         default=1,
@@ -410,7 +411,7 @@ def train_headneck():
                         default="0", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
-                        default=3)                        
+                        default=3)
     args = parser.parse_args()
     return args
 
@@ -426,13 +427,13 @@ def train2d_headneck():
                         default=2018, choices=config_dict["year"],
                         help="year of challenge")
     parser.add_argument('-is', '--image_shape', type=str,
-                        default="256-256-128", choices=config_dict["image_shape"],
+                        default="256-256-64", choices=config_dict["image_shape"],
                         help="image shape to read")
     parser.add_argument('-ps', '--patch_shape', type=str,
-                        default="256-128-1",
+                        default="256-256-1",
                         help="patch shape to train")
     parser.add_argument('-ba', '--batch_size', type=int,
-                        default=64,
+                        default=32,
                         help="train batch size")
     parser.add_argument('-r', '--crop', type=str,
                         default="0", choices=config_dict["crop"])
@@ -440,6 +441,6 @@ def train2d_headneck():
                         default="0", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
-                        default=2)                        
+                        default=2)
     args = parser.parse_args()
-    return args    
+    return args

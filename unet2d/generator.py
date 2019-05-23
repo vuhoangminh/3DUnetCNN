@@ -31,6 +31,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                                          patch_overlap=[
                                                              0, 0, -1],
                                                          project="brats",
+                                                         is_extract_patch_agressive=False,
                                                          data_type_generator="combined"):
     """
     Creates the training and validation generators that can be used when training the model.
@@ -74,7 +75,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
             data_file, training_file=training_keys_file,
             validation_file=validation_keys_file,
             testing_file=testing_keys_file,
-            data_split=0.8, overwrite=False)
+            data_split=data_split, overwrite=False)
     else:
         training_list, validation_list, _ = get_train_valid_test_split_isbr(
             data_file, training_file=training_keys_file,
@@ -102,6 +103,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                           augment_zoom=augment_zoom,
                                           n_augment=n_augment,
                                           skip_blank=skip_blank,
+                                          is_extract_patch_agressive=is_extract_patch_agressive,
                                           data_type_generator=data_type_generator)
     print(">> valid data generator")
     validation_generator = data_generator2d(data_file, validation_list,
@@ -111,6 +113,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                             patch_shape=patch_shape,
                                             patch_overlap=0,
                                             skip_blank=skip_blank,
+                                            is_extract_patch_agressive=is_extract_patch_agressive,
                                             data_type_generator=data_type_generator)
 
     # Set the number of training and testing samples per epoch correctly
@@ -150,10 +153,12 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # from unet3d.generator import get_number_of_patches
     num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
                                                                    patch_start_offset=training_patch_start_offset,
-                                                                   patch_overlap=patch_overlap),
+                                                                   patch_overlap=patch_overlap,
+                                                                   is_extract_patch_agressive=is_extract_patch_agressive),
                                              batch_size)
     num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-                                                                     patch_overlap=validation_patch_overlap),
+                                                                     patch_overlap=validation_patch_overlap,
+                                                                     is_extract_patch_agressive=is_extract_patch_agressive),
                                                validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)

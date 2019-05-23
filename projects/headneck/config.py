@@ -30,12 +30,11 @@ config["template_folder"] = "19991011"
 # config_unet["image_shape"] = (240, 240, 155)  # This determines what shape the images will be cropped/resampled to.
 # This determines what shape the images will be cropped/resampled to.
 # config["image_shape"] = (160, 192, 128)
-config["image_shape"] = (256, 256, 128)
+config["image_shape"] = (256, 256, 64)
 # config["is_create_patch_index_list_original"] = False
 
 
 config["labels"] = (1, 2, 3, 4, 5, 6)  # the label numbers on the input image
-# config["labels"] = (0, 1, 2, 4)  # the label numbers on the input image
 config["n_labels"] = len(config["labels"])
 
 
@@ -61,17 +60,21 @@ config_unet["n_base_filters"] = 16
 
 config_unet["batch_size"] = 1
 config_unet["validation_batch_size"] = 2
-config_unet["n_epochs"] = 200  # cutoff the training after this many epochs
+config_unet["n_epochs"] = 1000  # cutoff the training after this many epochs
 # learning rate will be reduced after this many epochs if the validation loss is not improving
 # config_unet["patience"] = 10
-config_unet["patience"] = 25
+config_unet["patience"] = 150
 # training will be stopped after this many epochs without the validation loss improving
 config_unet["early_stop"] = 300
-config_unet["initial_learning_rate"] = 1e-2 # factor by which the learning rate will be reduced
-config_unet["learning_rate_drop"] = 0.5 # portion of the data that will be used for training
+# factor by which the learning rate will be reduced
+config_unet["initial_learning_rate"] = 1e-4
+# portion of the data that will be used for training
+config_unet["learning_rate_drop"] = 0.2
 # config_unet["learning_rate_epochs"] = 1
-config_unet["validation_split"] = 0.8 # if > 0, during training, validation patches will be overlapping
-config_unet["validation_patch_overlap"] = 0 # randomly offset the first patch index by up to this offset
+# if > 0, during training, validation patches will be overlapping
+config_unet["validation_split"] = 0.8
+# randomly offset the first patch index by up to this offset
+config_unet["validation_patch_overlap"] = 0
 config_unet["training_patch_start_offset"] = None
 
 # if False, extract patches only in bouding box of mask
@@ -104,15 +107,19 @@ config_dict = dict()
 config_dict["challenge"] = ["brats"]
 config_dict["year"] = [2018, 2019]
 config_dict["model"] = ["unet", "isensee", "mnet", "unet_vae", "segnet"]
-config_dict["model"] = config_dict["model"] + ["casnet_v1", "casnet_v2", "casnet_v3", "casnet_v4", "casnet_v5", "casnet_v6", "casnet_v7", "casnet_v8"]
+config_dict["model"] = config_dict["model"] + ["casnet_v1", "casnet_v2",
+                                               "casnet_v3", "casnet_v4", "casnet_v5", "casnet_v6", "casnet_v7", "casnet_v8"]
 config_dict["model"] = config_dict["model"] + ["sepnet_v1", "sepnet_v2"]
-config_dict["model_depth"] = ["unet", "seunet", "multi", "denseunet", "resunet"]
+config_dict["model_depth"] = [
+    "unet", "seunet", "multi", "denseunet", "resunet"]
 # "deepmedic", "maskrcnn", "cascaded", "proposed"]
 config_dict["depth_unet"] = [3, 4, 5, 6]  # depth of unet
-config_dict["n_base_filters_unet"] = [4, 8, 16, 32]  # number of base filters of unet
+config_dict["n_base_filters_unet"] = [
+    4, 8, 16, 32]  # number of base filters of unet
 config_dict["image_shape"] = ["160-192-128", "144-144-144", "240-240-155"]
-config_dict["patch_shape"] = ["16-16-16", "32-32-32", "64-64-64", "128-128-128", "160-192-128", "160-192-1", "160-192-7"]
-config_dict["is_bias_correction"] = ["0","1"]
+config_dict["patch_shape"] = ["16-16-16", "32-32-32", "64-64-64",
+                              "128-128-128", "160-192-128", "160-192-1", "160-192-7"]
+config_dict["is_bias_correction"] = ["0", "1"]
 config_dict["is_denoise"] = ["0", "bm4d", "gaussian", "median"]
 config_dict["is_normalize"] = ["z", "01"]
 config_dict["is_crf"] = ["0", "post", "cnn", "rnn"]
@@ -125,7 +132,7 @@ config_convert_name = {
     "original": "bias-0_denoise-0",
     "preprocessed": "bias-1_denoise-0",
     "denoised_original": "bias-0_denoise-bm4d",
-    "denoised_preprocessed": "bias-1_denoise-bm4d",    
+    "denoised_preprocessed": "bias-1_denoise-bm4d",
 }
 
 config_finetune = dict()
@@ -134,5 +141,7 @@ config_finetune["n_epochs"] = 100  # cutoff the training after this many epochs
 config_finetune["patience"] = 5
 # training will be stopped after this many epochs without the validation loss improving
 config_finetune["early_stop"] = 16
-config_finetune["initial_learning_rate"] = 4e-5 # factor by which the learning rate will be reduced
-config_finetune["learning_rate_drop"] = 0.2 # portion of the data that will be used for training
+# factor by which the learning rate will be reduced
+config_finetune["initial_learning_rate"] = 4e-5
+# portion of the data that will be used for training
+config_finetune["learning_rate_drop"] = 0.2

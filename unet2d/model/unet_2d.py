@@ -26,7 +26,8 @@ def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_ra
                   batch_normalization=False, activation_name="sigmoid",
                   metrics=minh_dice_coef_metric,
                   loss_function="weighted",
-                  is_unet_original=True
+                  is_unet_original=True,
+                  weight_decay=0
                   ):
     """
     Builds the 3D UNet Keras model.f
@@ -57,12 +58,14 @@ def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_ra
                                             n_filters=n_base_filters *
                                             (2**layer_depth),
                                             batch_normalization=batch_normalization,
-                                            is_unet_original=is_unet_original)
+                                            is_unet_original=is_unet_original,
+                                            weight_decay=weight_decay)
         layer2 = create_convolution_block2d(input_layer=layer1,
                                             n_filters=n_base_filters *
                                             (2**layer_depth)*2,
                                             batch_normalization=batch_normalization,
-                                            is_unet_original=is_unet_original)
+                                            is_unet_original=is_unet_original,
+                                            weight_decay=weight_decay)
         if layer_depth < depth - 1:
             current_layer = MaxPooling2D(pool_size=pool_size)(layer2)
             levels.append([layer1, layer2, current_layer])
@@ -80,11 +83,13 @@ def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_ra
         current_layer = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
                                                    input_layer=concat,
                                                    batch_normalization=batch_normalization,
-                                                   is_unet_original=is_unet_original)
+                                                   is_unet_original=is_unet_original,
+                                                   weight_decay=weight_decay)
         current_layer = create_convolution_block2d(n_filters=levels[layer_depth][1]._keras_shape[1],
                                                    input_layer=current_layer,
                                                    batch_normalization=batch_normalization,
-                                                   is_unet_original=is_unet_original)
+                                                   is_unet_original=is_unet_original,
+                                                   weight_decay=weight_decay)
 
     final_convolution = Conv2D(n_labels, (1, 1))(current_layer)
     act = Activation(activation_name)(final_convolution)

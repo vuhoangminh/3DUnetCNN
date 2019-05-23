@@ -231,10 +231,11 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
                 y_list = list()
 
 
-def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None):
+def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap=0,
+                          patch_start_offset=None, is_extract_patch_agressive=False):
     if patch_shape:
         index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
-                                             patch_start_offset)
+                                             patch_start_offset, is_extract_patch_agressive=is_extract_patch_agressive)
 
         return len(index_list)
     else:

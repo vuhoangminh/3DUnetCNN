@@ -103,18 +103,9 @@ def train(args):
                              depth=args.depth_unet,
                              n_base_filters=args.n_base_filters_unet,
                              loss_function=args.loss)
-        elif args.model == "unet_vae":
-            print("init unet_vae model")
-            model = unet_vae(input_shape=config["input_shape"],
-                             n_labels=config["n_labels"],
-                             initial_learning_rate=config["initial_learning_rate"])
-
         else:
-            print("init isensee model")
-            model = isensee2017_model(input_shape=config["input_shape"],
-                                      n_labels=config["n_labels"],
-                                      initial_learning_rate=config["initial_learning_rate"],
-                                      loss_function=args.loss)
+            raise ValueError("Model is NotImplemented. Please check")                             
+
 
     model.summary()
 
@@ -124,9 +115,9 @@ def train(args):
     # run training
 
     if args.is_test == "0":
-        experiment = Experiment(api_key="34T3kJ5CkXUtKAbhI6foGNFBL",
-                                project_name="train",
-                                workspace="guusgrimbergen")
+        experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
+                                project_name="headneck",
+                                workspace="vuhoangminh")
     else:
         experiment = None
 

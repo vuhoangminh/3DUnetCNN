@@ -10,24 +10,19 @@ from comet_ml import Experiment
 # to compute memory consumption ----------------------------------
 
 
-from brats.config import config, config_unet
-from unet3d.utils.print_utils import print_processing, print_section, print_separator
-from brats.prepare_data import prepare_data
+from projects.headneck.config import config, config_unet
+from unet3d.utils.print_utils import print_section
+from projects.headneck.prepare_data import prepare_data
 import unet3d.utils.args_utils as get_args
-from unet3d.utils.path_utils import make_dir
 from unet3d.utils.path_utils import get_training_h5_paths
-from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
-from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
-from unet3d.training import load_old_model, train_model
+from unet3d.utils.path_utils import get_shape_from_string
+from unet3d.utils.path_utils import get_project_dir
+from unet3d.training import train_model
 from unet2d.model import *
 from unet2d.generator import get_training_and_validation_and_testing_generators2d
-from unet3d.data import write_data_to_file, open_data_file
-import numpy as np
-import pprint
-import glob
+from unet3d.data import open_data_file
 import os
 import unet3d.utils.path_utils as path_utils
-from unet3d.utils.utils import str2bool
 
 
 # pp = pprint.PrettyPrinter(indent=4)
@@ -73,7 +68,7 @@ def train(args):
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators2d(
         data_file_opened,
         batch_size=args.batch_size,
-        data_split=config["validation_split"],
+        data_split=0.9,
         overwrite=args.overwrite,
         validation_keys_file=config["validation_file"],
         training_keys_file=config["training_file"],
@@ -94,6 +89,7 @@ def train(args):
         n_augment=config["n_augment"],
         skip_blank=config["skip_blank"],
         is_test=args.is_test,
+        patch_overlap=[0, 0, 0],
         data_type_generator=config["data_type_generator"])
 
     print("-"*60)
@@ -123,89 +119,8 @@ def train(args):
                                   deconvolution=config["deconvolution"],
                                   depth=args.depth_unet,
                                   n_base_filters=args.n_base_filters_unet,
-                                  loss_function=args.loss)
-        elif args.model == "segnet":
-            print("init segnet model")
-            model = segnet2d(input_shape=config["input_shape"],
-                             n_labels=config["n_labels"],
-                             initial_learning_rate=config["initial_learning_rate"],
-                             depth=args.depth_unet,
-                             n_base_filters=args.n_base_filters_unet,
-                             loss_function=args.loss)
-        elif args.model == "casnet_v1":
-            print("init casnet_v1 model")
-            model = casnet_v1(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet,
-                              loss_function="casweighted")
-        elif args.model == "casnet_v2":
-            print("init casnet_v2 model")
-            model = casnet_v2(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet,
-                              loss_function="casweighted")
-        elif args.model == "casnet_v3":
-            print("init casnet_v3 model")
-            model = casnet_v3(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet,
-                              loss_function="casweighted")
-        elif args.model == "casnet_v4":
-            print("init casnet_v4 model")
-            model = casnet_v4(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
-        elif args.model == "casnet_v5":
-            print("init casnet_v5 model")
-            model = casnet_v5(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet,
-                              loss_function="casweighted")
-        elif args.model == "casnet_v6":
-            print("init casnet_v6 model")
-            model = casnet_v6(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
-        elif args.model == "casnet_v7":
-            print("init casnet_v7 model")
-            model = casnet_v7(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
-        elif args.model == "casnet_v8":
-            print("init casnet_v8 model")
-            model = casnet_v8(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
-        elif args.model == "sepnet_v1":
-            print("init sepnet_v1 model")
-            model = sepnet_v1(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
-        elif args.model == "sepnet_v2":
-            print("init sepnet_v2 model")
-            model = sepnet_v2(input_shape=config["input_shape"],
-                              initial_learning_rate=config["initial_learning_rate"],
-                              deconvolution=config["deconvolution"],
-                              depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
+                                  loss_function=args.loss,
+                                  weight_decay=1e-5)
 
         else:
             raise ValueError("Model is NotImplemented. Please check")
@@ -218,9 +133,9 @@ def train(args):
     # run training
 
     if args.is_test == "0":
-        experiment = Experiment(api_key="34T3kJ5CkXUtKAbhI6foGNFBL",
-                                project_name="train",
-                                workspace="guusgrimbergen")
+        experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
+                                project_name="headneck",
+                                workspace="vuhoangminh")
     else:
         experiment = None
 
@@ -251,7 +166,7 @@ def train(args):
 
 def main():
     global config
-    args = get_args.train2d()
+    args = get_args.train2d_headneck()
 
     config = path_utils.update_is_augment(args, config)
 
