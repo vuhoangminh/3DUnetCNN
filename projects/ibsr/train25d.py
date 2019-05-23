@@ -1,34 +1,51 @@
-from unet3d.utils.print_utils import print_section
-from projects.ibsr.config import config, config_dict, config_unet
-from projects.ibsr.prepare_data import prepare_data
-import unet3d.utils.args_utils as get_args
-import unet3d.utils.path_utils as path_utils
-import unet3d.utils.print_utils as print_utils
-from unet3d.training import train_model
-from unet3d.model import *
-from unet3d.generator import get_training_and_validation_and_testing_generators
-from unet3d.data import open_data_file
 from comet_ml import Experiment
 
-import os
-import pprint
-pp = pprint.PrettyPrinter(indent=4)
+# to compute memory consumption ----------------------------------
+# import tensorflow as tf
+# from keras.backend.tensorflow_backend import set_session
+# config_tf = tf.ConfigProto()
+# config_tf.gpu_options.per_process_gpu_memory_fraction = 0.015
+# config_tf.gpu_options.visible_device_list = "0"
+# set_session(tf.Session(config=config_tf))
+# to compute memory consumption ----------------------------------
 
+import os
+
+from unet3d.data import open_data_file
+from unet25d.generator import get_training_and_validation_and_testing_generators25d
+from unet25d.model import *
+from unet3d.training import train_model
+from unet3d.utils.path_utils import get_project_dir
+from unet3d.utils.path_utils import get_shape_from_string
+from unet3d.utils.path_utils import get_training_h5_paths
+import unet3d.utils.args_utils as get_args
+import unet3d.utils.path_utils as path_utils
+from unet3d.utils.print_utils import print_section
+
+from projects.ibsr.prepare_data import prepare_data
+from projects.ibsr.config import config, config_unet
+
+config.update(config_unet)
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
 
 
-config.update(config_unet)
-
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
-PROJECT_DIR = path_utils.get_project_dir(
-    CURRENT_WORKING_DIR, config["project_name"])
+PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
 BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
 
+def fix_learning_rate():
+    if config["patch_shape"] in ["160-192-13", "160-192-15", "160-192-17"]:
+        config["initial_learning_rate"] = 1e-4
+    if config["patch_shape"] in ["160-192-3"]:
+        config["initial_learning_rate"] = 1e-2
+    return config
+
+
 def train(args):
 
-    data_path, trainids_path, validids_path, testids_path, model_path = path_utils.get_training_h5_paths(
+    data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(
         brats_dir=BRATS_DIR, args=args)
 
     config["data_file"] = data_path
@@ -36,26 +53,36 @@ def train(args):
     config["training_file"] = trainids_path
     config["validation_file"] = validids_path
     config["testing_file"] = testids_path
-    config["patch_shape"] = path_utils.get_shape_from_string(args.patch_shape)
+    config["patch_shape"] = get_shape_from_string(args.patch_shape)
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
 
-    print_utils.print_section("Open file")
+    if args.patch_shape in ["160-192-13", "160-192-15", "160-192-17"]:
+        config["initial_learning_rate"] = 1e-4
+        print("lr updated...")
+    if args.patch_shape in ["160-192-3"]:
+        config["initial_learning_rate"] = 1e-2
+        print("lr updated...")
+
+    if args.overwrite or not os.path.exists(data_path):
+        prepare_data(args)
+
+    print_section("Open file")
     data_file_opened = open_data_file(config["data_file"])
 
-    print_utils.print_section("get training and testing generators")
-    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators(
+    print_section("get training and testing generators")
+    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators25d(
         data_file_opened,
         batch_size=args.batch_size,
-        validation_batch_size=args.batch_size,
-        overwrite=args.overwrite,
         data_split=config["validation_split"],
+        overwrite=args.overwrite,
         validation_keys_file=config["validation_file"],
         training_keys_file=config["training_file"],
         testing_keys_file=config["testing_file"],
         n_labels=config["n_labels"],
         labels=config["labels"],
         patch_shape=config["patch_shape"],
+        validation_batch_size=args.batch_size,
         validation_patch_overlap=config["validation_patch_overlap"],
         training_patch_start_offset=config["training_patch_start_offset"],
         augment_flipud=config["augment_flipud"],
@@ -67,11 +94,12 @@ def train(args):
         augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
         skip_blank=config["skip_blank"],
-        project="ibsr")
+        is_test=args.is_test)
 
     print("-"*60)
     print("# Load or init model")
     print("-"*60)
+
     if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
@@ -81,23 +109,22 @@ def train(args):
         # instantiate new model
         if args.model == "unet":
             print("init unet model")
-            model = unet_model_3d(input_shape=config["input_shape"],
-                                  pool_size=config["pool_size"],
-                                  n_labels=config["n_labels"],
-                                  initial_learning_rate=config["initial_learning_rate"],
-                                  deconvolution=config["deconvolution"],
-                                  depth=args.depth_unet,
-                                  n_base_filters=args.n_base_filters_unet,
-                                  loss_function=args.loss)
+            model = unet_model_25d(input_shape=config["input_shape"],
+                                   n_labels=config["n_labels"],
+                                   initial_learning_rate=config["initial_learning_rate"],
+                                   deconvolution=config["deconvolution"],
+                                   #   batch_normalization=True,
+                                   depth=args.depth_unet,
+                                   n_base_filters=args.n_base_filters_unet,
+                                   loss_function=args.loss)
         elif args.model == "segnet":
             print("init segnet model")
-            model = segnet3d(input_shape=config["input_shape"],
-                             pool_size=config["pool_size"],
-                             n_labels=config["n_labels"],
-                             initial_learning_rate=config["initial_learning_rate"],
-                             depth=args.depth_unet,
-                             n_base_filters=args.n_base_filters_unet,
-                             loss_function=args.loss)
+            model = segnet25d(input_shape=config["input_shape"],
+                              n_labels=config["n_labels"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet,
+                              loss_function=args.loss)
         else:
             raise ValueError("Model is NotImplemented. Please check")
 
@@ -116,17 +143,6 @@ def train(args):
         experiment = None
 
     print(config["initial_learning_rate"], config["learning_rate_drop"])
-    print("data file:", config["data_file"])
-    print("model file:", config["model_file"])
-    print("training file:", config["training_file"])
-    print("validation file:", config["validation_file"])
-    print("testing file:", config["testing_file"])
-    print("Number of training steps: ", n_train_steps)
-    print("Number of validation steps: ", n_validation_steps)
-
-    if args.is_test == "1":
-        config["n_epochs"] = 5
-
     train_model(experiment=experiment,
                 model=model,
                 model_file=config["model_file"],
@@ -151,12 +167,11 @@ def train(args):
 
 def main():
     global config
-    args = get_args.train_ibsr()
+    args = get_args.train25d_ibsr()
 
     config = path_utils.update_is_augment(args, config)
 
     data_path, _, _, _, _ = path_utils.get_training_h5_paths(BRATS_DIR, args)
-
     if args.overwrite or not os.path.exists(data_path):
         prepare_data(args)
 
