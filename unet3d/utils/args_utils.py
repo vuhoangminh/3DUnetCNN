@@ -302,9 +302,9 @@ def train25d_ibsr():
                         default=64,
                         help="train batch size")
     parser.add_argument('-r', '--crop', type=str,
-                        default="1", choices=config_dict["crop"])
+                        default="0", choices=config_dict["crop"])
     parser.add_argument('-b', '--is_bias_correction', type=str,
-                        default="1", choices=config_dict["is_bias_correction"],
+                        default="0", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
                         default=25)

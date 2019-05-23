@@ -22,7 +22,7 @@ import unet3d.utils.args_utils as get_args
 from projects.ibsr.prepare_data import prepare_data
 from projects.ibsr.config import config, config_dict, config_unet
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # run on server
 
 config.update(config_unet)
 
@@ -62,7 +62,6 @@ def train(args):
         testing_keys_file=config["testing_file"],
         n_labels=config["n_labels"],
         labels=config["labels"],
-        patch_overlap=[0, 0, 0],
         patch_shape=config["patch_shape"],
         validation_patch_overlap=config["validation_patch_overlap"],
         training_patch_start_offset=config["training_patch_start_offset"],
@@ -75,6 +74,7 @@ def train(args):
         augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
         skip_blank=config["skip_blank"],
+        patch_overlap=[0, 0, 0],
         project="ibsr")
 
     print("-"*60)

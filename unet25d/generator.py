@@ -9,6 +9,7 @@ import time
 from unet3d.utils import pickle_dump, pickle_load
 from unet3d.generator import get_train_valid_test_split, get_number_of_steps
 from unet3d.generator import get_multi_class_labels, get_data_from_file
+from unet3d.generator import get_train_valid_test_split_isbr
 from unet3d.generator import add_data
 from unet3d.utils.patches import compute_patch_indices, get_random_nd_index
 
@@ -26,6 +27,8 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
                                                           data_split=0.8, overwrite=False, labels=None, patch_shape=None,
                                                           validation_patch_overlap=0, training_patch_start_offset=None,
                                                           validation_batch_size=None,
+                                                          patch_overlap=[0, 0, -1],
+                                                          project="brats",
                                                           augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                           augment_rotation=False, augment_shift=False, augment_shear=False,
                                                           augment_zoom=False, n_augment=0, skip_blank=False, is_test="1"):
@@ -65,11 +68,18 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
     if not validation_batch_size:
         validation_batch_size = batch_size
 
-    training_list, validation_list, _ = get_train_valid_test_split(
-        data_file, training_file=training_keys_file,
-        validation_file=validation_keys_file,
-        testing_file=testing_keys_file,
-        data_split=0.8, overwrite=False)
+    if project == "brats":
+        training_list, validation_list, _ = get_train_valid_test_split(
+            data_file, training_file=training_keys_file,
+            validation_file=validation_keys_file,
+            testing_file=testing_keys_file,
+            data_split=data_split, overwrite=False)
+    else:
+        training_list, validation_list, _ = get_train_valid_test_split_isbr(
+            data_file, training_file=training_keys_file,
+            validation_file=validation_keys_file,
+            testing_file=testing_keys_file,
+            overwrite=False)
 
     print("training_list:", training_list)
     # train_patch_overlap = np.asarray([0, 0, patch_shape[-1]-2])

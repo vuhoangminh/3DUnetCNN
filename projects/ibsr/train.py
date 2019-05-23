@@ -1,3 +1,4 @@
+from comet_ml import Experiment
 from unet3d.utils.print_utils import print_section
 from projects.ibsr.config import config, config_dict, config_unet
 from projects.ibsr.prepare_data import prepare_data
@@ -8,13 +9,12 @@ from unet3d.training import train_model
 from unet3d.model import *
 from unet3d.generator import get_training_and_validation_and_testing_generators
 from unet3d.data import open_data_file
-from comet_ml import Experiment
 
 import os
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # run on server
 
 
 config.update(config_unet)

@@ -28,8 +28,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                                          augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                          augment_rotation=False, augment_shift=False, augment_shear=False,
                                                          augment_zoom=False, n_augment=0, skip_blank=False, is_test="1",
-                                                         patch_overlap=[
-                                                             0, 0, -1],
+                                                         patch_overlap=[0, 0, -1],
                                                          project="brats",
                                                          is_extract_patch_agressive=False,
                                                          data_type_generator="combined"):

@@ -26,7 +26,7 @@ from projects.ibsr.prepare_data import prepare_data
 from projects.ibsr.config import config, config_unet
 
 config.update(config_unet)
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # run on server
 
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
@@ -94,6 +94,8 @@ def train(args):
         augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
         skip_blank=config["skip_blank"],
+        patch_overlap=[0, 0, -1],
+        project="ibsr",
         is_test=args.is_test)
 
     print("-"*60)
