@@ -61,7 +61,7 @@ config_unet["n_base_filters"] = 16
 
 config_unet["batch_size"] = 1
 config_unet["validation_batch_size"] = 2
-config_unet["n_epochs"] = 400  # cutoff the training after this many epochs
+config_unet["n_epochs"] = 200  # cutoff the training after this many epochs
 # learning rate will be reduced after this many epochs if the validation loss is not improving
 # config_unet["patience"] = 10
 config_unet["patience"] = 20
