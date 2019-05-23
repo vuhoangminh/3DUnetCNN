@@ -38,8 +38,20 @@ columns = ["dataset",
            "modality",
            "size",
            "shape",
+           "shape_x",
+           "shape_y",
+           "shape_z",
            "bounding_box",
+           "bounding_box_x1",
+           "bounding_box_x2",
+           "bounding_box_y1",
+           "bounding_box_y2",
+           "bounding_box_z1",
+           "bounding_box_z2",
            "size_bounding_box",
+           "size_bounding_box_x",
+           "size_bounding_box_y",
+           "size_bounding_box_z",
            "n_non_zeros_pixel",
            "n_zeros_pixel",
            "mean_non_zeros_pixel",
@@ -100,8 +112,19 @@ def analyze_one_folder(data_folder, dataset, config, overwrite=False):
             df["modality"][i] = modality
             df["size"][i] = get_size(subject_dir)
             df["shape"][i] = get_shape(volume)
+            df["shape_x"][i], df["shape_y"][i], df["shape_z"][i] = get_shape(
+                volume)[0], get_shape(volume)[1], get_shape(volume)[2]
             df["bounding_box"][i] = get_bounding_box(volume)
+            df["bounding_box_x1"][i] = get_bounding_box(volume)[0]
+            df["bounding_box_x2"][i] = get_bounding_box(volume)[1]
+            df["bounding_box_y1"][i] = get_bounding_box(volume)[2]
+            df["bounding_box_y2"][i] = get_bounding_box(volume)[3]
+            df["bounding_box_z1"][i] = get_bounding_box(volume)[4]
+            df["bounding_box_z2"][i] = get_bounding_box(volume)[5]
             df["size_bounding_box"][i] = get_size_bounding_box(volume)
+            df["size_bounding_box_x"][i] = get_size_bounding_box(volume)[0]
+            df["size_bounding_box_y"][i] = get_size_bounding_box(volume)[1]
+            df["size_bounding_box_z"][i] = get_size_bounding_box(volume)[2]
             df["n_non_zeros_pixel"][i] = get_non_zeros_pixel(volume)
             df["n_zeros_pixel"][i] = get_zeros_pixel(volume)
             df["mean_non_zeros_pixel"][i] = compute_mean_non_zeros_pixel(
