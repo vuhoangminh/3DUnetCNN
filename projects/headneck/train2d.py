@@ -21,9 +21,10 @@ from unet3d.training import train_model
 from unet2d.model import *
 from unet2d.generator import get_training_and_validation_and_testing_generators2d
 from unet3d.data import open_data_file
-import os
 import unet3d.utils.path_utils as path_utils
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
 
 # pp = pprint.PrettyPrinter(indent=4)
 # # pp.pprint(config)
