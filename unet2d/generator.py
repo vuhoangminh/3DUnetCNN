@@ -149,7 +149,7 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # print("Number of training steps: ", num_training_steps)
     # print("Number of validation steps: ", num_validation_steps)
 
-    # from unet3d.generator import get_number_of_patches
+    from unet3d.generator import get_number_of_patches
     num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
                                                                    patch_start_offset=training_patch_start_offset,
                                                                    patch_overlap=patch_overlap,
@@ -404,6 +404,8 @@ def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overl
             add_data2d(x_list, y_list, data_file, index,
                        skip_blank=skip_blank, patch_shape=patch_shape,
                        data_type_generator=data_type_generator)
+
+            # a,b = convert_data2d(x_list, y_list, n_labels=2)
 
             if len(x_list) > 0:
                 count += 1

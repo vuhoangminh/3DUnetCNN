@@ -1,22 +1,22 @@
 import os
-import tables
+
 import numpy as np
+import tables
 
 import unet3d.utils.print_utils as print_utils
+
+# from .normalize import normalize_data_storage, normalize_01_data_storage
+# from .normalize_minh import normalize_minh_data_storage, reslice_image_set
 from unet3d.normalize import normalize_data_storage, reslice_image_set
 from unet3d.denoise import denoise_data_storage
 
 
-def create_data_file(out_file, n_channels, n_samples, image_shape=None):
+def create_data_file(out_file, n_channels, n_samples, image_shape):
     hdf5_file = tables.open_file(out_file, mode='w')
     filters = tables.Filters(complevel=5, complib='blosc')
 
-    if image_shape is None:
-        data_shape = None
-        truth_shape = None
-    else:
-        data_shape = tuple([0, n_channels] + list(image_shape))
-        truth_shape = tuple([0, 1] + list(image_shape))
+    data_shape = tuple([0, n_channels] + list(image_shape))
+    truth_shape = tuple([0, 1] + list(image_shape))
 
     data_storage = hdf5_file.create_earray(hdf5_file.root, 'data', tables.Float32Atom(), shape=data_shape,
                                            filters=filters, expectedrows=n_samples)
@@ -61,8 +61,8 @@ def add_data_to_storage(data_storage, truth_storage, affine_storage, subject_dat
     affine_storage.append(np.asarray(affine)[np.newaxis])
 
 
-def write_data_to_file(training_data_files, out_file, config, brats_dir,
-                       image_shape=None, truth_dtype=np.uint8,
+def write_data_to_file(training_data_files, out_file, image_shape, brats_dir,
+                       config, truth_dtype=np.uint8,
                        subject_ids=None, normalize=True, crop=True, is_normalize="z",
                        is_hist_match="0", dataset="test", is_denoise="0"):
     """
@@ -90,8 +90,7 @@ def write_data_to_file(training_data_files, out_file, config, brats_dir,
         os.remove(out_file)
         raise e
 
-    write_image_data_to_file(training_data_files, data_storage, truth_storage,
-                             image_shape=image_shape,
+    write_image_data_to_file(training_data_files, data_storage, truth_storage, image_shape,
                              truth_dtype=truth_dtype, n_channels=n_channels,
                              affine_storage=affine_storage, crop=crop)
     if subject_ids:

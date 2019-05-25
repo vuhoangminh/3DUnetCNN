@@ -2,8 +2,10 @@ import os
 import glob
 import argparse
 
-# kits19 has different images' shapes. Use its own data function
-from projects.kits.data import write_data_to_file
+# # kits19 has different images' shapes. Use its own data function
+# from projects.kits.data import write_data_to_file
+
+from unet3d.data import write_data_to_file
 from unet3d.utils.print_utils import print_separator, print_section
 
 from projects.kits.config import config, config_dict
@@ -70,7 +72,7 @@ def prepare_data(args):
                            brats_dir=BRATS_DIR,
                            dataset=dataset,
                            config=config,
-                           image_shape=None,
+                           image_shape=get_shape_from_string(args.image_shape),
                            crop=str2bool(args.crop),
                            is_normalize=args.is_normalize,
                            is_hist_match=args.is_hist_match,
@@ -81,18 +83,16 @@ def main():
     args = get_args.prepare_data_kits()
 
     args.is_test = "0"
-    for is_denoise in config_dict["is_denoise"]:
+    for is_denoise in ["0"]:
         args.is_denoise = is_denoise
-        for is_normalize in config_dict["is_normalize"]:
+        for is_normalize in ["z"]:
             args.is_normalize = is_normalize
-            for is_hist_match in ["0", "1"]:
+            for is_hist_match in ["0"]:
                 args.is_hist_match = is_hist_match
-                if is_normalize == "z" and is_hist_match == "1":
-                    continue
-                else:
-                    print(">> prepare data {} {} {}".format(
-                        is_denoise, is_normalize, is_hist_match))
-                    prepare_data(args)
+
+                print(">> prepare data {} {} {}".format(
+                    is_denoise, is_normalize, is_hist_match))
+                prepare_data(args)
 
 
 if __name__ == "__main__":

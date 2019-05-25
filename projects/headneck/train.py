@@ -23,7 +23,6 @@ PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
 BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
 DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
-
 def train(args):
 
     data_path, trainids_path, validids_path, testids_path, model_path = get_training_h5_paths(

@@ -45,17 +45,42 @@ def weighted_dice_coefficient_old(y_true, y_pred, smooth=0.00001):
                                                                                axis=axis) + smooth))
 
 
-def weighted_dice_coefficient(y_true, y_pred, labels=config["labels"], weights=[1, 1, 1]):
-    distance = 0
-    for label in range(len(labels)):
-        dice_coef_class = dice_coefficient(y_true[:, label], y_pred[:, label])
-        dice_coef_class_weighted = dice_coef_class*weights[label]
-        distance = dice_coef_class_weighted + distance
-    return distance/3
+def weighted_dice_coefficient(labels=[1, 2, 4]):
+    def loss(y_true, y_pred):
+        distance = 0
+        for label in range(len(labels)):
+            dice_coef_class = dice_coefficient(
+                y_true[:, label], y_pred[:, label])
+            dice_coef_class_weighted = dice_coef_class
+            distance = dice_coef_class_weighted + distance
+        return distance/3
+    return loss
 
 
-def weighted_dice_coefficient_loss(y_true, y_pred):
-    return -weighted_dice_coefficient(y_true, y_pred)
+def weighted_dice_coefficient_loss(labels=[1, 2, 4]):
+    def loss(y_true, y_pred):
+        distance = 0
+        for label in range(len(labels)):
+            dice_coef_class = dice_coefficient(
+                y_true[:, label], y_pred[:, label])
+            dice_coef_class_weighted = dice_coef_class
+            distance = dice_coef_class_weighted + distance
+        f_loss = -distance/len(labels)
+        return f_loss
+    return loss
+
+
+def minh_dice_coef_metric(labels=[1, 2, 4]):
+    def loss(y_true, y_pred):
+        distance = 0
+        for label in range(len(labels)):
+            dice_coef_class = dice_coefficient(
+                y_true[:, label], y_pred[:, label])
+            dice_coef_class_weighted = dice_coef_class
+            distance = dice_coef_class_weighted + distance
+        f_loss = distance/len(labels)
+        return f_loss
+    return loss
 
 
 def label_wise_dice_coefficient(y_true, y_pred, label_index):
@@ -89,13 +114,13 @@ def minh_dice_coef_loss(y_true, y_pred, labels=config["labels"], weights=[2, 1, 
     return distance
 
 
-def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"], weights=[2, 1, 3]):
-    distance = 0
-    for label in range(len(labels)):
-        dice_coef_class = dice_coefficient(y_true[:, label], y_pred[:, label])
-        dice_coef_class_weighted = dice_coef_class*weights[label]/6
-        distance = dice_coef_class_weighted + distance
-    return distance
+# def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"], weights=[2, 1, 3]):
+#     distance = 0
+#     for label in range(len(labels)):
+#         dice_coef_class = dice_coefficient(y_true[:, label], y_pred[:, label])
+#         dice_coef_class_weighted = dice_coef_class*weights[label]/6
+#         distance = dice_coef_class_weighted + distance
+#     return distance
 
 
 def tversky(y_true, y_pred, smooth=0.00001):
@@ -273,8 +298,14 @@ def tv_minh_loss(alpha=0.1):
 
 def tv_weighted_loss(alpha=0.1):
     def loss(y_true, y_pred):
-        return alpha*tv_ndim_loss(y_pred) + weighted_dice_coefficient_loss(y_true, y_pred)
+        return alpha*tv_ndim_loss(y_pred) + weighted_dice_coefficient_loss()
     return loss
+
+
+# def tv_weighted_loss(alpha=0.1):
+#     def loss(y_true, y_pred):
+#         return alpha*tv_ndim_loss(y_pred) + weighted_dice_coefficient_loss(y_true, y_pred)
+#     return loss
 
 
 def cacaded_weighted_dice_coefficient_loss(y_pred, y_true, smooth=0.00001):

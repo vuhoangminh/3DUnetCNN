@@ -106,13 +106,7 @@ def train(args):
         model = generate_model(config["model_file"], loss_function=args.loss)
     else:
         # instantiate new model
-        if args.model == "isensee":
-            print("init isensee model")
-            model = isensee2d_model(input_shape=config["input_shape"],
-                                    n_labels=config["n_labels"],
-                                    initial_learning_rate=config["initial_learning_rate"],
-                                    loss_function=args.loss)
-        elif args.model == "unet":
+        if args.model == "unet":
             print("init unet model")
             model = unet_model_2d(input_shape=config["input_shape"],
                                   n_labels=config["n_labels"],
@@ -121,7 +115,8 @@ def train(args):
                                   depth=args.depth_unet,
                                   n_base_filters=args.n_base_filters_unet,
                                   loss_function=args.loss,
-                                  weight_decay=1e-5)
+                                  weight_decay=0,
+                                  labels=config["labels"])
 
         else:
             raise ValueError("Model is NotImplemented. Please check")

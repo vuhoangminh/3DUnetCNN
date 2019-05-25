@@ -1,6 +1,6 @@
 from comet_ml import Experiment
-from brats.config import config, config_unet
-from brats.prepare_data import prepare_data
+from projects.kits.config import config, config_unet
+from projects.kits.prepare_data import prepare_data
 import unet3d.utils.path_utils as path_utils
 import unet3d.utils.args_utils as get_args
 from unet3d.utils.print_utils import print_section, print_separator
@@ -102,18 +102,9 @@ def train(args):
                              depth=args.depth_unet,
                              n_base_filters=args.n_base_filters_unet,
                              loss_function=args.loss)
-        elif args.model == "unet_vae":
-            print("init unet_vae model")
-            model = unet_vae(input_shape=config["input_shape"],
-                             n_labels=config["n_labels"],
-                             initial_learning_rate=config["initial_learning_rate"])
-
         else:
-            print("init isensee model")
-            model = isensee2017_model(input_shape=config["input_shape"],
-                                      n_labels=config["n_labels"],
-                                      initial_learning_rate=config["initial_learning_rate"],
-                                      loss_function=args.loss)
+            raise ValueError("Model is NotImplemented. Please check")                             
+
 
     model.summary()
 
@@ -163,7 +154,7 @@ def train(args):
 
 def main():
     global config
-    args = get_args.train()
+    args = get_args.train_kits()
 
     config = path_utils.update_is_augment(args, config)
 
