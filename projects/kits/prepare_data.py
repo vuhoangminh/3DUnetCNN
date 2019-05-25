@@ -2,7 +2,8 @@ import os
 import glob
 import argparse
 
-from unet3d.data import write_data_to_file
+# kits19 has different images' shapes. Use its own data function
+from projects.kits.data import write_data_to_file
 from unet3d.utils.print_utils import print_separator, print_section
 
 from projects.kits.config import config, config_dict
@@ -69,7 +70,7 @@ def prepare_data(args):
                            brats_dir=BRATS_DIR,
                            dataset=dataset,
                            config=config,
-                           image_shape=get_shape_from_string(args.image_shape),
+                           image_shape=None,
                            crop=str2bool(args.crop),
                            is_normalize=args.is_normalize,
                            is_hist_match=args.is_hist_match,
