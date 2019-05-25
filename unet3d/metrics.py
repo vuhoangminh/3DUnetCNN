@@ -24,7 +24,7 @@ def dice_coefficient_loss(y_true, y_pred):
     return -dice_coefficient(y_true, y_pred)
 
 
-def weighted_dice_coefficient_old(y_true, y_pred, smooth=0.00001):
+def weighted_dice_coefficient(y_true, y_pred, smooth=0.00001):
     """
     Weighted dice coefficient. Default axis assumes a "channels first" data structure
     :param smooth:
@@ -45,7 +45,11 @@ def weighted_dice_coefficient_old(y_true, y_pred, smooth=0.00001):
                                                                                axis=axis) + smooth))
 
 
-def weighted_dice_coefficient(labels=[1, 2, 4]):
+def weighted_dice_coefficient_loss(y_true, y_pred):
+    return -weighted_dice_coefficient(y_true, y_pred)
+
+
+def weighted_dice_coefficient_new(labels=[1, 2, 4]):
     def loss(y_true, y_pred):
         distance = 0
         for label in range(len(labels)):
@@ -57,8 +61,8 @@ def weighted_dice_coefficient(labels=[1, 2, 4]):
     return loss
 
 
-def weighted_dice_coefficient_loss(labels=[1, 2, 4]):
-    def loss(y_true, y_pred):
+def weighted_dice_coefficient_loss_new(labels=[1, 2, 4]):
+    def weighted_dice_coefficient_loss(y_true, y_pred):
         distance = 0
         for label in range(len(labels)):
             dice_coef_class = dice_coefficient(
@@ -67,11 +71,11 @@ def weighted_dice_coefficient_loss(labels=[1, 2, 4]):
             distance = dice_coef_class_weighted + distance
         f_loss = -distance/len(labels)
         return f_loss
-    return loss
+    return weighted_dice_coefficient_loss
 
 
 def minh_dice_coef_metric(labels=[1, 2, 4]):
-    def loss(y_true, y_pred):
+    def minh_dice_coef_metric(y_true, y_pred):
         distance = 0
         for label in range(len(labels)):
             dice_coef_class = dice_coefficient(
@@ -80,7 +84,7 @@ def minh_dice_coef_metric(labels=[1, 2, 4]):
             distance = dice_coef_class_weighted + distance
         f_loss = distance/len(labels)
         return f_loss
-    return loss
+    return minh_dice_coef_metric
 
 
 def label_wise_dice_coefficient(y_true, y_pred, label_index):

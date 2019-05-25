@@ -110,7 +110,8 @@ def compile_model(model, loss_function="weighted",
     elif loss_function == "tv_weighted":
         loss = tv_weighted_loss(alpha=alpha)
     elif loss_function == "weighted":
-        loss = weighted_dice_coefficient_loss(labels=labels)
+        # loss = weighted_dice_coefficient_loss(labels=labels)
+        loss = weighted_dice_coefficient_loss
     if loss_function == "casweighted":
         model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
                       loss={'out_whole': dice_coefficient_loss,
@@ -134,11 +135,11 @@ def compile_model(model, loss_function="weighted",
                                     }
                       )
     else:
-        if metrics is not None:
-            model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
-                          loss=loss, metrics=[metrics])
-        else:
-            model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
-                          loss=loss)
+        # if metrics is not None:
+        #     model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
+        #                   loss=loss, metrics=[metrics])
+        # else:
+        model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
+                        loss=loss)
 
     return model

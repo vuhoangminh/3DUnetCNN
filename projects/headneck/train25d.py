@@ -20,12 +20,13 @@ from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_training_h5_paths
 import unet3d.utils.args_utils as get_args
 import unet3d.utils.path_utils as path_utils
-
-from brats.prepare_data import prepare_data
-
 from unet3d.utils.print_utils import print_section
 
-from brats.config import config, config_unet
+from projects.headneck.prepare_data import prepare_data
+from projects.headneck.config import config, config_unet
+
+
+
 
 # pp = pprint.PrettyPrinter(indent=4)
 # # pp.pprint(config)
@@ -187,7 +188,7 @@ def train(args):
 
 def main():
     global config
-    args = get_args.train25d()
+    args = get_args.train25d_headneck()
 
     config = path_utils.update_is_augment(args, config)
 

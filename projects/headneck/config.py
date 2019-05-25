@@ -67,7 +67,7 @@ config_unet["patience"] = 150
 # training will be stopped after this many epochs without the validation loss improving
 config_unet["early_stop"] = 300
 # factor by which the learning rate will be reduced
-config_unet["initial_learning_rate"] = 1e-5
+config_unet["initial_learning_rate"] = 1e-4
 # portion of the data that will be used for training
 config_unet["learning_rate_drop"] = 0.2
 # config_unet["learning_rate_epochs"] = 1
