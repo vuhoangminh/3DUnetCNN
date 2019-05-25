@@ -26,6 +26,7 @@ def unet_model_25d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_r
                    batch_normalization=False, activation_name="sigmoid",
                    metrics=minh_dice_coef_metric,
                    loss_function="weighted",
+                   labels=[1, 2, 4],
                    is_unet_original=True
                    ):
     """
@@ -97,6 +98,7 @@ def unet_model_25d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_r
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 

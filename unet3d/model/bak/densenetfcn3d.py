@@ -51,6 +51,7 @@ def densefcn_model_3d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_p
                       transition_pooling='max', initial_kernel_size=(3, 3, 3),
                       initial_learning_rate=0.00001,
                       metrics=minh_dice_coef_metric,
+                      labels=[1, 2, 4],
                       loss_function="weighted"):
     '''Instantiate the DenseNet FCN architecture.
         Note that when using TensorFlow,
@@ -180,6 +181,7 @@ def densefcn_model_3d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_p
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 
@@ -217,8 +219,9 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
         # x = BatchNormalization(
-            # axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
-        x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_in'))(ip)
+        # axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        x = InstanceNormalization(
+            axis=1, name=name_or_none(block_prefix, '_in'))(ip)
         x = Activation('relu')(x)
 
         if bottleneck:
@@ -227,9 +230,9 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
             x = Conv3D(inter_channel, (1, 1, 1), kernel_initializer='he_normal', padding='same', use_bias=False,
                        kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv2D'))(x)
             # x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5,
-                                   # name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
+            # name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
             x = InstanceNormalization(axis=1, name=name_or_none(
-			    block_prefix, '_bottleneck_in'))(x)
+                block_prefix, '_bottleneck_in'))(x)
             x = Activation('relu')(x)
 
         x = Conv3D(nb_filter, (3, 3, 3), kernel_initializer='he_normal', padding='same', use_bias=False,
@@ -326,8 +329,9 @@ def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
         # x = BatchNormalization(
-            # axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
-        x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_in'))(ip)
+        # axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
+        x = InstanceNormalization(
+            axis=1, name=name_or_none(block_prefix, '_in'))(ip)
         x = Activation('relu')(x)
         x = Conv3D(int(nb_filter * compression), (1, 1, 1), kernel_initializer='he_normal', padding='same',
                    use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv2D'))(x)
@@ -511,7 +515,7 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
                                      block_prefix='dense_%i' % (nb_dense_block - 1))
 
         # x = BatchNormalization(
-            # axis=concat_axis, epsilon=1.1e-5, name='final_bn')(x)
+        # axis=concat_axis, epsilon=1.1e-5, name='final_bn')(x)
         x = InstanceNormalization(axis=1, name='final_in')(x)
         x = Activation('relu')(x)
 
@@ -613,7 +617,7 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         x = Conv3D(init_conv_filters, initial_kernel_size, kernel_initializer='he_normal', padding='same', name='initial_conv2D',
                    use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
         # x = BatchNormalization(
-            # axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+        # axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
         x = InstanceNormalization(axis=1, name='initial_in')(x)
         x = Activation('relu')(x)
 
@@ -679,7 +683,6 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
                        padding='same', use_bias=False)(x_up)
             x = Activation("sigmoid")(x)
 
-
             # if K.image_data_format() == 'channels_first':
             #     channel, row, col, dep = input_shape
             #     x = Reshape((nb_classes, row * col * dep))(x)
@@ -692,5 +695,5 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
             #     x = Reshape((row, col, dep, nb_classes))(x)
         else:
             x = x_up
-            
+
         return x

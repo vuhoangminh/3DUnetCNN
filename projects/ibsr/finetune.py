@@ -212,6 +212,7 @@ def finetune(overwrite=True,
         model = generate_model(config["model_file"],
                                initial_learning_rate=config["initial_learning_rate"],
                                loss_function=loss,
+                               labels=config["labels"],
                                weight_tv_to_main_loss=weight_tv_to_main_loss)
         model.summary()
 

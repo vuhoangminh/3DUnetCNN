@@ -244,7 +244,7 @@ def casnet_v9(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=True, activation_name="sigmoid",
               loss_function="casweighted",
               is_unet_original=True,
-              weight_decay=1e-4
+              weight_decay=1e-4, labels=[1, 2, 4]
               ):
 
     inputs = Input(input_shape)
@@ -263,7 +263,8 @@ def casnet_v9(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 # casnet_v8 (similar to v2): replace regularizer 1e-5 to 1e-4
@@ -272,7 +273,7 @@ def casnet_v8(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=True, activation_name="sigmoid",
               loss_function="casweighted",
               is_unet_original=True,
-              weight_decay=1e-4
+              weight_decay=1e-4, labels=[1, 2, 4]
               ):
 
     inputs = Input(input_shape)
@@ -291,7 +292,8 @@ def casnet_v8(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 # casnet_v7 (similar to v2): replace regularizer 1e-5 to 1e-3
@@ -300,7 +302,7 @@ def casnet_v7(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=True, activation_name="sigmoid",
               loss_function="casweighted",
               is_unet_original=True,
-              weight_decay=1e-3
+              weight_decay=1e-3, labels=[1, 2, 4]
               ):
 
     inputs = Input(input_shape)
@@ -319,7 +321,8 @@ def casnet_v7(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 # casnet_v6 (similar to v2): replace conv_block by resnet_block
@@ -328,7 +331,7 @@ def casnet_v6(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=False, activation_name="sigmoid",
               loss_function="casweighted",
               is_unet_original=True,
-              weight_decay=1e-5
+              weight_decay=1e-5, labels=[1, 2, 4]
               ):
 
     inputs = Input(input_shape)
@@ -347,7 +350,8 @@ def casnet_v6(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 # casnet_v5: 3 2D U-Net: whole_d5_n16, core_d5_n16, enh_d5_n16
@@ -356,7 +360,7 @@ def casnet_v5(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=True, activation_name="sigmoid",
               loss_function="casweighted",
               is_unet_original=True,
-              weight_decay=1e-5
+              weight_decay=1e-5, labels=[1, 2, 4]
               ):
 
     inputs = Input(input_shape)
@@ -375,7 +379,8 @@ def casnet_v5(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 # casnet_v4 (similar to v2): inputs of core and enh = multiplication of inputs and "masks"
@@ -384,7 +389,7 @@ def casnet_v4(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=True, activation_name="sigmoid",
               loss_function="casweighted",
               is_unet_original=True,
-              weight_decay=1e-5
+              weight_decay=1e-5, labels=[1, 2, 4]
               ):
 
     # instead of concat, we multiply the output of previous mask
@@ -415,7 +420,8 @@ def casnet_v4(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 # casnet_v3: 1 encoder, 3 decoders
@@ -424,7 +430,7 @@ def casnet_v3(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=False, activation_name="sigmoid",
               loss_function="casweighted",
               is_unet_original=True,
-              weight_decay=1e-5
+              weight_decay=1e-5, labels=[1, 2, 4]
               ):
 
     # each class (whole, core, enhance) is fed into different decoder branch
@@ -531,7 +537,8 @@ def casnet_v3(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 # casnet_v2: 3 2D U-Net: whole_d4_n16, core_d4_n16, enh_d4_n16
@@ -540,7 +547,7 @@ def casnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=True, activation_name="sigmoid",
               loss_function="casweighted",
               is_unet_original=True,
-              weight_decay=1e-5
+              weight_decay=1e-5, labels=[1, 2, 4]
               ):
 
     inputs = Input(input_shape)
@@ -559,7 +566,8 @@ def casnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 # casnet_v1: 3 2D U-Net: whole_d4_n16, core_d3_n16, enh_d2_n16
@@ -568,7 +576,7 @@ def casnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=False, activation_name="sigmoid",
               loss_function="casweighted",
               is_unet_original=True,
-              weight_decay=1e-5
+              weight_decay=1e-5, labels=[1, 2, 4]
               ):
 
     inputs = Input(input_shape)
@@ -587,8 +595,8 @@ def casnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
     return compile_model(model, loss_function=loss_function,
-                         #  metrics=metrics,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 # sepnet_v1: 1 encoder, 3 decoders for 3 classes (1, 2 ,4) + w/ squeeze_excite_block2d after concat
@@ -597,7 +605,7 @@ def sepnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=False, activation_name="sigmoid",
               loss_function="sepweighted",
               is_unet_original=True,
-              weight_decay=1e-5
+              weight_decay=1e-5, labels=[1, 2, 4]
               ):
 
     # each class (whole, core, enhance) is fed into different decoder branch
@@ -693,7 +701,8 @@ def sepnet_v1(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_1, out_2, out_4])
 
     return compile_model(model, loss_function=loss_function,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 # sepnet_v1: 1 encoder, 3 decoders for 3 classes (1, 2 ,4) + wo/ squeeze_excite_block2d after concat
@@ -702,7 +711,7 @@ def sepnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
               batch_normalization=False, activation_name="sigmoid",
               loss_function="sepweighted",
               is_unet_original=True,
-              weight_decay=1e-5
+              weight_decay=1e-5, labels=[1, 2, 4]
               ):
 
     # each class (whole, core, enhance) is fed into different decoder branch
@@ -794,7 +803,8 @@ def sepnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
     model = Model(inputs=inputs, outputs=[out_1, out_2, out_4])
 
     return compile_model(model, loss_function=loss_function,
-                         initial_learning_rate=initial_learning_rate)
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
 
 
 def main():

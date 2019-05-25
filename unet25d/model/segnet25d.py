@@ -30,7 +30,7 @@ def create_convolution_block(input_layer, n_filters, batch_normalization=True, k
 
 
 def segnet25d(input_shape, n_labels, n_base_filters=16, depth=4, pool_size=(2, 2), loss_function="weighted",
-              metrics=minh_dice_coef_metric, initial_learning_rate=1e-4):
+              metrics=minh_dice_coef_metric, initial_learning_rate=1e-4, labels=[1,2,4]):
 
     inputs = Input(input_shape)
     current_layer = inputs
@@ -79,6 +79,7 @@ def segnet25d(input_shape, n_labels, n_base_filters=16, depth=4, pool_size=(2, 2
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 

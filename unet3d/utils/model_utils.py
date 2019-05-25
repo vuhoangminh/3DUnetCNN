@@ -71,14 +71,16 @@ def load_model_multi_gpu(model_file):
 def generate_model(model_file, loss_function="weighted",
                    metrics=minh_dice_coef_metric,
                    initial_learning_rate=0.001,
-                   weight_tv_to_main_loss=0.1):
+                   weight_tv_to_main_loss=0.1,
+                   labels=[1, 2, 4]):
 
     model = load_model_multi_gpu(model_file)
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
                          initial_learning_rate=initial_learning_rate,
-                         alpha=weight_tv_to_main_loss)
+                         alpha=weight_tv_to_main_loss,
+                         labels=labels)
 
 
 def get_available_gpus():
@@ -134,9 +136,9 @@ def compile_model(model, loss_function="weighted",
     else:
         if metrics is not None:
             model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
-                        loss=loss, metrics=[metrics])
+                          loss=loss, metrics=[metrics])
         else:
             model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
-                        loss=loss)
+                          loss=loss)
 
     return model

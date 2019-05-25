@@ -19,6 +19,7 @@ from unet3d.metrics import weighted_dice_coefficient_loss, tversky_loss, minh_di
 model = load_old_model(model_path)
 # model = generate_model(model_path, loss_function="weighted",
 #                        metrics=minh_dice_coef_metric,
+# labels=config["labels"],
 #                        initial_learning_rate=0.001)
 model.summary()
 # weights = model.

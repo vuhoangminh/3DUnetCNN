@@ -167,7 +167,9 @@ def loss(input_shape, inp, out_VAE, z_mean, z_var, e=1e-8):
     return loss_
 
 
-def unet_vae(input_shape, n_labels=1, initial_learning_rate=0.00001, metrics=minh_dice_coef_metric):
+def unet_vae(input_shape, n_labels=1, initial_learning_rate=0.00001,
+             metrics=minh_dice_coef_metric,
+             labels=[1, 2, 4]):
     """
     build_model(input_shape=(4, 160, 192, 128))
     -------------------------------------------
@@ -415,6 +417,7 @@ def unet_vae(input_shape, n_labels=1, initial_learning_rate=0.00001, metrics=min
 
     return compile_model(model, loss_function=loss(input_shape, inp, out_VAE, z_mean, z_var),
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
     return model

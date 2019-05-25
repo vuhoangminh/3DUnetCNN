@@ -15,7 +15,6 @@ from unet3d.data import open_data_file
 import os
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # run on server
 
-
 config.update(config_unet)
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
@@ -78,7 +77,7 @@ def train(args):
     if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
-        model = generate_model(config["model_file"], loss_function=args.loss)
+        model = generate_model(config["model_file"], loss_function=args.loss, labels=config["labels"])
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
@@ -91,7 +90,8 @@ def train(args):
                                   deconvolution=config["deconvolution"],
                                   depth=args.depth_unet,
                                   n_base_filters=args.n_base_filters_unet,
-                                  loss_function=args.loss)
+                                  loss_function=args.loss,
+                                  labels=config["labels"])
         elif args.model == "segnet":
             print("init segnet model")
             model = segnet3d(input_shape=config["input_shape"],
@@ -100,19 +100,22 @@ def train(args):
                              initial_learning_rate=config["initial_learning_rate"],
                              depth=args.depth_unet,
                              n_base_filters=args.n_base_filters_unet,
-                             loss_function=args.loss)
+                             loss_function=args.loss,
+                             labels=config["labels"])
         elif args.model == "unet_vae":
             print("init unet_vae model")
             model = unet_vae(input_shape=config["input_shape"],
                              n_labels=config["n_labels"],
-                             initial_learning_rate=config["initial_learning_rate"])
+                             initial_learning_rate=config["initial_learning_rate"],
+                             labels=config["labels"])
 
         else:
             print("init isensee model")
             model = isensee2017_model(input_shape=config["input_shape"],
                                       n_labels=config["n_labels"],
                                       initial_learning_rate=config["initial_learning_rate"],
-                                      loss_function=args.loss)
+                                      loss_function=args.loss,
+                                      labels=config["labels"])
 
     model.summary()
 

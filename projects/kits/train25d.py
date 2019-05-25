@@ -20,11 +20,9 @@ from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_training_h5_paths
 import unet3d.utils.args_utils as get_args
 import unet3d.utils.path_utils as path_utils
-
-from brats.prepare_data import prepare_data
-
 from unet3d.utils.print_utils import print_section
 
+from brats.prepare_data import prepare_data
 from brats.config import config, config_unet
 
 # pp = pprint.PrettyPrinter(indent=4)
@@ -107,7 +105,7 @@ def train(args):
     if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
-        model = generate_model(config["model_file"], loss_function=args.loss)
+        model = generate_model(config["model_file"], loss_function=args.loss, labels=config["labels"])
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
@@ -117,11 +115,11 @@ def train(args):
                                    n_labels=config["n_labels"],
                                    initial_learning_rate=config["initial_learning_rate"],
                                    deconvolution=config["deconvolution"],
-                                   #   batch_normalization=True,
                                    depth=args.depth_unet,
                                    n_base_filters=args.n_base_filters_unet,
                                    loss_function=args.loss,
-                                   is_unet_original=False)
+                                   is_unet_original=False,
+                                   labels=config["labels"])
         elif args.model == "unet":
             print("init unet model")
             model = unet_model_25d(input_shape=config["input_shape"],
@@ -131,7 +129,8 @@ def train(args):
                                    #   batch_normalization=True,
                                    depth=args.depth_unet,
                                    n_base_filters=args.n_base_filters_unet,
-                                   loss_function=args.loss)
+                                   loss_function=args.loss,
+                                   labels=config["labels"])
         elif args.model == "segnet":
             print("init segnet model")
             model = segnet25d(input_shape=config["input_shape"],
@@ -139,13 +138,8 @@ def train(args):
                               initial_learning_rate=config["initial_learning_rate"],
                               depth=args.depth_unet,
                               n_base_filters=args.n_base_filters_unet,
-                              loss_function=args.loss)
-        elif args.model == "isensee":
-            print("init isensee model")
-            model = isensee25d_model(input_shape=config["input_shape"],
-                                     n_labels=config["n_labels"],
-                                     initial_learning_rate=config["initial_learning_rate"],
-                                     loss_function=args.loss)
+                              loss_function=args.loss,
+                              labels=config["labels"])
 
     model.summary()
 

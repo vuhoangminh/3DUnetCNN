@@ -17,7 +17,8 @@ create_convolution_block2d = partial(
 def isensee2d_model(input_shape=(4, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
                     n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
                     loss_function="weighted", activation_name="sigmoid", metrics=minh_dice_coef_metric,
-                    is_unet_original=True, weight_decay=0):
+                    is_unet_original=True, weight_decay=0,
+                    labels=[1, 2, 4]):
     """
     This function builds a model proposed by Isensee et al. for the BRATS 2017 challenge:
     https://www.cbica.upenn.edu/sbia/Spyridon.Bakas/MICCAI_BraTS/MICCAI_BraTS_2017_proceedings_shortPapers.pdf
@@ -96,6 +97,7 @@ def isensee2d_model(input_shape=(4, 128, 128), n_base_filters=16, depth=5, dropo
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 

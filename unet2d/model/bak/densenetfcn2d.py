@@ -39,6 +39,7 @@ def densefcn_model_2d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_p
                       transition_pooling='max', initial_kernel_size=(3, 3),
                       initial_learning_rate=0.00001,
                       metrics=minh_dice_coef_metric,
+                      labels=[1, 2, 4],
                       loss_function="weighted"):
     '''Instantiate the DenseNet FCN architecture.
         Note that when using TensorFlow,
@@ -165,6 +166,7 @@ def densefcn_model_2d(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_p
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 
@@ -203,7 +205,8 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
 
         # x = BatchNormalization(
         #     axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
-        x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_in'))(ip)
+        x = InstanceNormalization(
+            axis=1, name=name_or_none(block_prefix, '_in'))(ip)
         x = Activation('relu')(x)
 
         if bottleneck:
@@ -211,7 +214,8 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
 
             x = Conv2D(inter_channel, (1, 1), kernel_initializer='he_normal', padding='same', use_bias=False,
                        kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv2D'))(x)
-            x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_in'))(x)
+            x = InstanceNormalization(
+                axis=1, name=name_or_none(block_prefix, '_in'))(x)
             # x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5,
             #                        name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
             x = Activation('relu')(x)
@@ -255,7 +259,8 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
 
         # x = BatchNormalization(
         #     axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
-        x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_in'))(ip)
+        x = InstanceNormalization(
+            axis=1, name=name_or_none(block_prefix, '_in'))(ip)
         x = Activation('relu')(x)
 
         if bottleneck:
@@ -265,7 +270,8 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
                        kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv2D'))(x)
             # x = BatchNormalization(axis=concat_axis, epsilon=1.1e-5,
             #                        name=name_or_none(block_prefix, '_bottleneck_bn'))(x)
-            x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_bottleneck_in'))(x)
+            x = InstanceNormalization(axis=1, name=name_or_none(
+                block_prefix, '_bottleneck_in'))(x)
             x = Activation('relu')(x)
 
         x = Conv2D(nb_filter, (3, 3), kernel_initializer='he_normal', padding='same', use_bias=False,
@@ -356,7 +362,8 @@ def __transition_block(ip, nb_filter, compression=1.0, weight_decay=1e-4, block_
 
         # x = BatchNormalization(
         #     axis=concat_axis, epsilon=1.1e-5, name=name_or_none(block_prefix, '_bn'))(ip)
-        x = InstanceNormalization(axis=1, name=name_or_none(block_prefix, '_in'))(ip)
+        x = InstanceNormalization(
+            axis=1, name=name_or_none(block_prefix, '_in'))(ip)
         x = Activation('relu')(x)
         x = Conv2D(int(nb_filter * compression), (1, 1), kernel_initializer='he_normal', padding='same',
                    use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv2D'))(x)

@@ -101,7 +101,7 @@ def train(overwrite=True, crop=True, challenge="brats", year=2018,
     if not overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
-        model = generate_model(config["model_file"], loss_function=loss)
+        model = generate_model(config["model_file"], loss_function=loss, labels=config["labels"])
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model

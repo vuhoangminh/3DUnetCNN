@@ -155,6 +155,7 @@ def finetune(args):
         model = generate_model(config["model_file"],
                                initial_learning_rate=config["initial_learning_rate"],
                                loss_function=args.loss,
+                               labels=config["labels"],
                                weight_tv_to_main_loss=args.weight_tv_to_main_loss)
         model.summary()
 

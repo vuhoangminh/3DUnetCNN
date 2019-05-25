@@ -21,7 +21,8 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
                   batch_normalization=False, activation_name="sigmoid",
                   metrics=minh_dice_coef_metric,
                   loss_function="weighted",
-                  is_unet_original=True
+                  is_unet_original=True,
+                  labels=[1, 2, 4]
                   ):
     """
     Builds the 3D UNet Keras model.f
@@ -87,6 +88,7 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 

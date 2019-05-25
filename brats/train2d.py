@@ -101,7 +101,7 @@ def train(args):
         from unet3d.utils.model_utils import generate_model
         if "casnet" in args.model:
             args.loss = "casweighted"
-        model = generate_model(config["model_file"], loss_function=args.loss)
+        model = generate_model(config["model_file"], loss_function=args.loss, labels=config["labels"])
     else:
         # instantiate new model
         if args.model == "isensee":
@@ -109,7 +109,8 @@ def train(args):
             model = isensee2d_model(input_shape=config["input_shape"],
                                     n_labels=config["n_labels"],
                                     initial_learning_rate=config["initial_learning_rate"],
-                                    loss_function=args.loss)
+                                    loss_function=args.loss,
+                                    labels=config["labels"])
         elif args.model == "unet":
             print("init unet model")
             model = unet_model_2d(input_shape=config["input_shape"],
@@ -118,7 +119,8 @@ def train(args):
                                   deconvolution=config["deconvolution"],
                                   depth=args.depth_unet,
                                   n_base_filters=args.n_base_filters_unet,
-                                  loss_function=args.loss)
+                                  loss_function=args.loss,
+                                  labels=config["labels"])
         elif args.model == "segnet":
             print("init segnet model")
             model = segnet2d(input_shape=config["input_shape"],
@@ -126,7 +128,8 @@ def train(args):
                              initial_learning_rate=config["initial_learning_rate"],
                              depth=args.depth_unet,
                              n_base_filters=args.n_base_filters_unet,
-                             loss_function=args.loss)
+                             loss_function=args.loss,
+                             labels=config["labels"])
         elif args.model == "casnet_v1":
             print("init casnet_v1 model")
             model = casnet_v1(input_shape=config["input_shape"],
@@ -134,7 +137,8 @@ def train(args):
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
                               n_base_filters=args.n_base_filters_unet,
-                              loss_function="casweighted")
+                              loss_function="casweighted",
+                              labels=config["labels"])
         elif args.model == "casnet_v2":
             print("init casnet_v2 model")
             model = casnet_v2(input_shape=config["input_shape"],
@@ -142,7 +146,8 @@ def train(args):
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
                               n_base_filters=args.n_base_filters_unet,
-                              loss_function="casweighted")
+                              loss_function="casweighted",
+                              labels=config["labels"])
         elif args.model == "casnet_v3":
             print("init casnet_v3 model")
             model = casnet_v3(input_shape=config["input_shape"],
@@ -150,14 +155,16 @@ def train(args):
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
                               n_base_filters=args.n_base_filters_unet,
-                              loss_function="casweighted")
+                              loss_function="casweighted",
+                              labels=config["labels"])
         elif args.model == "casnet_v4":
             print("init casnet_v4 model")
             model = casnet_v4(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
+                              n_base_filters=args.n_base_filters_unet,
+                              labels=config["labels"])
         elif args.model == "casnet_v5":
             print("init casnet_v5 model")
             model = casnet_v5(input_shape=config["input_shape"],
@@ -165,48 +172,55 @@ def train(args):
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
                               n_base_filters=args.n_base_filters_unet,
-                              loss_function="casweighted")
+                              loss_function="casweighted",
+                              labels=config["labels"])
         elif args.model == "casnet_v6":
             print("init casnet_v6 model")
             model = casnet_v6(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
+                              n_base_filters=args.n_base_filters_unet,
+                              labels=config["labels"])
         elif args.model == "casnet_v7":
             print("init casnet_v7 model")
             model = casnet_v7(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
+                              n_base_filters=args.n_base_filters_unet,
+                              labels=config["labels"])
         elif args.model == "casnet_v8":
             print("init casnet_v8 model")
             model = casnet_v8(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
+                              n_base_filters=args.n_base_filters_unet,
+                              labels=config["labels"])
         elif args.model == "casnet_v9":
             print("init casnet_v9 model")
             model = casnet_v9(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
-                              n_base_filters=args.n_base_filters_unet)                              
+                              n_base_filters=args.n_base_filters_unet,
+                              labels=config["labels"])                            
         elif args.model == "sepnet_v1":
             print("init sepnet_v1 model")
             model = sepnet_v1(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
+                              n_base_filters=args.n_base_filters_unet,
+                              labels=config["labels"])
         elif args.model == "sepnet_v2":
             print("init sepnet_v2 model")
             model = sepnet_v2(input_shape=config["input_shape"],
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               depth=args.depth_unet,
-                              n_base_filters=args.n_base_filters_unet)
+                              n_base_filters=args.n_base_filters_unet,
+                              labels=config["labels"])
 
         else:
             raise ValueError("Model is NotImplemented. Please check")

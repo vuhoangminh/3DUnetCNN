@@ -34,7 +34,8 @@ def res_unet_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_r
                 depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
                 batch_normalization=False, activation_name="sigmoid",
                 metrics=minh_dice_coef_metric,
-                loss_function="weighted"
+                loss_function="weighted",
+                labels=[1, 2, 4],
                 ):
     """
     Builds the 3D UNet Keras model.f
@@ -91,6 +92,7 @@ def res_unet_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_r
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 
@@ -98,7 +100,8 @@ def dense_unet_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
                   depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
                   batch_normalization=False, activation_name="sigmoid",
                   metrics=minh_dice_coef_metric,
-                  loss_function="weighted"
+                  loss_function="weighted",
+                  labels=[1, 2, 4],
                   ):
     """
     Builds the 3D UNet Keras model.f
@@ -158,4 +161,5 @@ def dense_unet_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)

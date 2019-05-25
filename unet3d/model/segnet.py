@@ -17,7 +17,7 @@ from brats.config import config, config_unet
 
 def create_3d_convolution_block(input_layer, n_filters, batch_normalization=True, kernel=(3, 3, 3), activation=None,
                                 padding='same', strides=(1, 1, 1), instance_normalization=False,
-                                is_unet_original=True):
+                                is_unet_original=True, labels=[1, 2, 4]):
 
     layer = Conv3D(n_filters, kernel, padding=padding,
                    strides=strides)(input_layer)
@@ -30,7 +30,7 @@ def create_3d_convolution_block(input_layer, n_filters, batch_normalization=True
 
 
 def segnet3d(input_shape, n_labels, n_base_filters=16, depth=4, pool_size=(2, 2, 2), loss_function="weighted",
-             metrics=minh_dice_coef_metric, initial_learning_rate=1e-4):
+             metrics=minh_dice_coef_metric, initial_learning_rate=1e-4, labels=[1, 2, 4]):
 
     img_input = Input(input_shape)
     current_layer = img_input
@@ -73,12 +73,13 @@ def segnet3d(input_shape, n_labels, n_base_filters=16, depth=4, pool_size=(2, 2,
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 
 def main():
 
-    model = SegNet3D(input_shape=(1, 128, 128, 128),
+    model = segnet3d(input_shape=(1, 128, 128, 128),
                      n_labels=3)
     model.summary()
 

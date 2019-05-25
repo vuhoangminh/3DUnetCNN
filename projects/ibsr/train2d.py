@@ -85,8 +85,7 @@ def train(args):
     if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
-        model = generate_model(
-            config["model_file"], loss_function=args.loss)
+        model = generate_model(config["model_file"], loss_function=args.loss, labels=config["labels"])
         # model = load_old_model(config["model_file"])
     else:
         if args.model == "unet":
@@ -97,7 +96,8 @@ def train(args):
                                   deconvolution=config["deconvolution"],
                                   depth=args.depth_unet,
                                   n_base_filters=args.n_base_filters_unet,
-                                  loss_function=args.loss)
+                                  loss_function=args.loss,
+                                  labels=config["labels"])
         elif args.model == "segnet":
             print("init segnet model")
             model = segnet2d(input_shape=config["input_shape"],
@@ -105,7 +105,8 @@ def train(args):
                              initial_learning_rate=config["initial_learning_rate"],
                              depth=args.depth_unet,
                              n_base_filters=args.n_base_filters_unet,
-                             loss_function=args.loss)
+                             loss_function=args.loss,
+                             labels=config["labels"])
         else:
             raise ValueError("Model is NotImplemented. Please check")
 

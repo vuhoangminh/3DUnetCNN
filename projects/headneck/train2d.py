@@ -103,7 +103,7 @@ def train(args):
         from unet3d.utils.model_utils import generate_model
         if "casnet" in args.model:
             args.loss = "casweighted"
-        model = generate_model(config["model_file"], loss_function=args.loss)
+        model = generate_model(config["model_file"], loss_function=args.loss, labels=config["labels"])
     else:
         # instantiate new model
         if args.model == "unet":

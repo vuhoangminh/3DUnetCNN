@@ -22,6 +22,7 @@ def simple_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
                     n_base_filters=32,
                     metrics=minh_dice_coef_metric,
                     loss_function="weighted",
+                    labels=[1, 2, 4],
                     is_unet_original=True):
     inputs = Input(input_shape)
     current_layer = inputs
@@ -37,6 +38,7 @@ def simple_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 
@@ -48,6 +50,7 @@ def eye_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
                  growth_rate=2,
                  metrics=minh_dice_coef_metric,
                  loss_function="weighted",
+                 labels=[1, 2, 4],
                  is_unet_original=True):
     inputs = Input(input_shape)
     current_layer = inputs
@@ -66,6 +69,7 @@ def eye_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 
@@ -73,6 +77,7 @@ def mnet_model_3d(input_shape=(4, 128, 128, 128), n_base_filters=32,
                   pool_size=(2, 2, 2),
                   n_segmentation_levels=3, n_labels=4,
                   initial_learning_rate=5e-4,
+                  labels=[1, 2, 4],
                   loss_function="weighted", activation_name="sigmoid",
                   metrics=minh_dice_coef_metric):
     """
@@ -129,6 +134,7 @@ def mnet_model_3d(input_shape=(4, 128, 128, 128), n_base_filters=32,
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 
@@ -203,7 +209,8 @@ def multiscale_unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initi
                              batch_normalization=False, activation_name="sigmoid",
                              metrics=minh_dice_coef_metric,
                              loss_function="weighted",
-                             is_unet_original=True
+                             is_unet_original=True,
+                             labels=[1, 2, 4]
                              ):
     """
     Builds the 3D UNet Keras model.f
@@ -235,7 +242,6 @@ def multiscale_unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initi
                                          (2**layer_depth), strides=pool_size)
         current_layer = layer
         down_levels.append([layer])
-
 
     current_layer = inputs
     for layer_depth in range(depth):
@@ -283,6 +289,7 @@ def multiscale_unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initi
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
+                         labels=labels,
                          initial_learning_rate=initial_learning_rate)
 
 
