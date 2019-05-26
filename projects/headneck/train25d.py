@@ -25,6 +25,8 @@ from unet3d.utils.print_utils import print_section
 from projects.headneck.prepare_data import prepare_data
 from projects.headneck.config import config, config_unet
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
+
 
 
 

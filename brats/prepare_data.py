@@ -82,22 +82,19 @@ def prepare_data(args):
 
 
 def main():
-    args = get_args.prepare_data()
-    overwrite = args.overwrite
-    crop = args.crop
-    challenge = args.challenge
-    year = args.year
-    image_shape = args.image_shape
-    is_bias_correction = args.is_bias_correction
-    is_normalize = args.is_normalize
-    is_denoise = args.is_denoise
-    is_test = args.is_test
-    is_hist_match = args.is_hist_match
+    args = get_args.prepare_data_kits()
 
-    prepare_data(overwrite=overwrite, crop=crop, challenge=challenge, year=year,
-                 image_shape=image_shape, is_bias_correction=is_bias_correction,
-                 is_normalize=is_normalize, is_denoise=is_denoise,
-                 is_hist_match=is_hist_match, is_test=is_test)
+    args.is_test = "0"
+    for is_denoise in ["0"]:
+        args.is_denoise = is_denoise
+        for is_normalize in ["z"]:
+            args.is_normalize = is_normalize
+            for is_hist_match in ["0"]:
+                args.is_hist_match = is_hist_match
+
+                print(">> prepare data {} {} {}".format(
+                    is_denoise, is_normalize, is_hist_match))
+                prepare_data(args)
 
 
 if __name__ == "__main__":

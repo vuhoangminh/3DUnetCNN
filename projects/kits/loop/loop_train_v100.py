@@ -1,9 +1,9 @@
-from brats.loop.loop_utils import run
+from projects.kits.loop.loop_utils import run
 import unet3d.utils.args_utils as get_args
 from unet3d.utils.path_utils import get_model_h5_filename
 import random
 from unet3d.utils.path_utils import get_project_dir
-from brats.config import config, config_unet
+from projects.kits.config import config, config_unet
 import os
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
@@ -20,26 +20,26 @@ model_list = list()
 cmd_list = list()
 out_file_list = list()
 
-list_25d_model = ["160-192-3", "160-192-5",
-                  "160-192-7", "160-192-9", "160-192-11"]
-list_2d_model = ["160-192-1"]
-list_3d_model = ["160-192-128"]
+list_25d_model = ["3-256-256", "5-256-256",
+                  "7-256-256", "9-256-256", "11-256-256"]
+list_2d_model = ["1-256-256"]
+list_3d_model = ["32-256-256"]
 
 
 for patch_shape in list_25d_model + list_2d_model + list_3d_model:
     if patch_shape in list_2d_model:
         args = get_args.train2d()
-        task = "brats/train2d"
+        task = "projects/kits/train2d"
         model_dim = 2
         args.batch_size = 64
     elif patch_shape in list_25d_model:
         args = get_args.train25d()
-        task = "brats/train25d"
+        task = "projects/kits/train25d"
         model_dim = 25
         args.batch_size = 64
     else:
         args = get_args.train()
-        task = "brats/train"
+        task = "projects/kits/train"
         model_dim = 3
         args.batch_size = 1
 

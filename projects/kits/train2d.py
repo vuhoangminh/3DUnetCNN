@@ -151,7 +151,7 @@ def train(args):
 
     if args.is_test == "0":
         experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
-                                project_name="kits",
+                                project_name="kits19",
                                 workspace="vuhoangminh")
     else:
         experiment = None
