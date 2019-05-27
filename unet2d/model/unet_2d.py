@@ -96,7 +96,7 @@ def unet_model_2d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_ra
     model = Model(inputs=inputs, outputs=act)
 
     return compile_model(model, loss_function=loss_function,
-                         metrics=minh_dice_coef_metric(labels),
+                         metrics=minh_dice_coef_metric,
                          initial_learning_rate=initial_learning_rate,
                          labels=labels)
 

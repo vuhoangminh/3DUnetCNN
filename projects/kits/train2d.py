@@ -20,6 +20,7 @@ from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, 
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.training import load_old_model, train_model
 from unet2d.model import *
+# from projects.kits.generator2d import get_training_and_validation_and_testing_generators2d
 from unet2d.generator import get_training_and_validation_and_testing_generators2d
 from unet3d.data import write_data_to_file, open_data_file
 import numpy as np
@@ -116,7 +117,8 @@ def train(args):
         from unet3d.utils.model_utils import generate_model
         if "casnet" in args.model:
             args.loss = "casweighted"
-        model = generate_model(config["model_file"], loss_function=args.loss, labels=config["labels"])
+        model = generate_model(
+            config["model_file"], loss_function=args.loss, labels=config["labels"])
     else:
         # instantiate new model
         if args.model == "unet":

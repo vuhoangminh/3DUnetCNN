@@ -12,7 +12,7 @@ from comet_ml import Experiment
 import os
 
 from unet3d.data import open_data_file
-from unet25d.generator import get_training_and_validation_and_testing_generators25d
+from projects.headneck.generator25d import get_training_and_validation_and_testing_generators25d
 from unet25d.model import *
 from unet3d.training import train_model
 from unet3d.utils.path_utils import get_project_dir
@@ -159,9 +159,9 @@ def train(args):
     # run training
 
     if args.is_test == "0":
-        experiment = Experiment(api_key="34T3kJ5CkXUtKAbhI6foGNFBL",
-                                project_name="train",
-                                workspace="guusgrimbergen")
+        experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
+                                project_name="headneck",
+                                workspace="vuhoangminh")
     else:
         experiment = None
 

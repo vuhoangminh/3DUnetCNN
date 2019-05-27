@@ -19,7 +19,7 @@ from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir
 from unet3d.training import train_model
 from unet2d.model import *
-from unet2d.generator import get_training_and_validation_and_testing_generators2d
+from projects.headneck.generator2d import get_training_and_validation_and_testing_generators2d
 from unet3d.data import open_data_file
 import unet3d.utils.path_utils as path_utils
 

@@ -20,11 +20,14 @@ model_list = list()
 cmd_list = list()
 out_file_list = list()
 
-list_25d_model = ["256-128-3", "256-128-5",
-                  "256-128-7", "256-128-9", "256-128-11"]
-list_2d_model = ["256-128-1"]
-list_3d_model = ["256-128-64"]
-# list_3d_model = []
+# list_25d_model = ["256-128-3", "256-128-5",
+#                   "256-128-7", "256-128-9", "256-128-11"]
+# list_2d_model = ["256-128-1"]
+# list_3d_model = ["256-128-64"]
+
+list_25d_model = ["256-128-3"]
+list_2d_model = []
+list_3d_model = []
 
 
 for patch_shape in list_25d_model + list_2d_model + list_3d_model:
