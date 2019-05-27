@@ -92,4 +92,5 @@ model_list[:], cmd_list = zip(*combined)
 for i in range(len(model_list)):
     model_filename = model_list[i]
     cmd = cmd_list[i]
-    run(model_filename, cmd, mode_run=0)
+    run(model_filename=model_filename, cmd=cmd, config=config,
+        model_path="database/model", mode_run=0)

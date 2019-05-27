@@ -378,8 +378,8 @@ def train2d_kits():
                         default="64-256-256", 
                         help="image shape to read")
     parser.add_argument('-ps', '--patch_shape', type=str,
-                        default="1-256-256",
-                        # default="64-256-1",
+                        # default="1-256-256",
+                        default="64-256-1",
                         help="patch shape to train")
     parser.add_argument('-ba', '--batch_size', type=int,
                         default=32,

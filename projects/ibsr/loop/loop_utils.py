@@ -1,20 +1,17 @@
 from unet3d.utils.path_utils import get_project_dir
-from brats.config import config, config_unet
 import os
 
-config.update(config_unet)
 
-CURRENT_WORKING_DIR = os.path.realpath(__file__)
-PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
-BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
-DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
-
-
-def run(model_filename, cmd, model_path="database/model/finetune", mode_run=2):
+def run(model_filename, cmd, config, model_path="database/model/finetune", mode_run=2):
 
     # mode_run: 0 - just run
     # mode_run: 1 - run if file not exists
     # mode_run: 2 - run if file not exists and no gpu is running
+
+    CURRENT_WORKING_DIR = os.path.realpath(__file__)
+    PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
+    BRATS_DIR = os.path.join(PROJECT_DIR, config["brats_folder"])
+    DATASET_DIR = os.path.join(PROJECT_DIR, config["dataset_folder"])
 
     def check_is_running(model_filename):
         path = os.path.join(BRATS_DIR, "loop/running.txt")

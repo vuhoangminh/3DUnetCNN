@@ -23,7 +23,8 @@ def find_is_augment(config):
     augment_shift = config["augment_shift"],
     augment_shear = config["augment_shear"],
     augment_zoom = config["augment_zoom"]
-    augment = augment_flipud[0] or augment_fliplr[0] or augment_elastic[0] or augment_rotation[0] or augment_shift[0] or augment_shear[0] or augment_zoom
+    augment = augment_flipud[0] or augment_fliplr[0] or augment_elastic[
+        0] or augment_rotation[0] or augment_shift[0] or augment_shear[0] or augment_zoom
     if augment:
         is_augment = "1"
     else:
@@ -38,9 +39,9 @@ def update_is_augment(args, config):
     config["augment_shift"] = False
     config["augment_shear"] = False
     config["augment_zoom"] = False
-    config["augment_rotation"], config["augment_fliplr"]= False, False
-    if args.is_augment=="1":
-        config["augment_rotation"], config["augment_fliplr"]= True, True
+    config["augment_rotation"], config["augment_fliplr"] = False, False
+    if args.is_augment == "1":
+        config["augment_rotation"], config["augment_fliplr"] = True, True
     return config
 
 
@@ -149,7 +150,7 @@ def get_model_name(args):
     if "tv" in args.loss:
         from decimal import Decimal
         args.loss = "{}-{}".format(args.loss,
-                                     "{:.0E}".format(Decimal(str(args.weight_tv_to_main_loss))))
+                                   "{:.0E}".format(Decimal(str(args.weight_tv_to_main_loss))))
         # loss = loss + "-" + Decimal(str(weight_tv_to_main_loss))
     if any(ext in args.model for ext in config_dict["model_depth"]):
         return "ps-{}_{}_crf-{}_d-{}_nb-{}_loss-{}_aug-{}".format(
@@ -235,6 +236,14 @@ def get_shape_from_string(shape_string):
     splitted_string = shape_string.split("-")
     splitted_number = list(map(int, splitted_string))
     return tuple(splitted_number)
+
+
+def get_input_shape_from_tuple(shape_tuple):
+    shape_list = list()
+    for i in range(len(shape_tuple)):
+        if i == 0 or shape_tuple[i] != 1:
+            shape_list.append(shape_tuple[i])
+    return tuple(shape_list)
 
 
 def get_training_h5_paths(brats_dir, args, is_finetune=False, dir_read_write="base"):

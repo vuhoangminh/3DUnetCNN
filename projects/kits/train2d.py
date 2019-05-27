@@ -16,12 +16,12 @@ from projects.kits.prepare_data import prepare_data
 import unet3d.utils.args_utils as get_args
 from unet3d.utils.path_utils import make_dir
 from unet3d.utils.path_utils import get_training_h5_paths
-from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
+from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string, get_input_shape_from_tuple
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_model_h5_filename
 from unet3d.training import load_old_model, train_model
 from unet2d.model import *
-# from projects.kits.generator2d import get_training_and_validation_and_testing_generators2d
-from unet2d.generator import get_training_and_validation_and_testing_generators2d
+from projects.kits.generator2d import get_training_and_validation_and_testing_generators2d
+# from unet2d.generator import get_training_and_validation_and_testing_generators2d
 from unet3d.data import write_data_to_file, open_data_file
 import numpy as np
 import pprint
@@ -102,15 +102,7 @@ def train(args):
     print("# Load or init model")
     print("-"*60)
 
-    # config["input_shape"] = (
-    #     config["input_shape"][0],
-    #     config["input_shape"][2],
-    #     config["input_shape"][3])
-
-    config["input_shape"] = (
-        config["input_shape"][0],
-        config["input_shape"][1],
-        config["input_shape"][2])
+    config["input_shape"] = get_input_shape_from_tuple(config["input_shape"])
 
     if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
