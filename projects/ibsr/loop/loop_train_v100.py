@@ -92,4 +92,4 @@ model_list[:], cmd_list = zip(*combined)
 for i in range(len(model_list)):
     model_filename = model_list[i]
     cmd = cmd_list[i]
-    run(model_filename, cmd)
+    run(model_filename, cmd, mode_run=0)
