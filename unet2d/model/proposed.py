@@ -4,6 +4,7 @@ from keras.layers import (Activation, BatchNormalization, Conv2D,
                           MaxPooling2D, Permute, PReLU, Reshape, UpSampling2D,
                           multiply, Add)
 from unet3d.utils.model_utils import compile_model
+from unet2d.model.blocks import get_down_sampling
 from unet2d.model.blocks import get_up_convolution2d
 from unet2d.model.blocks import squeeze_excite_block2d
 from unet2d.model.blocks import create_convolution_block2d, conv_block_resnet2d
@@ -19,7 +20,8 @@ def baseline_unet(inputs, pool_size=(2, 2), n_labels=1,
                   activation_name="sigmoid",
                   is_unet_original=True,
                   weight_decay=1e-5,
-                  name=None
+                  name=None,
+                  down_levels=None
                   ):
     """
     Builds the 3D UNet Keras model.f
@@ -43,8 +45,11 @@ def baseline_unet(inputs, pool_size=(2, 2), n_labels=1,
     current_layer = inputs
     levels = list()
 
-    # add levels with max pooling
+# add levels with max pooling
     for layer_depth in range(depth):
+        if down_levels is not None and layer_depth > 0:
+            current_layer = concatenate(
+                [down_levels[layer_depth], current_layer], axis=1)
         layer1 = create_convolution_block2d(input_layer=current_layer,
                                             n_filters=n_base_filters *
                                             (2**layer_depth),
@@ -89,7 +94,8 @@ def baseline_isensee(inputs, n_base_filters=16, depth=5,
                      dropout_rate=0.3, n_segmentation_levels=3, n_labels=1,
                      weight_decay=1e-5,
                      activation_name="sigmoid",
-                     name=None):
+                     name=None,
+                     down_levels=None):
 
     from unet2d.model.isensee2d import create_context_module
     from unet2d.model.isensee2d import create_up_sampling_module
@@ -98,9 +104,13 @@ def baseline_isensee(inputs, n_base_filters=16, depth=5,
     current_layer = inputs
     level_output_layers = list()
     level_filters = list()
-    for level_number in range(depth):
-        n_level_filters = (2**level_number) * n_base_filters
+    for layer_depth in range(depth):
+        n_level_filters = (2**layer_depth) * n_base_filters
         level_filters.append(n_level_filters)
+
+        if down_levels is not None and layer_depth > 0:
+            current_layer = concatenate(
+                [down_levels[layer_depth], current_layer], axis=1)
 
         if current_layer is inputs:
             in_conv = create_convolution_block2d(
@@ -120,29 +130,29 @@ def baseline_isensee(inputs, n_base_filters=16, depth=5,
         current_layer = summation_layer
 
     segmentation_layers = list()
-    for level_number in range(depth - 2, -1, -1):
+    for layer_depth in range(depth - 2, -1, -1):
         up_sampling = create_up_sampling_module(
-            current_layer, level_filters[level_number],
+            current_layer, level_filters[layer_depth],
             weight_decay=weight_decay)
         concatenation_layer = concatenate(
-            [level_output_layers[level_number], up_sampling], axis=1)
+            [level_output_layers[layer_depth], up_sampling], axis=1)
         localization_output = create_localization_module(
-            concatenation_layer, level_filters[level_number],
+            concatenation_layer, level_filters[layer_depth],
             weight_decay=weight_decay)
         current_layer = localization_output
-        if level_number < n_segmentation_levels:
+        if layer_depth < n_segmentation_levels:
             segmentation_layers.insert(
                 0, Conv2D(n_labels, (1, 1))(current_layer))
 
     output_layer = None
-    for level_number in reversed(range(n_segmentation_levels)):
-        segmentation_layer = segmentation_layers[level_number]
+    for layer_depth in reversed(range(n_segmentation_levels)):
+        segmentation_layer = segmentation_layers[layer_depth]
         if output_layer is None:
             output_layer = segmentation_layer
         else:
             output_layer = Add()([output_layer, segmentation_layer])
 
-        if level_number > 0:
+        if layer_depth > 0:
             output_layer = UpSampling2D(size=(2, 2))(output_layer)
 
     output = Activation(activation_name, name=name)(output_layer)
@@ -157,7 +167,8 @@ def baseline_resnet(inputs, pool_size=(2, 2), n_labels=1,
                     activation_name="sigmoid",
                     is_unet_original=True,
                     weight_decay=1e-5,
-                    name=None
+                    name=None,
+                    down_levels=None
                     ):
     """
     Builds the 3D UNet Keras model.f
@@ -184,6 +195,11 @@ def baseline_resnet(inputs, pool_size=(2, 2), n_labels=1,
     # add levels with max pooling
     for layer_depth in range(depth):
         n_filters = n_base_filters * (2**layer_depth)
+
+        if down_levels is not None and layer_depth > 0:
+            current_layer = concatenate(
+                [down_levels[layer_depth], current_layer], axis=1)
+
         layer1 = conv_block_resnet2d(input_layer=current_layer,
                                      kernel_size=3,
                                      n_filters=[n_filters,
@@ -238,7 +254,45 @@ def baseline_resnet(inputs, pool_size=(2, 2), n_labels=1,
     return output
 
 
-# casnet_v9 (similar to v2): replace conv_block by baseline_isensee
+# casnet_v10 (similar to v2): concat down-sampled input at different levels of encoders
+def casnet_v10(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+               depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
+               batch_normalization=True, activation_name="sigmoid",
+               loss_function="casweighted",
+               weight_decay=1e-5, labels=[1, 2, 4]
+               ):
+
+    inputs = Input(input_shape)
+    inp_whole = inputs
+    down_levels = get_down_sampling(inputs, depth=depth)
+    out_whole = baseline_unet(inp_whole, depth=depth,
+                              n_base_filters=n_base_filters,
+                              weight_decay=weight_decay,
+                              down_levels=down_levels,
+                              name="out_whole")
+
+    inp_core = concatenate([out_whole, inp_whole], axis=1)
+    out_core = baseline_unet(inp_core, depth=depth,
+                             n_base_filters=n_base_filters,
+                             weight_decay=weight_decay,
+                             down_levels=down_levels,
+                             name="out_core")
+
+    inp_enh = concatenate([out_core, inp_core], axis=1)
+    out_enh = baseline_unet(inp_enh, depth=depth,
+                            n_base_filters=n_base_filters,
+                            weight_decay=weight_decay,
+                            down_levels=down_levels,
+                            name="out_enh")
+
+    model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
+
+    return compile_model(model, loss_function=loss_function,
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
+
+
+# casnet_v9 (similar to v2): replace baseline_unet by baseline_isensee
 def casnet_v9(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
               depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
               batch_normalization=True, activation_name="sigmoid",
@@ -808,7 +862,7 @@ def sepnet_v2(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0
 
 
 def main():
-    model = casnet_v9(input_shape=(4, 160, 192))
+    model = casnet_v10(input_shape=(4, 160, 192))
     model.summary()
 
 

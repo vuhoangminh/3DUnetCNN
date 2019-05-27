@@ -140,6 +140,6 @@ def compile_model(model, loss_function="weighted",
         #                   loss=loss, metrics=[metrics])
         # else:
         model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
-                        loss=loss)
+                      loss=loss)
 
     return model

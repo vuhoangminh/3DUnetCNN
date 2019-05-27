@@ -101,7 +101,8 @@ def train(args):
         from unet3d.utils.model_utils import generate_model
         if "casnet" in args.model:
             args.loss = "casweighted"
-        model = generate_model(config["model_file"], loss_function=args.loss, labels=config["labels"])
+        model = generate_model(
+            config["model_file"], loss_function=args.loss, labels=config["labels"])
     else:
         # instantiate new model
         if args.model == "isensee":
@@ -204,7 +205,14 @@ def train(args):
                               initial_learning_rate=config["initial_learning_rate"],
                               deconvolution=config["deconvolution"],
                               n_base_filters=args.n_base_filters_unet,
-                              labels=config["labels"])                            
+                              labels=config["labels"])
+        elif args.model == "casnet_v10":
+            print("init casnet_v10 model")
+            model = casnet_v10(input_shape=config["input_shape"],
+                               initial_learning_rate=config["initial_learning_rate"],
+                               deconvolution=config["deconvolution"],
+                               n_base_filters=args.n_base_filters_unet,
+                               labels=config["labels"])
         elif args.model == "sepnet_v1":
             print("init sepnet_v1 model")
             model = sepnet_v1(input_shape=config["input_shape"],

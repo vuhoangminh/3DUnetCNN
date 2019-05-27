@@ -74,7 +74,7 @@ def weighted_dice_coefficient_loss_new(labels=[1, 2, 4]):
     return weighted_dice_coefficient_loss
 
 
-def minh_dice_coef_metric(labels=[1, 2, 4]):
+def minh_dice_coef_metric_new(labels=[1, 2, 4]):
     def minh_dice_coef_metric(y_true, y_pred):
         distance = 0
         for label in range(len(labels)):
@@ -118,13 +118,13 @@ def minh_dice_coef_loss(y_true, y_pred, labels=config["labels"], weights=[2, 1, 
     return distance
 
 
-# def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"], weights=[2, 1, 3]):
-#     distance = 0
-#     for label in range(len(labels)):
-#         dice_coef_class = dice_coefficient(y_true[:, label], y_pred[:, label])
-#         dice_coef_class_weighted = dice_coef_class*weights[label]/6
-#         distance = dice_coef_class_weighted + distance
-#     return distance
+def minh_dice_coef_metric(y_true, y_pred, labels=config["labels"], weights=[2, 1, 3]):
+    distance = 0
+    for label in range(len(labels)):
+        dice_coef_class = dice_coefficient(y_true[:, label], y_pred[:, label])
+        dice_coef_class_weighted = dice_coef_class*weights[label]/6
+        distance = dice_coef_class_weighted + distance
+    return distance
 
 
 def tversky(y_true, y_pred, smooth=0.00001):
@@ -302,7 +302,7 @@ def tv_minh_loss(alpha=0.1):
 
 def tv_weighted_loss(alpha=0.1):
     def loss(y_true, y_pred):
-        return alpha*tv_ndim_loss(y_pred) + weighted_dice_coefficient_loss()
+        return alpha*tv_ndim_loss(y_pred) + weighted_dice_coefficient_loss(y_true, y_pred)
     return loss
 
 

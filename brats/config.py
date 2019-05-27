@@ -104,7 +104,7 @@ config_dict = dict()
 config_dict["challenge"] = ["brats"]
 config_dict["year"] = [2018, 2019]
 config_dict["model"] = ["unet", "isensee", "mnet", "unet_vae", "segnet"]
-config_dict["model"] = config_dict["model"] + ["casnet_v1", "casnet_v2", "casnet_v3", "casnet_v4", "casnet_v5", "casnet_v6", "casnet_v7", "casnet_v8", "casnet_v9"]
+config_dict["model"] = config_dict["model"] + ["casnet_v1", "casnet_v2", "casnet_v3", "casnet_v4", "casnet_v5", "casnet_v6", "casnet_v7", "casnet_v8", "casnet_v9", "casnet_v10"]
 config_dict["model"] = config_dict["model"] + ["sepnet_v1", "sepnet_v2"]
 config_dict["model_depth"] = ["unet", "seunet", "multi", "denseunet", "resunet"]
 # "deepmedic", "maskrcnn", "cascaded", "proposed"]

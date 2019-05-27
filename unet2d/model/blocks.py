@@ -337,3 +337,15 @@ def conv_block_resnet2d(input_layer, kernel_size, n_filters, stage, block,
     x = Add()([x, shortcut])
     x = Activation('relu', name='res' + str(stage) + block + '_out')(x)
     return x
+
+
+def get_down_sampling(input_layer, pool_size=(2, 2), depth=4):
+    levels = list()
+    current_layer = input_layer
+    for layer_depth in range(depth):
+        if layer_depth == 0:
+            levels.append(current_layer)
+        else:
+            current_layer = MaxPooling2D(pool_size=pool_size)(current_layer)
+            levels.append(current_layer)
+    return levels
