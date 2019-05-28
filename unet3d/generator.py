@@ -2,16 +2,17 @@ import os
 import copy
 from random import shuffle
 import itertools
-
 import numpy as np
 import time
 
-from .utils import pickle_dump, pickle_load
-from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
+from unet3d.utils import pickle_dump, pickle_load
+from unet3d.utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
 
 import tensorlayer as tl
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
+
+import unet3d.utils.image_utils as image_utils
 
 
 def get_training_and_validation_and_testing_generators(data_file, batch_size, n_labels, training_keys_file,
@@ -363,6 +364,12 @@ def elastic_transform_multi(x, alpha, sigma, mode="constant", cval=0, is_random=
 def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                  augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
     """ data augumentation """
+    shape_data = data[0].shape
+    if np.argmin(shape_data) == 0:
+        data = image_utils.move_axis_data(data, source=0, destination=-1)
+    elif np.argmin(shape_data) == 1:
+        data = image_utils.move_axis_data(data, source=-1, destination=0)
+
     if augment_flipud:
         data = tl.prepro.flip_axis_multi(
             data, axis=0, is_random=True)  # up down
@@ -384,6 +391,11 @@ def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elast
     if augment_zoom:
         data = tl.prepro.zoom_multi(
             data, zoom_range=[0.9, 1.1], is_random=True, fill_mode='constant')
+
+    if np.argmin(shape_data) == 0:
+        data = image_utils.move_axis_data(data, source=-1, destination=0)
+    elif np.argmin(shape_data) == 1:
+        data = image_utils.move_axis_data(data, source=0, destination=-1)
     return data
 
 

@@ -11,12 +11,13 @@ from unet3d.generator import get_train_valid_test_split, get_number_of_steps
 from unet3d.generator import get_train_valid_test_split_isbr
 from unet3d.generator import get_number_of_patches, create_patch_index_list
 from unet3d.generator import get_multi_class_labels, get_data_from_file
+from unet3d.utils.threadsafe import threadsafe_generator
 
 import tensorlayer as tl
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
 
-from unet3d.utils.threadsafe import threadsafe_generator
+import unet3d.utils.image_utils as image_utils
 # from unet3d.generator import get_training_and_validation_and_testing_generators
 
 
@@ -28,7 +29,8 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                                          augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                          augment_rotation=False, augment_shift=False, augment_shear=False,
                                                          augment_zoom=False, n_augment=0, skip_blank=False, is_test="1",
-                                                         patch_overlap=[0, 0, -1],
+                                                         patch_overlap=[
+                                                             0, 0, -1],
                                                          project="brats",
                                                          is_extract_patch_agressive=False,
                                                          data_type_generator="combined"):
@@ -300,6 +302,12 @@ def elastic_transform_multi2d(x, alpha, sigma, mode="constant", cval=0, is_rando
 def augment_data2d(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                    augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
     """ data augumentation """
+    shape_data = data[0].shape
+    if np.argmin(shape_data) == 0:
+        data = image_utils.move_axis_data(data, source=0, destination=-1)
+    elif np.argmin(shape_data) == 1:
+        data = image_utils.move_axis_data(data, source=-1, destination=0)
+        
     if augment_flipud:
         data = tl.prepro.flip_axis_multi(
             data, axis=0, is_random=True)  # up down
@@ -321,6 +329,11 @@ def augment_data2d(data, augment_flipud=False, augment_fliplr=False, augment_ela
     if augment_zoom:
         data = tl.prepro.zoom_multi(
             data, zoom_range=[0.9, 1.1], is_random=True, fill_mode='constant')
+
+    if np.argmin(shape_data) == 0:
+        data = image_utils.move_axis_data(data, source=-1, destination=0)
+    elif np.argmin(shape_data) == 1:
+        data = image_utils.move_axis_data(data, source=0, destination=-1)
     return data
 
 
@@ -406,7 +419,7 @@ def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overl
                        skip_blank=skip_blank, patch_shape=patch_shape,
                        data_type_generator=data_type_generator)
 
-            a,b = convert_data2d(x_list, y_list, n_labels=2)
+            a, b = convert_data2d(x_list, y_list, n_labels=2)
 
             if len(x_list) > 0:
                 count += 1
