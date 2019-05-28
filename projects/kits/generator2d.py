@@ -11,12 +11,14 @@ from unet3d.generator import get_train_valid_test_split, get_number_of_steps
 from unet3d.generator import get_train_valid_test_split_isbr
 from unet3d.generator import get_number_of_patches, create_patch_index_list
 from unet3d.generator import get_multi_class_labels, get_data_from_file
+from unet3d.utils.threadsafe import threadsafe_generator
 
 import tensorlayer as tl
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
 
-from unet3d.utils.threadsafe import threadsafe_generator
+import unet3d.utils.image_utils as image_utils
+
 # from unet3d.generator import get_training_and_validation_and_testing_generators
 
 
@@ -28,7 +30,8 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                                          augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                          augment_rotation=False, augment_shift=False, augment_shear=False,
                                                          augment_zoom=False, n_augment=0, skip_blank=False, is_test="1",
-                                                         patch_overlap=[0, 0, -1],
+                                                         patch_overlap=[
+                                                             0, 0, -1],
                                                          project="brats",
                                                          is_extract_patch_agressive=False,
                                                          data_type_generator="combined"):
@@ -118,15 +121,15 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # Set the number of training and testing samples per epoch correctly
     print(">> compute number of training and validation steps")
 
-    num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
-                                                                     patch_start_offset=training_patch_start_offset,
-                                                                     patch_overlap=patch_overlap,
-                                                                     data_type_generator=data_type_generator),
-                                             batch_size)
-    num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
-                                                                       patch_overlap=0,
-                                                                       data_type_generator=data_type_generator),
-                                               validation_batch_size)
+    # num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
+    #                                                                  patch_start_offset=training_patch_start_offset,
+    #                                                                  patch_overlap=patch_overlap,
+    #                                                                  data_type_generator=data_type_generator),
+    #                                          batch_size)
+    # num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
+    #                                                                    patch_overlap=0,
+    #                                                                    data_type_generator=data_type_generator),
+    #                                            validation_batch_size)
 
     # else:
     #     # num_training_steps = get_number_of_steps(11137, batch_size)
@@ -134,16 +137,16 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # num_training_steps = get_number_of_steps(5576, batch_size)
     # num_validation_steps = get_number_of_steps(2794, validation_batch_size)
 
-    # from unet3d.generator import get_number_of_patches
-    # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-    #                                                                patch_start_offset=training_patch_start_offset,
-    #                                                                patch_overlap=patch_overlap,
-    #                                                                is_extract_patch_agressive=is_extract_patch_agressive),
-    #                                          batch_size)
-    # num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-    #                                                                  patch_overlap=validation_patch_overlap,
-    #                                                                  is_extract_patch_agressive=is_extract_patch_agressive),
-    #                                            validation_batch_size)
+    from unet3d.generator import get_number_of_patches
+    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+                                                                   patch_start_offset=training_patch_start_offset,
+                                                                   patch_overlap=patch_overlap,
+                                                                   is_extract_patch_agressive=is_extract_patch_agressive),
+                                             batch_size)
+    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+                                                                     patch_overlap=validation_patch_overlap,
+                                                                     is_extract_patch_agressive=is_extract_patch_agressive),
+                                               validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
@@ -285,6 +288,13 @@ def elastic_transform_multi2d(x, alpha, sigma, mode="constant", cval=0, is_rando
 def augment_data2d(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                    augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
     """ data augumentation """
+    shape_data = data[0].shape
+
+    if np.argmin(shape_data) == 0:
+        data = image_utils.move_axis_data(data, source=0, destination=-1)
+    elif np.argmin(shape_data) == 1:
+        data = image_utils.move_axis_data(data, source=-1, destination=0)
+
     if augment_flipud:
         data = tl.prepro.flip_axis_multi(
             data, axis=0, is_random=True)  # up down
@@ -306,6 +316,11 @@ def augment_data2d(data, augment_flipud=False, augment_fliplr=False, augment_ela
     if augment_zoom:
         data = tl.prepro.zoom_multi(
             data, zoom_range=[0.9, 1.1], is_random=True, fill_mode='constant')
+
+    if np.argmin(shape_data) == 0:
+        data = image_utils.move_axis_data(data, source=-1, destination=0)
+    elif np.argmin(shape_data) == 1:
+        data = image_utils.move_axis_data(data, source=0, destination=-1)
     return data
 
 
@@ -388,18 +403,20 @@ def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overl
             x_list = list()
             y_list = list()
             add_data2d(x_list, y_list, data_file, index,
+                       augment_fliplr=True,
+                       augment_rotation=True,
                        skip_blank=skip_blank, patch_shape=patch_shape,
                        data_type_generator=data_type_generator)
 
-            if len(x_list) > 0:                
-                count += 1 
-                a,b = convert_data2d(x_list, y_list, n_labels=2)
-                if b[0][1].max()>0 and count % 10 == 0:
-                    from unet3d.utils.image_utils import display_array_as_image
-                    display_array_as_image(np.squeeze(a))
-                    display_array_as_image(np.squeeze(b)[0])
-                    display_array_as_image(np.squeeze(b)[1])
-                    t=0
+            if len(x_list) > 0:
+                count += 1
+                # a,b = convert_data2d(x_list, y_list, n_labels=2)
+                # if b[0][1].max()>0 and count % 10 == 0:
+                #     from unet3d.utils.image_utils import display_array_as_image
+                #     display_array_as_image(np.squeeze(a))
+                #     display_array_as_image(np.squeeze(b)[0])
+                #     display_array_as_image(np.squeeze(b)[1])
+                #     t=0
 
         print(">> processing {}/{}, added {}/{}".format(i,
                                                         len(index_list), count, len(index_list)))

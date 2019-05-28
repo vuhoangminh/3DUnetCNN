@@ -37,6 +37,10 @@ def parent_train_parser():
                         default="1")
     parser.add_argument('-name', '--name', type=str,
                         default="0")
+    parser.add_argument('-lr', '--learning_rate', type=float,
+                        default=None)
+    parser.add_argument('-ne', '--n_epochs', type=input,
+                        default=None)
     return parser
 
 
@@ -323,7 +327,7 @@ def prepare_data_kits():
                         default=2019, choices=config_dict["year"],
                         help="year of challenge")
     parser.add_argument('-is', '--image_shape', type=str,
-                        default="64-256-256", 
+                        default="64-256-256",
                         help="image shape to read")
     parser.add_argument('-r', '--crop', type=str,
                         default="0")
@@ -345,7 +349,7 @@ def train_kits():
                         default=2019, choices=config_dict["year"],
                         help="year of challenge")
     parser.add_argument('-is', '--image_shape', type=str,
-                        default="64-256-256", 
+                        default="64-256-256",
                         help="image shape to read")
     parser.add_argument('-ps', '--patch_shape', type=str,
                         default="32-256-256",
@@ -375,11 +379,11 @@ def train2d_kits():
                         default=2019, choices=config_dict["year"],
                         help="year of challenge")
     parser.add_argument('-is', '--image_shape', type=str,
-                        default="64-256-256", 
+                        default="64-256-256",
                         help="image shape to read")
     parser.add_argument('-ps', '--patch_shape', type=str,
-                        # default="1-256-256",
-                        default="64-256-1",
+                        default="1-256-256",
+                        # default="64-256-1",
                         help="patch shape to train")
     parser.add_argument('-ba', '--batch_size', type=int,
                         default=32,
@@ -391,6 +395,36 @@ def train2d_kits():
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
                         default=2)
+    args = parser.parse_args()
+    return args
+
+
+def train25d_kits():
+    parent_parser = parent_train_parser()
+    parser = argparse.ArgumentParser(
+        parents=[parent_parser], description='Finetuning')
+    parser.add_argument('-c', '--challenge', type=str,
+                        default="kits", choices=config_dict["challenge"],
+                        help="challenge name")
+    parser.add_argument('-y', '--year', type=str,
+                        default=2019, choices=config_dict["year"],
+                        help="year of challenge")
+    parser.add_argument('-is', '--image_shape', type=str,
+                        default="64-256-256",
+                        help="image shape to read")
+    parser.add_argument('-ps', '--patch_shape', type=str,
+                        default="3-256-256",
+                        help="patch shape to train")
+    parser.add_argument('-ba', '--batch_size', type=int,
+                        default=16,
+                        help="train batch size")
+    parser.add_argument('-r', '--crop', type=str,
+                        default="1", choices=config_dict["crop"])
+    parser.add_argument('-b', '--is_bias_correction', type=str,
+                        default="1", choices=config_dict["is_bias_correction"],
+                        help="perform bias field removal?")
+    parser.add_argument('-dim', '--model_dim', type=int,
+                        default=25)
     args = parser.parse_args()
     return args
 
