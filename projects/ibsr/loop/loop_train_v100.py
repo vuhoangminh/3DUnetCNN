@@ -52,7 +52,7 @@ for patch_shape in list_25d_model + list_2d_model + list_3d_model:
 
     for is_augment in ["1"]:
         args.is_augment = is_augment
-        for model_name in ["unet", "segnet"]:
+        for model_name in ["segnet"]:
             args.model = model_name
             for is_denoise in ["0"]:
                 args.is_denoise = is_denoise
