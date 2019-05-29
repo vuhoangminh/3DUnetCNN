@@ -29,6 +29,8 @@ from unet3d.utils.volume import get_non_zeros_pixel, get_zeros_pixel
 from unet3d.utils.volume import get_shape
 from unet3d.utils.volume import get_size_bounding_box
 from unet3d.utils.volume import get_bounding_box
+from unet3d.utils.volume import get_spacing
+
 import unet3d.utils.args_utils as get_args
 
 
@@ -37,6 +39,10 @@ columns = ["dataset",
            "name",
            "modality",
            "size",
+           "spacing",
+           "spacing_x",
+           "spacing_y",
+           "spacing_z",
            "shape",
            "shape_x",
            "shape_y",
@@ -104,8 +110,12 @@ def analyze_one_folder(data_folder, dataset, config, overwrite=False):
             dataset, folder, name, modality = get_header_info(subject_dir)
 
             volume = nib.load(subject_dir)
-            volume = volume.get_fdata()
+            df["spacing"][i] = get_spacing(volume)
+            df["spacing_x"][i] = df["spacing"][i][0]
+            df["spacing_y"][i] = df["spacing"][i][1]
+            df["spacing_z"][i] = df["spacing"][i][2]
 
+            volume = volume.get_fdata()
             df["dataset"][i] = dataset
             df["folder"][i] = folder
             df["name"][i] = name

@@ -134,8 +134,9 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # else:
     #     # num_training_steps = get_number_of_steps(11137, batch_size)
 
-    # num_training_steps = get_number_of_steps(5576, batch_size)
-    # num_validation_steps = get_number_of_steps(2794, validation_batch_size)
+    ## 1-512-512
+    # num_training_steps = get_number_of_steps(6690, batch_size)
+    # num_validation_steps = get_number_of_steps(1605, validation_batch_size)
 
     from unet3d.generator import get_number_of_patches
     num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
@@ -403,8 +404,8 @@ def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overl
             x_list = list()
             y_list = list()
             add_data2d(x_list, y_list, data_file, index,
-                       augment_fliplr=True,
-                       augment_rotation=True,
+                    #    augment_fliplr=True,
+                    #    augment_rotation=True,
                        skip_blank=skip_blank, patch_shape=patch_shape,
                        data_type_generator=data_type_generator)
 

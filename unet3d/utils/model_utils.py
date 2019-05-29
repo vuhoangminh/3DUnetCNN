@@ -14,6 +14,7 @@ from unet3d.metrics import tv_minh_loss
 from unet3d.metrics import tv_weighted_loss
 from unet3d.metrics import minh_dice_coef_metric
 from unet3d.metrics import dice_coefficient_loss
+from keras.losses import categorical_crossentropy
 
 
 def load_model_multi_gpu(model_file):
@@ -112,6 +113,8 @@ def compile_model(model, loss_function="weighted",
     elif loss_function == "weighted":
         # loss = weighted_dice_coefficient_loss(labels=labels)
         loss = weighted_dice_coefficient_loss
+    elif loss_function == "categorical":
+        loss = categorical_crossentropy
     if loss_function == "casweighted":
         model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
                       loss={'out_whole': dice_coefficient_loss,
@@ -135,11 +138,15 @@ def compile_model(model, loss_function="weighted",
                                     }
                       )
     else:
+        if loss_function == "categorical":
+            model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
+                          loss=loss, metrics=[weighted_dice_coefficient_loss])
+        else:
+            model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
+                          loss=loss)
         # if metrics is not None:
         #     model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
         #                   loss=loss, metrics=[metrics])
         # else:
-        model.compile(optimizer=Adam(lr=initial_learning_rate, beta_1=0.9, beta_2=0.999),
-                      loss=loss)
 
     return model

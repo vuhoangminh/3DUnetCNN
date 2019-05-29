@@ -13,6 +13,10 @@ from unet3d.utils.path_utils import get_modality
 from brats.config import config
 
 
+def get_spacing(volume):
+    return volume.header.get_zooms()
+
+
 def get_shape(volume):
     return volume.shape
 
@@ -128,7 +132,7 @@ def is_truth_path(path, truth_name="truth"):
     if truth_name in path:
         return True
     else:
-        return False     
+        return False
 
 
 def get_background_mask(volume_path):

@@ -1,85 +1,35 @@
 from functools import partial
 
-from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Activation
-from keras.layers import SpatialDropout3D, Conv3D, Deconvolution3D, MaxPooling3D
+
+from keras.layers.core import Dense, Lambda
+from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Activation, MaxPooling3D
+from keras.layers import SpatialDropout3D, Conv3D, BatchNormalization, Dropout
 from keras.engine import Model
 from keras.optimizers import Adam
 
-from .unet import create_convolution_block, concatenate, get_up_convolution, squeeze_excite_block
-from ..metrics import weighted_dice_coefficient_loss, tversky_loss, minh_dice_coef_loss, minh_dice_coef_metric
+from .unet import concatenate
+from ..metrics import weighted_dice_coefficient_loss, tversky_loss
+from ..metrics import minh_dice_coef_loss, minh_dice_coef_metric
 
 from keras.utils import multi_gpu_model
+from keras import regularizers
+from keras.layers.merge import concatenate, add
 from unet3d.utils.model_utils import compile_model
+from unet3d.model.unet_vae import GroupNormalization
+import keras.backend as K
 
-create_convolution_block = partial(
-    create_convolution_block, activation=LeakyReLU, instance_normalization=True)
-
-
-def simple_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
-                    initial_learning_rate=0.00001,
-                    activation_name="sigmoid",
-                    depth=10,
-                    n_base_filters=32,
-                    metrics=minh_dice_coef_metric,
-                    loss_function="weighted",
-                    labels=[1, 2, 4],
-                    is_unet_original=True):
-    inputs = Input(input_shape)
-    current_layer = inputs
-    for layer_depth in range(depth):
-        current_layer = create_convolution_block(input_layer=current_layer,
-                                                 n_filters=n_base_filters,
-                                                 batch_normalization=False,
-                                                 is_unet_original=is_unet_original)
-
-    final_convolution = Conv3D(n_labels, (1, 1, 1))(current_layer)
-    act = Activation(activation_name)(final_convolution)
-    model = Model(inputs=inputs, outputs=act)
-
-    return compile_model(model, loss_function=loss_function,
-                         metrics=metrics,
-                         labels=labels,
-                         initial_learning_rate=initial_learning_rate)
+# import tensorflow as tf
+# import external.gradient_checkpointing.memory_saving_gradients as memory_saving_gradients
+# # from tensorflow.python.keras._impl.keras import backend as K
+# import tensorflow.keras.backend as K
+# # K.__dict__["gradients"] = memory_saving_gradients.gradients_memory
+# # K.__dict__["gradients"] = memory_saving_gradients.gradients_speed
 
 
-def eye_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1,
-                 initial_learning_rate=0.00001,
-                 activation_name="sigmoid",
-                 depth=5,
-                 n_base_filters=8,
-                 growth_rate=2,
-                 metrics=minh_dice_coef_metric,
-                 loss_function="weighted",
-                 labels=[1, 2, 4],
-                 is_unet_original=True):
-    inputs = Input(input_shape)
-    current_layer = inputs
-    for layer_depth in reversed(range(depth)):
-        kernel_size = 3 + layer_depth*growth_rate
-        n_filters = n_base_filters*2**(depth-layer_depth-1)
-        current_layer = create_convolution_block(input_layer=current_layer,
-                                                 n_filters=n_filters,
-                                                 batch_normalization=False,
-                                                 is_unet_original=is_unet_original,
-                                                 kernel=(kernel_size, kernel_size, kernel_size))
-
-    final_convolution = Conv3D(n_labels, (1, 1, 1))(current_layer)
-    act = Activation(activation_name)(final_convolution)
-    model = Model(inputs=inputs, outputs=act)
-
-    return compile_model(model, loss_function=loss_function,
-                         metrics=metrics,
-                         labels=labels,
-                         initial_learning_rate=initial_learning_rate)
-
-
-def mnet_model_3d(input_shape=(4, 128, 128, 128), n_base_filters=32,
-                  pool_size=(2, 2, 2),
-                  n_segmentation_levels=3, n_labels=4,
-                  initial_learning_rate=5e-4,
-                  labels=[1, 2, 4],
-                  loss_function="weighted", activation_name="sigmoid",
-                  metrics=minh_dice_coef_metric):
+def pernet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
+           n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
+           loss_function="weighted", activation_name="sigmoid", metrics=minh_dice_coef_metric,
+           labels=[1, 2, 4]):
     """
     This function builds a model proposed by Isensee et al. for the BRATS 2017 challenge:
     https://www.cbica.upenn.edu/sbia/Spyridon.Bakas/MICCAI_BraTS/MICCAI_BraTS_2017_proceedings_shortPapers.pdf
@@ -102,195 +52,489 @@ def mnet_model_3d(input_shape=(4, 128, 128, 128), n_base_filters=32,
     """
     inputs = Input(input_shape)
 
-    down0 = inputs
-    down1 = create_convolution_block(down0, n_filters=4, strides=pool_size)
-    down2 = create_convolution_block(down1, n_filters=4, strides=pool_size)
-    down3 = create_convolution_block(down2, n_filters=4, strides=pool_size)
-
-    conv0 = create_convolution_block(down0, n_filters=n_base_filters)
-    conv1 = create_convolution_block(down1, n_filters=n_base_filters)
-    conv2 = create_convolution_block(down2, n_filters=n_base_filters)
-    conv3 = create_convolution_block(down3, n_filters=n_base_filters)
-
-    out3 = conv3
-    out3 = UpSampling3D(size=pool_size)(out3)
-
-    concat2 = concatenate([out3, conv2], axis=1)
-    out2 = create_convolution_block(concat2, n_filters=n_base_filters)
-    out2 = create_up_sampling_module(
-        out2, n_filters=n_base_filters, size=pool_size)
-
-    concat1 = concatenate([out2, conv1], axis=1)
-    out1 = create_convolution_block(concat1, n_filters=n_base_filters)
-    out1 = create_up_sampling_module(
-        out1, n_filters=n_base_filters, size=pool_size)
-
-    concat0 = concatenate([out1, conv0], axis=1)
-    out0 = create_convolution_block(concat0, n_filters=n_base_filters)
-
-    final_convolution = Conv3D(n_labels, (1, 1, 1))(out0)
-    act = Activation(activation_name)(final_convolution)
-    model = Model(inputs=inputs, outputs=act)
-
-    return compile_model(model, loss_function=loss_function,
-                         metrics=metrics,
-                         labels=labels,
-                         initial_learning_rate=initial_learning_rate)
-
-
-def mnet_model2_3d(input_shape=(4, 128, 128, 128), n_base_filters=32,
-                   pool_size=(2, 2, 2),
-                   n_segmentation_levels=3, n_labels=4,
-                   initial_learning_rate=5e-4,
-                   loss_function="weighted", activation_name="sigmoid",
-                   metrics=minh_dice_coef_metric):
-    """
-    This function builds a model proposed by Isensee et al. for the BRATS 2017 challenge:
-    https://www.cbica.upenn.edu/sbia/Spyridon.Bakas/MICCAI_BraTS/MICCAI_BraTS_2017_proceedings_shortPapers.pdf
-
-    This network is highly similar to the model proposed by Kayalibay et al. "CNN-based Segmentation of Medical
-    Imaging Data", 2017: https://arxiv.org/pdf/1701.03056.pdf
-
-
-    :param input_shape:
-    :param n_base_filters:
-    :param depth:
-    :param dropout_rate:
-    :param n_segmentation_levels:
-    :param n_labels:
-    :param optimizer:
-    :param initial_learning_rate:
-    :param loss_function:
-    :param activation_name:
-    :return:
-    """
-    inputs = Input(input_shape)
-
-    down0 = inputs
-    down1 = create_convolution_block(down0, n_filters=4, strides=pool_size)
-    down2 = create_convolution_block(down1, n_filters=4, strides=pool_size)
-    down3 = create_convolution_block(down2, n_filters=4, strides=pool_size)
-    # down1 = MaxPooling3D(pool_size=pool_size)(down0)
-    # down2 = MaxPooling3D(pool_size=pool_size)(down1)
-    # down3 = MaxPooling3D(pool_size=pool_size)(down2)
-
-    conv0 = create_convolution_block(down0, n_filters=n_base_filters)
-    conv1 = create_convolution_block(down1, n_filters=n_base_filters*2)
-    conv2 = create_convolution_block(down2, n_filters=n_base_filters*4)
-    conv3 = create_convolution_block(down3, n_filters=n_base_filters*8)
-
-    out3 = conv3
-    out3 = UpSampling3D(size=pool_size)(out3)
-
-    concat2 = concatenate([out3, conv2], axis=1)
-    out2 = create_convolution_block(concat2, n_filters=n_base_filters*4)
-    out2 = create_up_sampling_module2(
-        out2, n_filters=n_base_filters*4, size=pool_size)
-
-    concat1 = concatenate([out2, conv1], axis=1)
-    out1 = create_convolution_block(concat1, n_filters=n_base_filters*2)
-    out1 = create_up_sampling_module2(
-        out1, n_filters=n_base_filters*2, size=pool_size)
-
-    concat0 = concatenate([out1, conv0], axis=1)
-    out0 = create_convolution_block(concat0, n_filters=n_base_filters)
-
-    final_convolution = Conv3D(n_labels, (1, 1, 1))(out0)
-    act = Activation(activation_name)(final_convolution)
-    model = Model(inputs=inputs, outputs=act)
-
-    return compile_model(model, loss_function=loss_function,
-                         metrics=metrics,
-                         initial_learning_rate=initial_learning_rate)
-
-
-def multiscale_unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
-                             depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
-                             batch_normalization=False, activation_name="sigmoid",
-                             metrics=minh_dice_coef_metric,
-                             loss_function="weighted",
-                             is_unet_original=True,
-                             labels=[1, 2, 4]
-                             ):
-    """
-    Builds the 3D UNet Keras model.f
-    :param metrics: List metrics to be calculated during model training (default is dice coefficient).
-    :param include_label_wise_dice_coefficients: If True and n_labels is greater than 1, model will report the dice
-    coefficient for each label as metric.
-    :param n_base_filters: The number of filters that the first layer in the convolution network will have. Following
-    layers will contain a multiple of this number. Lowering this number will likely reduce the amount of memory required
-    to train the model.
-    :param depth: indicates the depth of the U-shape for the model. The greater the depth, the more max pooling
-    layers will be added to the model. Lowering the depth may reduce the amount of memory required for training.
-    :param input_shape: Shape of the input data (n_chanels, x_size, y_size, z_size). The x, y, and z sizes must be
-    divisible by the pool size to the power of the depth of the UNet, that is pool_size^depth.
-    :param pool_size: Pool size for the max pooling operations.
-    :param n_labels: Number of binary labels that the model is learning.
-    :param initial_learning_rate: Initial learning rate for the model. This will be decayed during training.
-    :param deconvolution: If set to True, will use transpose convolution(deconvolution) instead of up-sampling. This
-    increases the amount memory required during training.
-    :return: Untrained 3D UNet Model
-    """
-    inputs = Input(input_shape)
     current_layer = inputs
-    levels = list()
+    level_output_layers = list()
+    level_filters = list()
+    for level_number in range(depth):
+        n_level_filters = (2**level_number) * n_base_filters
+        level_filters.append(n_level_filters)
 
-    down_levels = list()
-    # add levels with max pooling
-    for layer_depth in range(depth):
-        layer = create_convolution_block(current_layer, n_filters=n_base_filters *
-                                         (2**layer_depth), strides=pool_size)
-        current_layer = layer
-        down_levels.append([layer])
-
-    current_layer = inputs
-    for layer_depth in range(depth):
-        if layer_depth > 0:
-            down_layer = down_levels[layer_depth-1][0]
-            current_layer = concatenate([down_layer, current_layer], axis=1)
-
-        layer1 = create_convolution_block(input_layer=current_layer,
-                                          n_filters=n_base_filters *
-                                          (2**layer_depth),
-                                          batch_normalization=batch_normalization,
-                                          is_unet_original=is_unet_original)
-
-        layer2 = create_convolution_block(input_layer=layer1,
-                                          n_filters=n_base_filters *
-                                          (2**layer_depth)*2,
-                                          batch_normalization=batch_normalization,
-                                          is_unet_original=is_unet_original)
-        if layer_depth < depth - 1:
-            current_layer = MaxPooling3D(pool_size=pool_size)(layer2)
-            levels.append([layer1, layer2, current_layer])
+        if current_layer is inputs:
+            in_conv = create_convolution_block(current_layer, n_level_filters)
         else:
-            current_layer = layer2
-            levels.append([layer1, layer2])
+            in_conv = create_convolution_block(
+                current_layer, n_level_filters, strides=(2, 2, 2))
 
-    # add levels with up-convolution or up-sampling
-    for layer_depth in range(depth-2, -1, -1):
-        up_convolution = get_up_convolution(pool_size=pool_size, deconvolution=deconvolution,
-                                            n_filters=current_layer._keras_shape[1])(current_layer)
-        concat = concatenate([up_convolution, levels[layer_depth][1]], axis=1)
-        if not is_unet_original:
-            concat = squeeze_excite_block(concat)
-        current_layer = create_convolution_block(n_filters=levels[layer_depth][1]._keras_shape[1],
-                                                 input_layer=concat,
-                                                 batch_normalization=batch_normalization,
-                                                 is_unet_original=is_unet_original)
-        current_layer = create_convolution_block(n_filters=levels[layer_depth][1]._keras_shape[1],
-                                                 input_layer=current_layer,
-                                                 batch_normalization=batch_normalization,
-                                                 is_unet_original=is_unet_original)
+        context_output_layer = create_context_module(
+            in_conv, n_level_filters, dropout_rate=dropout_rate)
 
-    final_convolution = Conv3D(n_labels, (1, 1, 1))(current_layer)
-    act = Activation(activation_name)(final_convolution)
-    model = Model(inputs=inputs, outputs=act)
+        summation_layer = Add()([in_conv, context_output_layer])
+        level_output_layers.append(summation_layer)
+        current_layer = summation_layer
+
+    segmentation_layers = list()
+    for level_number in range(depth - 2, -1, -1):
+        up_sampling = create_up_sampling_module(
+            current_layer, level_filters[level_number])
+        concatenation_layer = concatenate(
+            [level_output_layers[level_number], up_sampling], axis=1)
+        localization_output = create_localization_module(
+            concatenation_layer, level_filters[level_number])
+        current_layer = localization_output
+        if level_number < n_segmentation_levels:
+            segmentation_layers.insert(
+                0, Conv3D(n_labels, (1, 1, 1))(current_layer))
+
+    output_layer = None
+    for level_number in reversed(range(n_segmentation_levels)):
+        segmentation_layer = segmentation_layers[level_number]
+        if output_layer is None:
+            output_layer = segmentation_layer
+        else:
+            output_layer = Add()([output_layer, segmentation_layer])
+
+        if level_number > 0:
+            output_layer = UpSampling3D(size=(2, 2, 2))(output_layer)
+
+    activation_block = Activation(activation_name)(output_layer)
+
+    model = Model(inputs=inputs, outputs=activation_block)
 
     return compile_model(model, loss_function=loss_function,
                          metrics=metrics,
                          labels=labels,
                          initial_learning_rate=initial_learning_rate)
+
+
+def mnet(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
+         n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
+         weight_decay=1e-5, loss_function="weighted", activation_name="sigmoid",
+         metrics=minh_dice_coef_metric, labels=[1, 2, 4]):
+    """
+    :param input_shape:
+    :param n_base_filters:
+    :param depth:
+    :param dropout_rate:
+    :param n_segmentation_levels:
+    :param n_labels:
+    :param optimizer:
+    :param initial_learning_rate:
+    :param loss_function:
+    :param activation_name:
+    :return:
+    """
+    inp = Input(input_shape)
+    # The Initial Block
+
+    # The Initial Block
+    x = Conv3D(
+        filters=32,
+        kernel_size=(3, 3, 3),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        padding='same',
+        data_format='channels_first',
+        name='Input_x1')(inp)
+
+    ## Dropout (0.2)
+    x = Dropout(0.2)(x)
+
+    # Green Block x1 (output filters = 32)
+    # x1 = __bottleneck_block(x, 32, 4)
+    x1 = green_block(x, 32, weight_decay=weight_decay, name='x1')
+    x = Conv3D(
+        filters=32,
+        kernel_size=(3, 3, 3),
+        strides=2,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        padding='same',
+        data_format='channels_first',
+        name='Enc_DownSample_32')(x1)
+
+    # Green Block x2 (output filters = 64)
+    x = green_block(x, 64, weight_decay=weight_decay, name='Enc_64_1')
+    x2 = green_block(x, 64, weight_decay=weight_decay, name='x2')
+    x = Conv3D(
+        filters=64,
+        kernel_size=(3, 3, 3),
+        strides=2,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        padding='same',
+        data_format='channels_first',
+        name='Enc_DownSample_64')(x2)
+
+    # Green Blocks x2 (output filters = 128)
+    x = green_block(x, 128, weight_decay=weight_decay, name='Enc_128_1')
+    x3 = green_block(x, 128, weight_decay=weight_decay, name='x3')
+    x = Conv3D(
+        filters=128,
+        kernel_size=(3, 3, 3),
+        strides=2,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        padding='same',
+        data_format='channels_first',
+        name='Enc_DownSample_128')(x3)
+
+    # Green Blocks x4 (output filters = 256)
+    x = green_block(x, 256, weight_decay=weight_decay, name='Enc_256_1')
+    x = green_block(x, 256, weight_decay=weight_decay, name='Enc_256_2')
+    x = green_block(x, 256, weight_decay=weight_decay, name='Enc_256_3')
+    x4 = green_block(x, 256, weight_decay=weight_decay, name='x4')
+
+    # -------------------------------------------------------------------------
+    # Decoder
+    # -------------------------------------------------------------------------
+
+    # GT (Groud Truth) Part
+    # -------------------------------------------------------------------------
+
+    # Green Block x1 (output filters=128)
+    x = Conv3D(
+        filters=128,
+        kernel_size=(1, 1, 1),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        data_format='channels_first',
+        name='Dec_GT_ReduceDepth_128')(x4)
+    x = UpSampling3D(
+        size=2,
+        data_format='channels_first',
+        name='Dec_GT_UpSample_128')(x)
+    x = Add(name='Input_Dec_GT_128')([x, x3])
+    x = green_block(x, 128, weight_decay=weight_decay, name='Dec_GT_128')
+
+    # Green Block x1 (output filters=64)
+    x = Conv3D(
+        filters=64,
+        kernel_size=(1, 1, 1),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        data_format='channels_first',
+        name='Dec_GT_ReduceDepth_64')(x)
+    x = UpSampling3D(
+        size=2,
+        data_format='channels_first',
+        name='Dec_GT_UpSample_64')(x)
+    x = Add(name='Input_Dec_GT_64')([x, x2])
+    x = green_block(x, 64, weight_decay=weight_decay, name='Dec_GT_64')
+
+    # Green Block x1 (output filters=32)
+    x = Conv3D(
+        filters=32,
+        kernel_size=(1, 1, 1),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        data_format='channels_first',
+        name='Dec_GT_ReduceDepth_32')(x)
+    x = UpSampling3D(
+        size=2,
+        data_format='channels_first',
+        name='Dec_GT_UpSample_32')(x)
+    x = Add(name='Input_Dec_GT_32')([x, x1])
+    x = green_block(x, 32, weight_decay=weight_decay, name='Dec_GT_32')
+
+    # Blue Block x1 (output filters=32)
+    x = Conv3D(
+        filters=32,
+        kernel_size=(3, 3, 3),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        padding='same',
+        data_format='channels_first',
+        name='Input_Dec_GT_Output')(x)
+
+    # Output Block
+    out_GT = Conv3D(
+        filters=n_labels,  # No. of tumor classes is 3
+        kernel_size=(1, 1, 1),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        data_format='channels_first',
+        activation='sigmoid',
+        name='Dec_GT_Output')(x)
+
+    # Build and Compile the model
+    out = out_GT
+    model = Model(inp, out)  # Create the model
+
+    return compile_model(model, loss_function=loss_function,
+                         metrics=metrics,
+                         labels=labels,
+                         initial_learning_rate=initial_learning_rate)
+
+
+def __grouped_convolution_block(input, grouped_channels, cardinality, strides, weight_decay=5e-4):
+    ''' Adds a grouped convolution block. It is an equivalent block from the paper
+    Args:
+        input: input tensor
+        grouped_channels: grouped number of filters
+        cardinality: cardinality factor describing the number of groups
+        strides: performs strided convolution for downscaling if > 1
+        weight_decay: weight decay term
+    Returns: a keras tensor
+    '''
+    init = input
+    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
+
+    group_list = []
+
+    if cardinality == 1:
+        # with cardinality 1, it is a standard convolution
+        x = Conv3D(grouped_channels, (3, 3, 3), padding='same', use_bias=False, strides=(strides, strides, strides),
+                   kernel_initializer='he_normal', kernel_regularizer=regularizers.l2(weight_decay))(init)
+        x = BatchNormalization(axis=channel_axis)(x)
+        x = Activation('relu')(x)
+        return x
+
+    for c in range(cardinality):
+        x = Lambda(lambda z: z[:, :, :, c * grouped_channels:(c + 1) * grouped_channels]
+                   if K.image_data_format() == 'channels_last' else
+                   lambda z: z[:, c * grouped_channels:(c + 1) * grouped_channels, :, :])(input)
+
+        x = Conv3D(grouped_channels, (3, 3, 3), padding='same', use_bias=False, strides=(strides, strides, strides),
+                   kernel_initializer='he_normal', kernel_regularizer=regularizers.l2(weight_decay))(x)
+
+        group_list.append(x)
+
+    group_merge = concatenate(group_list, axis=channel_axis)
+    x = BatchNormalization(axis=channel_axis)(group_merge)
+    x = Activation('relu')(x)
+
+    return x
+
+
+def __bottleneck_block(input, filters=64, cardinality=8, strides=1, weight_decay=5e-4):
+    ''' Adds a bottleneck block
+    Args:
+        input: input tensor
+        filters: number of output filters
+        cardinality: cardinality factor described number of
+            grouped convolutions
+        strides: performs strided convolution for downsampling if > 1
+        weight_decay: weight decay factor
+    Returns: a keras tensor
+    '''
+    init = input
+
+    grouped_channels = int(filters / cardinality)
+    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
+
+    # Check if input number of filters is same as 16 * k, else create convolution2d for this input
+    if K.image_data_format() == 'channels_first':
+        if init._keras_shape[1] != 2 * filters:
+            init = Conv3D(filters * 2, (1, 1, 1), padding='same', strides=(strides, strides, strides),
+                          use_bias=False, kernel_initializer='he_normal', kernel_regularizer=regularizers.l2(weight_decay))(init)
+            init = BatchNormalization(axis=channel_axis)(init)
+    else:
+        if init._keras_shape[-1] != 2 * filters:
+            init = Conv3D(filters * 2, (1, 1, 1), padding='same', strides=(strides, strides, strides),
+                          use_bias=False, kernel_initializer='he_normal', kernel_regularizer=regularizers.l2(weight_decay))(init)
+            init = BatchNormalization(axis=channel_axis)(init)
+
+    x = Conv3D(filters, (1, 1, 1), padding='same', use_bias=False,
+               kernel_initializer='he_normal', kernel_regularizer=regularizers.l2(weight_decay))(input)
+    x = BatchNormalization(axis=channel_axis)(x)
+    x = Activation('relu')(x)
+
+    x = __grouped_convolution_block(
+        x, grouped_channels, cardinality, strides, weight_decay)
+
+    x = Conv3D(filters * 2, (1, 1, 1), padding='same', use_bias=False, kernel_initializer='he_normal',
+               kernel_regularizer=regularizers.l2(weight_decay))(x)
+    x = BatchNormalization(axis=channel_axis)(x)
+
+    x = add([init, x])
+    x = Activation('relu')(x)
+
+    return x
+
+
+def green_block_new(inp, filters, data_format='channels_first',
+                    cardinality=8, strides=1, weight_decay=5e-4,
+                    name=None):
+    """
+    green_block(inp, filters, name=None)
+    ------------------------------------
+    Implementation of the special residual block used in the paper. The block
+    consists of two (GroupNorm --> ReLu --> 3x3x3 non-strided Convolution)
+    units, with a residual connection from the input `inp` to the output. Used
+    internally in the model. Can be used independently as well.
+
+    Parameters
+    ----------
+    `inp`: An keras.layers.layer instance, required
+        The keras layer just preceding the green block.
+    `filters`: integer, required
+        No. of filters to use in the 3D convolutional block. The output
+        layer of this green block will have this many no. of channels.
+    `data_format`: string, optional
+        The format of the input data. Must be either 'chanels_first' or
+        'channels_last'. Defaults to `channels_first`, as used in the paper.
+    `name`: string, optional
+        The name to be given to this green block. Defaults to None, in which
+        case, keras uses generated names for the involved layers. If a string
+        is provided, the names of individual layers are generated by attaching
+        a relevant prefix from [GroupNorm_, Res_, Conv3D_, Relu_, ], followed
+        by _1 or _2.
+
+    Returns
+    -------
+    `out`: A keras.layers.Layer instance
+        The output of the green block. Has no. of channels equal to `filters`.
+        The size of the rest of the dimensions remains same as in `inp`.
+    """
+    channel_axis = 1 if data_format == 'channels_first' else -1
+    grouped_channels = int(filters / cardinality)
+
+    inp_res = Conv3D(
+        filters=filters,
+        kernel_size=(1, 1, 1),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        data_format=data_format,
+        name=f'Res_{name}' if name else None)(inp)
+
+    # axis=1 for channels_first data format
+    # No. of groups = 8, as given in the paper
+    x = BatchNormalization(
+        axis=channel_axis,
+        name=f'BatchNorm_1_{name}' if name else None)(inp)
+    x = Activation('relu', name=f'Relu_1_{name}' if name else None)(x)
+    x = Conv3D(
+        filters=filters,
+        kernel_size=(3, 3, 3),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        padding='same',
+        data_format=data_format,
+        name=f'Conv3D_1_{name}' if name else None)(x)
+
+    x = __grouped_convolution_block(
+        x, grouped_channels, cardinality, strides, weight_decay)
+
+    x = BatchNormalization(
+        axis=channel_axis,
+        name=f'BatchNorm_2_{name}' if name else None)(x)
+    x = Activation('relu', name=f'Relu_2_{name}' if name else None)(x)
+    x = Conv3D(
+        filters=filters,
+        kernel_size=(3, 3, 3),
+        strides=1,
+        padding='same',
+        data_format=data_format,
+        name=f'Conv3D_2_{name}' if name else None)(x)
+
+    out = Add(name=f'Out_{name}' if name else None)([x, inp_res])
+    return out
+
+
+def green_block(inp, filters, data_format='channels_first', weight_decay=5e-4, name=None):
+    """
+    green_block(inp, filters, name=None)
+    ------------------------------------
+    Implementation of the special residual block used in the paper. The block
+    consists of two (GroupNorm --> ReLu --> 3x3x3 non-strided Convolution)
+    units, with a residual connection from the input `inp` to the output. Used
+    internally in the model. Can be used independently as well.
+
+    Parameters
+    ----------
+    `inp`: An keras.layers.layer instance, required
+        The keras layer just preceding the green block.
+    `filters`: integer, required
+        No. of filters to use in the 3D convolutional block. The output
+        layer of this green block will have this many no. of channels.
+    `data_format`: string, optional
+        The format of the input data. Must be either 'chanels_first' or
+        'channels_last'. Defaults to `channels_first`, as used in the paper.
+    `name`: string, optional
+        The name to be given to this green block. Defaults to None, in which
+        case, keras uses generated names for the involved layers. If a string
+        is provided, the names of individual layers are generated by attaching
+        a relevant prefix from [GroupNorm_, Res_, Conv3D_, Relu_, ], followed
+        by _1 or _2.
+
+    Returns
+    -------
+    `out`: A keras.layers.Layer instance
+        The output of the green block. Has no. of channels equal to `filters`.
+        The size of the rest of the dimensions remains same as in `inp`.
+    """
+    inp_res = Conv3D(
+        filters=filters,
+        kernel_size=(1, 1, 1),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        data_format=data_format,
+        name=f'Res_{name}' if name else None)(inp)
+
+    # axis=1 for channels_first data format
+    # No. of groups = 8, as given in the paper
+    x = GroupNormalization(
+        groups=8,
+        axis=1 if data_format == 'channels_first' else 0,
+        name=f'GroupNorm_1_{name}' if name else None)(inp)
+    x = Activation('relu', name=f'Relu_1_{name}' if name else None)(x)
+    x = Conv3D(
+        filters=filters,
+        kernel_size=(3, 3, 3),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        padding='same',
+        data_format=data_format,
+        name=f'Conv3D_1_{name}' if name else None)(x)
+
+    x = GroupNormalization(
+        groups=8,
+        axis=1 if data_format == 'channels_first' else 0,
+        name=f'GroupNorm_2_{name}' if name else None)(x)
+    x = Activation('relu', name=f'Relu_2_{name}' if name else None)(x)
+    x = Conv3D(
+        filters=filters,
+        kernel_size=(3, 3, 3),
+        strides=1,
+        kernel_regularizer=regularizers.l2(weight_decay),
+        padding='same',
+        data_format=data_format,
+        name=f'Conv3D_2_{name}' if name else None)(x)
+
+    out = Add(name=f'Out_{name}' if name else None)([x, inp_res])
+    return out
+
+
+def create_convolution_block(input_layer, n_filters, batch_normalization=False, kernel=(3, 3, 3), activation=LeakyReLU,
+                             padding='same', strides=(1, 1, 1), normalization="Batch"):
+    """
+    :param strides:
+    :param input_layer:
+    :param n_filters:
+    :param batch_normalization:
+    :param kernel:
+    :param activation: Keras activation layer to use. (default is 'relu')
+    :param padding:
+    :return:
+    """
+    layer = Conv3D(n_filters, kernel,
+                   padding=padding,
+                   strides=strides,
+                   # kernel_regularizer=regularizers.regularizers.l2(l=1e-4))(input_layer)#doesn't work
+                   )(input_layer)
+    if normalization == " Batch":
+        layer = BatchNormalization(axis=1)(layer)
+    elif normalization == " Instance":
+        try:
+            from keras_contrib.layers.normalization import InstanceNormalization
+        except ImportError:
+            raise ImportError("Install keras_contrib in order to use instance normalization."
+                              "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
+        layer = InstanceNormalization(axis=1)(layer)
+    else:
+        layer = GroupNormalization(groups=8, axis=1)(layer)
+    if activation is None:
+        layer = Activation('relu')(layer)
+    else:
+        layer = activation()(layer)
+    return layer
 
 
 def create_localization_module(input_layer, n_filters):
@@ -306,8 +550,11 @@ def create_up_sampling_module(input_layer, n_filters, size=(2, 2, 2)):
     return convolution
 
 
-def create_up_sampling_module2(input_layer, n_filters, size=(2, 2, 2)):
-    up_sample = Deconvolution3D(filters=n_filters, kernel_size=size,
-                                strides=size)(input_layer)
-    convolution = create_convolution_block(up_sample, n_filters)
-    return convolution
+def create_context_module(input_layer, n_level_filters, dropout_rate=0.3, data_format="channels_first"):
+    convolution1 = create_convolution_block(
+        input_layer=input_layer, n_filters=n_level_filters)
+    dropout = SpatialDropout3D(
+        rate=dropout_rate, data_format=data_format)(convolution1)
+    convolution2 = create_convolution_block(
+        input_layer=dropout, n_filters=n_level_filters)
+    return convolution2
