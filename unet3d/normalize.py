@@ -11,9 +11,7 @@ from .utils import crop_img, crop_img_to, read_image
 
 from unet3d.utils.utils import resize, read_image_files
 from unet3d.utils.path_utils import get_template_path
-
 from unet3d.utils.volume import get_background_mask
-
 from unet3d.utils.utils import str2bool
 
 
