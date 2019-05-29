@@ -10,7 +10,7 @@ from unet2d.model.blocks import (compute_level_output_shape2d,
                                  create_convolution_block2d,
                                  get_up_convolution2d, squeeze_excite_block2d)
 from unet3d.metrics import minh_dice_coef_metric
-from unet3d.model.unet import create_convolution_block
+from unet3d.model.blocks import create_convolution_block3d
 from unet3d.utils.model_utils import compile_model
 
 K.set_image_data_format("channels_first")
@@ -131,11 +131,11 @@ def create_transition_3d_to_2d(input_layer, n_filters, batch_normalization=False
     for _ in range(depth):
         current_layer = ZeroPadding3D(
             padding=(1, 1, 0), data_format="channels_first")(current_layer)
-        current_layer = create_convolution_block(input_layer=current_layer, n_filters=n_filters,
-                                                 batch_normalization=batch_normalization,
-                                                 is_unet_original=is_unet_original,
-                                                 instance_normalization=instance_normalization,
-                                                 padding=padding)
+        current_layer = create_convolution_block3d(input_layer=current_layer, n_filters=n_filters,
+                                                   batch_normalization=batch_normalization,
+                                                   is_unet_original=is_unet_original,
+                                                   instance_normalization=instance_normalization,
+                                                   padding=padding)
 
     shape = current_layer._keras_shape
     to_shape = shape[1:len(shape)-1]
