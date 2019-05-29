@@ -82,7 +82,7 @@ def get_header_info(path):
     return dataset, folder, name, modality
 
 
-def analyze_one_folder(data_folder, dataset, config, overwrite=False):
+def analyze_one_folder(challenge, data_folder, dataset, config, overwrite=False):
 
     analysis_dir = get_analysis_dir(DATASET_DIR, data_folder)
     analysis_file_path = os.path.join(analysis_dir, dataset + ".xlsx")
@@ -98,7 +98,13 @@ def analyze_one_folder(data_folder, dataset, config, overwrite=False):
         writer = pd.ExcelWriter(analysis_file_path)
 
         data_dir = os.path.join(analysis_dir, dataset)
-        subject_dirs = glob.glob(os.path.join(data_dir, "*", "*.nii.gz"))
+
+        if challenge == "brats":
+            subject_dirs = glob.glob(os.path.join(
+                data_dir, "*", "*", "*.nii.gz"))
+        else:
+            subject_dirs = glob.glob(os.path.join(
+                data_dir, "*", "*.nii.gz"))
 
         index = range(0, len(subject_dirs)-1, 1)
         df = pd.DataFrame(index=index, columns=columns)
@@ -163,20 +169,25 @@ def analyze_one_folder(data_folder, dataset, config, overwrite=False):
 
 
 def main():
-    args = get_args.train_kits()
-    dataset = "original"
-    data_folder = "data_train"
-    overwrite = True
-    challenge = args.challenge
 
     global BRATS_DIR, DATASET_DIR, PROJECT_DIR
 
+    challenge = "brats"
+
     if challenge == "brats":
         from brats.config import config
+        args = get_args.train()
     elif challenge == "ibsr":
         from projects.ibsr.config import config
+        args = get_args.train_ibsr()
     elif challenge == "kits":
         from projects.kits.config import config
+        args = get_args.train_kits()
+
+    challenge = args.challenge
+    dataset = "original"
+    data_folder = "data_train"
+    overwrite = True
 
     CURRENT_WORKING_DIR = os.path.realpath(__file__)
     PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])
@@ -185,7 +196,7 @@ def main():
 
     print(args)
 
-    analyze_one_folder(data_folder, dataset,
+    analyze_one_folder(challenge, data_folder, dataset,
                        config=config, overwrite=overwrite)
 
 
