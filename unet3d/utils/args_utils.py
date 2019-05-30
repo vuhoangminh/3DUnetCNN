@@ -327,7 +327,7 @@ def prepare_data_kits():
                         default=2019, choices=config_dict["year"],
                         help="year of challenge")
     parser.add_argument('-is', '--image_shape', type=str,
-                        default="64-256-256",
+                        default="256-256-128",
                         help="image shape to read")
     parser.add_argument('-r', '--crop', type=str,
                         default="0")
@@ -349,7 +349,7 @@ def train_kits():
                         default=2019, choices=config_dict["year"],
                         help="year of challenge")
     parser.add_argument('-is', '--image_shape', type=str,
-                        default="64-256-256",
+                        default="256-256-128",
                         help="image shape to read")
     parser.add_argument('-ps', '--patch_shape', type=str,
                         default="32-256-256",
@@ -379,10 +379,10 @@ def train2d_kits():
                         default=2019, choices=config_dict["year"],
                         help="year of challenge")
     parser.add_argument('-is', '--image_shape', type=str,
-                        default="64-256-256",
+                        default="256-256-128",
                         help="image shape to read")
     parser.add_argument('-ps', '--patch_shape', type=str,
-                        default="1-256-256",
+                        default="256-256-1",
                         # default="64-256-1",
                         help="patch shape to train")
     parser.add_argument('-ba', '--batch_size', type=int,
@@ -410,18 +410,18 @@ def train25d_kits():
                         default=2019, choices=config_dict["year"],
                         help="year of challenge")
     parser.add_argument('-is', '--image_shape', type=str,
-                        default="64-256-256",
+                        default="256-256-128",
                         help="image shape to read")
     parser.add_argument('-ps', '--patch_shape', type=str,
-                        default="3-256-256",
+                        default="256-256-5",
                         help="patch shape to train")
     parser.add_argument('-ba', '--batch_size', type=int,
                         default=16,
                         help="train batch size")
     parser.add_argument('-r', '--crop', type=str,
-                        default="1", choices=config_dict["crop"])
+                        default="0", choices=config_dict["crop"])
     parser.add_argument('-b', '--is_bias_correction', type=str,
-                        default="1", choices=config_dict["is_bias_correction"],
+                        default="0", choices=config_dict["is_bias_correction"],
                         help="perform bias field removal?")
     parser.add_argument('-dim', '--model_dim', type=int,
                         default=25)

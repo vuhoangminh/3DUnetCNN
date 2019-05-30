@@ -172,7 +172,7 @@ def main():
 
     global BRATS_DIR, DATASET_DIR, PROJECT_DIR
 
-    challenge = "brats"
+    challenge = "kits"
 
     if challenge == "brats":
         from brats.config import config
@@ -186,6 +186,7 @@ def main():
 
     challenge = args.challenge
     dataset = "original"
+    dataset = "preprocessed"
     data_folder = "data_train"
     overwrite = True
 

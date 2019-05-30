@@ -1,4 +1,5 @@
 from comet_ml import Experiment
+import os
 
 # to compute memory consumption ----------------------------------
 # import tensorflow as tf
@@ -28,15 +29,12 @@ from unet3d.data import write_data_to_file, open_data_file
 import numpy as np
 import pprint
 import glob
-import os
 import unet3d.utils.path_utils as path_utils
 from unet3d.utils.utils import str2bool
 
-
-# pp = pprint.PrettyPrinter(indent=4)
-# # pp.pprint(config)
 config.update(config_unet)
-# pp.pprint(config)
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"  # run on server
 
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)

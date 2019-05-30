@@ -14,7 +14,7 @@ from unet3d.generator import get_training_and_validation_and_testing_generators
 from unet3d.data import open_data_file
 
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # run on server
+os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"  # run on server
 
 
 config.update(config_unet)
@@ -84,7 +84,8 @@ def train(args):
     if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
-        model = generate_model(config["model_file"], loss_function=args.loss, labels=config["labels"])
+        model = generate_model(
+            config["model_file"], loss_function=args.loss, labels=config["labels"])
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
@@ -110,8 +111,7 @@ def train(args):
                              loss_function=args.loss,
                              labels=config["labels"])
         else:
-            raise ValueError("Model is NotImplemented. Please check")                             
-
+            raise ValueError("Model is NotImplemented. Please check")
 
     model.summary()
 

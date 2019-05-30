@@ -85,12 +85,42 @@ def resize(image, new_shape, interpolation="linear"):
     return new_img_like(image, new_data, affine=new_affine)
 
 
-def pad(image, new_shape, mode="min"):
+def pad(image, new_shape, mode="constant", interpolation="linear"):
     image = reorder_img(image, resample=interpolation)
-    zoom_level = np.divide(new_shape, image.shape)
+    zoom_level = np.asarray((1, 1, 1))
     new_spacing = np.divide(image.header.get_zooms(), zoom_level)
-    new_data = resample_to_spacing(image.get_data(), image.header.get_zooms(), new_spacing,
-                                   interpolation=interpolation)
+
+    # np.divide(image.header.get_zooms(), zoom_level)
+
+    old_shape = image.shape
+    pad_x_1 = int((new_shape[0] - old_shape[0])/2)
+    pad_x_2 = new_shape[0] - pad_x_1 - old_shape[0]
+    pad_x_1 = max(pad_x_1, 0)
+    pad_x_2 = max(pad_x_2, 0)
+    pad_y_1 = int((new_shape[1] - old_shape[1])/2)
+    pad_y_2 = new_shape[1] - pad_y_1 - old_shape[1]
+    pad_y_1 = max(pad_y_1, 0)
+    pad_y_2 = max(pad_y_2, 0)
+    pad_z_1 = int((new_shape[2] - old_shape[2])/2)
+    pad_z_2 = new_shape[2] - pad_z_1 - old_shape[2]
+    pad_z_1 = max(pad_z_1, 0)
+    pad_z_2 = max(pad_z_2, 0)
+
+    # pad_y_1 = max(0, int((new_shape[1] - old_shape[1])/2))
+    # pad_y_2 = max(0, new_shape[1] - pad_y_1 - old_shape[1])
+    # pad_z_1 = max(0, int((new_shape[2] - old_shape[2])/2))
+    # pad_z_2 = max(0, new_shape[2] - pad_z_1 - old_shape[2])
+
+    new_data = np.copy(image.get_fdata())
+    constant_values = np.min(new_data)
+    new_data = np.pad(new_data, ((pad_x_1, pad_x_2),
+                                 (pad_y_1, pad_y_2),
+                                 (pad_z_1, pad_z_2)),
+                      mode=mode,
+                      constant_values=constant_values)
+
+    # return nib.Nifti1Image(new_data, affine=np.copy(image.affine))
+
     new_affine = np.copy(image.affine)
     np.fill_diagonal(new_affine, new_spacing.tolist() + [1])
     new_affine[:3,

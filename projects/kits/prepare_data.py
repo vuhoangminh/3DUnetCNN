@@ -28,7 +28,7 @@ def get_dataset(is_test="1", is_denoise="0"):
         if is_denoise == "bm4d":
             return "denoised"
         else:
-            return "original"
+            return "preprocessed"
 
 
 def fetch_training_data_files(dataset):

@@ -9,10 +9,8 @@ from comet_ml import Experiment
 # set_session(tf.Session(config=config_tf))
 # to compute memory consumption ----------------------------------
 
-import os
-
 from unet3d.data import open_data_file
-from unet25d.generator import get_training_and_validation_and_testing_generators25d
+from projects.kits.generator25d import get_training_and_validation_and_testing_generators25d
 from unet25d.model import *
 from unet3d.training import train_model
 from unet3d.utils.path_utils import get_project_dir
@@ -22,13 +20,14 @@ import unet3d.utils.args_utils as get_args
 import unet3d.utils.path_utils as path_utils
 from unet3d.utils.print_utils import print_section
 
-from brats.prepare_data import prepare_data
-from brats.config import config, config_unet
+from projects.kits.prepare_data import prepare_data
+from projects.kits.config import config, config_unet
 
-# pp = pprint.PrettyPrinter(indent=4)
-# # pp.pprint(config)
 config.update(config_unet)
-# pp.pprint(config)
+
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"  # run on server
+
 
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
@@ -58,13 +57,6 @@ def train(args):
     config["patch_shape"] = get_shape_from_string(args.patch_shape)
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
-
-    if args.patch_shape in ["160-192-13", "160-192-15", "160-192-17"]:
-        config["initial_learning_rate"] = 1e-4
-        print("lr updated...")
-    if args.patch_shape in ["160-192-3"]:
-        config["initial_learning_rate"] = 1e-2
-        print("lr updated...")
 
     if args.overwrite or not os.path.exists(data_path):
         prepare_data(args)
@@ -105,7 +97,8 @@ def train(args):
     if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
-        model = generate_model(config["model_file"], loss_function=args.loss, labels=config["labels"])
+        model = generate_model(
+            config["model_file"], loss_function=args.loss, labels=config["labels"])
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
@@ -180,7 +173,7 @@ def train(args):
 
 def main():
     global config
-    args = get_args.train25d()
+    args = get_args.train25d_kits()
 
     config = path_utils.update_is_augment(args, config)
 
