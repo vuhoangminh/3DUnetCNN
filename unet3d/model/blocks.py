@@ -258,7 +258,7 @@ def compute_level_output_shape3d(n_filters, depth, pool_size, image_shape):
     return tuple([None, n_filters] + output_image_shape)
 
 
-def get_up_convolution3d(n_filters, pool_size, kernel_size=(2, 2), strides=(2, 2),
+def get_up_convolution3d(n_filters, pool_size, kernel_size=(2, 2, 2), strides=(2, 2, 2),
                          deconvolution=False):
     if deconvolution:
         return Deconvolution3D(filters=n_filters, kernel_size=kernel_size,
@@ -340,7 +340,7 @@ def conv_block_resnet3d(input_layer, kernel_size, n_filters, stage, block,
     return x
 
 
-def get_down_sampling(input_layer, pool_size=(2, 2), depth=4):
+def get_down_sampling(input_layer, pool_size=(2, 2, 2), depth=4):
     levels = list()
     current_layer = input_layer
     for layer_depth in range(depth):

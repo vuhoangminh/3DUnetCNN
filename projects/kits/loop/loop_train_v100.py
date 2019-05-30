@@ -20,10 +20,10 @@ model_list = list()
 cmd_list = list()
 out_file_list = list()
 
-list_25d_model = ["3-256-256", "5-256-256",
-                  "7-256-256", "9-256-256", "11-256-256"]
-list_2d_model = ["1-256-256"]
-list_3d_model = ["32-256-256"]
+list_25d_model = ["256-256-3", "256-256-5",
+                  "256-256-7", "256-256-9", "256-256-11"]
+list_2d_model = ["256-256-1"]
+list_3d_model = ["256-256-32"]
 
 
 for patch_shape in list_25d_model + list_2d_model + list_3d_model:
@@ -36,19 +36,19 @@ for patch_shape in list_25d_model + list_2d_model + list_3d_model:
         args = get_args.train25d_kits()
         task = "projects/kits/train25d"
         model_dim = 25
-        args.batch_size = 64
+        args.batch_size = 32
     else:
         args = get_args.train_kits()
         task = "projects/kits/train"
         model_dim = 3
-        args.batch_size = 1
+        args.batch_size = 2
 
     args.patch_shape = patch_shape
     args.is_test = "0"
 
     for is_augment in ["1"]:
         args.is_augment = is_augment
-        for model_name in ["unet", "segnet"]:
+        for model_name in ["unet"]:
             args.model = model_name
             for is_denoise in ["0"]:
                 args.is_denoise = is_denoise

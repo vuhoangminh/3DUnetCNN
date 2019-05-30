@@ -10,7 +10,7 @@ from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir
 from unet3d.training import train_model
 from unet3d.model import *
-from unet3d.generator import get_training_and_validation_and_testing_generators
+from projects.kits.generator import get_training_and_validation_and_testing_generators
 from unet3d.data import open_data_file
 
 import os

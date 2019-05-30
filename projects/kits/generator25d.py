@@ -8,10 +8,11 @@ import time
 
 from unet3d.utils import pickle_dump, pickle_load
 from unet3d.generator import get_train_valid_test_split, get_number_of_steps
-from unet3d.generator import get_multi_class_labels, get_data_from_file
-from unet3d.generator import get_train_valid_test_split_isbr
-from unet3d.generator import add_data
+from unet3d.generator import get_multi_class_labels, get_data_from_file, elastic_transform_multi
+# from unet3d.generator import get_train_valid_test_split_isbr
+# from unet3d.generator import add_data
 from unet3d.utils.patches import compute_patch_indices, get_random_nd_index
+import unet3d.utils.image_utils as image_utils
 
 import tensorlayer as tl
 from scipy.ndimage.filters import gaussian_filter
@@ -214,3 +215,80 @@ def convert_data25d(x_list, y_list, n_labels=1, labels=None):
         y = get_multi_class_labels(y, n_labels=n_labels, labels=labels)
     slice_gt = y.shape[-1]//2
     return x, y[..., slice_gt]
+
+
+def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+                 augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
+    """ data augumentation """
+    shape_data = data[0].shape
+    if np.argmin(shape_data) == 0:
+        data = image_utils.move_axis_data(data, source=0, destination=-1)
+    elif np.argmin(shape_data) == 1:
+        data = image_utils.move_axis_data(data, source=-1, destination=0)
+
+    if augment_flipud:
+        data = tl.prepro.flip_axis_multi(
+            data, axis=0, is_random=True)  # up down
+    if augment_fliplr:
+        data = tl.prepro.flip_axis_multi(
+            data, axis=1, is_random=True)  # left right
+    if augment_elastic:
+        data = elastic_transform_multi(
+            data, alpha=720, sigma=10, is_random=True)
+    if augment_rotation:
+        data = tl.prepro.rotation_multi(
+            data, rg=20, is_random=True, fill_mode='constant')  # nearest, constant
+    if augment_shift:
+        data = tl.prepro.shift_multi(
+            data, wrg=0.10, hrg=0.10, is_random=True, fill_mode='constant')
+    if augment_shear:
+        data = tl.prepro.shear_multi(
+            data, 0.05, is_random=True, fill_mode='constant')
+    if augment_zoom:
+        data = tl.prepro.zoom_multi(
+            data, zoom_range=[0.9, 1.1], is_random=True, fill_mode='constant')
+
+    if np.argmin(shape_data) == 0:
+        data = image_utils.move_axis_data(data, source=-1, destination=0)
+    elif np.argmin(shape_data) == 1:
+        data = image_utils.move_axis_data(data, source=0, destination=-1)
+    return data
+
+
+def add_data(x_list, y_list, data_file, index, patch_shape=None,
+             augment_flipud=False, augment_fliplr=False, augment_elastic=False,
+             augment_rotation=False, augment_shift=False, augment_shear=False,
+             augment_zoom=False, skip_blank=True, model_dim=3):
+    """
+    Adds data from the data file to the given lists of feature and target data
+    :return:
+    """
+    data, truth = get_data_from_file(data_file, index, patch_shape=patch_shape)
+
+    augment = augment_flipud or augment_fliplr or augment_elastic or augment_rotation or augment_shift or augment_shear or augment_zoom
+    if augment:
+        data_list = list()
+        for i in range(data.shape[0]):
+            data_list.append(data[i, :, :, :])
+        data_list.append(truth[:, :, :])
+        data_list = augment_data(data=data_list, augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
+                                 augment_elastic=augment_elastic, augment_rotation=augment_rotation,
+                                 augment_shift=augment_shift, augment_shear=augment_shear,
+                                 augment_zoom=augment_zoom)
+        for i in range(data.shape[0]):
+            data[i, :, :, :] = data_list[i]
+        truth[:, :, :] = data_list[-1]
+    truth = truth[np.newaxis]
+    is_added = False
+    if model_dim == 3:
+        is_added = True
+    if model_dim == 25:
+        truth_slice = truth[..., int((patch_shape[-1]-1)/2)]
+        if np.any(truth_slice != 0):
+            # if np.any(data != 0):
+            is_added = True
+    if model_dim == 2:
+        is_added = True
+    if is_added:
+        x_list.append(data)
+        y_list.append(truth)
