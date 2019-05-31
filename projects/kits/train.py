@@ -9,7 +9,10 @@ from unet3d.utils.path_utils import get_training_h5_paths
 from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir
 from unet3d.training import train_model
+
 from unet3d.model import *
+from projects.kits.proposed3d import casnet_v10
+
 from projects.kits.generator import get_training_and_validation_and_testing_generators
 from unet3d.data import open_data_file
 
@@ -47,6 +50,13 @@ def train(args):
     if args.n_epochs is not None:
         config["n_epochs"] = args.n_epochs
 
+    if "casnet" in args.model:
+        config["data_type_generator"] = 'cascaded'
+    elif "sepnet" in args.model:
+        config["data_type_generator"] = 'separated'
+    else:
+        config["data_type_generator"] = 'combined'
+
     if args.overwrite or not os.path.exists(data_path):
         prepare_data(args)
 
@@ -76,7 +86,8 @@ def train(args):
         augment_shear=config["augment_shear"],
         augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
-        skip_blank=config["skip_blank"])
+        skip_blank=config["skip_blank"],
+        data_type_generator=config["data_type_generator"])
 
     print("-"*60)
     print("# Load or init model")
@@ -110,6 +121,15 @@ def train(args):
                              n_base_filters=args.n_base_filters_unet,
                              loss_function=args.loss,
                              labels=config["labels"])
+        elif args.model == "casnet_v10":
+            print("init casnet_v10 model")
+            model = casnet_v10(input_shape=config["input_shape"],
+                               initial_learning_rate=config["initial_learning_rate"],
+                               deconvolution=config["deconvolution"],
+                               depth=args.depth_unet,
+                               n_base_filters=args.n_base_filters_unet,
+                               loss_function="casweighted",
+                               labels=config["labels"])
         else:
             raise ValueError("Model is NotImplemented. Please check")
 

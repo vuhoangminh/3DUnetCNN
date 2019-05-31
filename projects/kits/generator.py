@@ -23,7 +23,8 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
                                                        augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                                                        augment_rotation=False, augment_shift=False, augment_shear=False,
                                                        augment_zoom=False, n_augment=0, skip_blank=False,
-                                                       project="brats"):
+                                                       project="brats",
+                                                       data_type_generator="combined"):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -60,18 +61,11 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
     if not validation_batch_size:
         validation_batch_size = batch_size
 
-    if project == "brats":
-        training_list, validation_list, _ = get_train_valid_test_split(
-            data_file, training_file=training_keys_file,
-            validation_file=validation_keys_file,
-            testing_file=testing_keys_file,
-            data_split=0.8, overwrite=False)
-    else:
-        training_list, validation_list, _ = get_train_valid_test_split_isbr(
-            data_file, training_file=training_keys_file,
-            validation_file=validation_keys_file,
-            testing_file=testing_keys_file,
-            overwrite=False)
+    training_list, validation_list, _ = get_train_valid_test_split(
+        data_file, training_file=training_keys_file,
+        validation_file=validation_keys_file,
+        testing_file=testing_keys_file,
+        data_split=0.8, overwrite=False)
 
     print("training_list:", training_list)
 
@@ -92,7 +86,8 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
                                         augment_shear=augment_shear,
                                         augment_zoom=augment_zoom,
                                         n_augment=n_augment,
-                                        skip_blank=skip_blank)
+                                        skip_blank=skip_blank,
+                                        data_type_generator=data_type_generator)
     print(">> valid data generator")
     validation_generator = data_generator(data_file, validation_list,
                                           batch_size=validation_batch_size,
@@ -101,22 +96,22 @@ def get_training_and_validation_and_testing_generators(data_file, batch_size, n_
                                           patch_shape=patch_shape,
                                           patch_overlap=validation_patch_overlap,
                                           is_create_patch_index_list_original=is_create_patch_index_list_original,
-                                          skip_blank=skip_blank
-                                          )
+                                          skip_blank=skip_blank,
+                                          data_type_generator=data_type_generator)
 
     # Set the number of training and testing samples per epoch correctly
     # if overwrite or not os.path.exists(n_steps_file):
     print(">> compute number of training and validation steps")
-    # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
-    #                                                                patch_start_offset=training_patch_start_offset,
-    #                                                                patch_overlap=0),
-    #                                          batch_size)
-    # num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
-    #                                                                  patch_overlap=validation_patch_overlap),
-    #                                            validation_batch_size)
+    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+                                                                   patch_start_offset=training_patch_start_offset,
+                                                                   patch_overlap=0),
+                                             batch_size)
+    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+                                                                     patch_overlap=validation_patch_overlap),
+                                               validation_batch_size)
 
-    num_training_steps = get_number_of_steps(532, batch_size)
-    num_validation_steps = get_number_of_steps(124, validation_batch_size)
+    # num_training_steps = get_number_of_steps(532, batch_size)
+    # num_validation_steps = get_number_of_steps(124, validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
@@ -178,7 +173,8 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
                    skip_blank=True, is_create_patch_index_list_original=True,
                    augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                    augment_rotation=False, augment_shift=False, augment_shear=False,
-                   augment_zoom=False, n_augment=False):
+                   augment_zoom=False, n_augment=False,
+                   data_type_generator="combined"):
     orig_index_list = index_list
     while True:
         x_list = list()
@@ -197,10 +193,13 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
                      augment_flipud=augment_flipud, augment_fliplr=augment_fliplr,
                      augment_elastic=augment_elastic, augment_rotation=augment_rotation,
                      augment_shift=augment_shift, augment_shear=augment_shear,
-                     augment_zoom=augment_zoom)
+                     augment_zoom=augment_zoom, data_type_generator=data_type_generator)
 
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
-                yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
+                if data_type_generator != "combined":
+                    yield convert_multioutput_data(x_list, y_list)
+                else:
+                    yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
                 y_list = list()
 
@@ -212,18 +211,19 @@ def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap
         index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
                                              patch_start_offset, is_extract_patch_agressive=is_extract_patch_agressive)
 
-        count = 0
-        for i, index in enumerate(index_list, 0):
-            if i % 50 == 0 and i > 0:
-                print(">> processing {}/{}, added {}/{}".format(i,
-                                                                len(index_list), count, len(index_list)))
-            x_list = list()
-            y_list = list()
-            add_data(x_list, y_list, data_file, index,
-                     skip_blank=skip_blank, patch_shape=patch_shape)
-            if len(x_list) > 0:
-                count += 1
-        return count
+        # count = 0
+        # for i, index in enumerate(index_list, 0):
+        #     if i % 50 == 0 and i > 0:
+        #         print(">> processing {}/{}, added {}/{}".format(i,
+        #                                                         len(index_list), count, len(index_list)))
+        #     x_list = list()
+        #     y_list = list()
+        #     add_data(x_list, y_list, data_file, index,
+        #              skip_blank=skip_blank, patch_shape=patch_shape)
+        #     if len(x_list) > 0:
+        #         count += 1
+        # return count
+        return len(index_list)
     else:
         return len(index_list)
 
@@ -266,6 +266,25 @@ def convert_data(x_list, y_list, n_labels=1, labels=None):
     elif n_labels > 1:
         y = get_multi_class_labels(y, n_labels=n_labels, labels=labels)
     return x, y
+
+
+def convert_multioutput_data(x_list, y_list):
+    x = np.asarray(x_list)
+    count = 0
+    for y in y_list:
+        if count == 0:
+            y_list_whole = [y[0]]
+            y_list_core = [y[1]]
+        else:
+            y_list_whole.append(y[0])
+            y_list_core.append(y[1])
+        count += 1
+
+    y_whole = np.asarray(y_list_whole)
+    y_core = np.asarray(y_list_core)
+
+    return x, [y_whole, y_core]
+    # return 0
 
 
 def get_multi_class_labels(data, n_labels, labels=None):
@@ -387,7 +406,8 @@ def augment_data(data, augment_flipud=False, augment_fliplr=False, augment_elast
 def add_data(x_list, y_list, data_file, index, patch_shape=None,
              augment_flipud=False, augment_fliplr=False, augment_elastic=False,
              augment_rotation=False, augment_shift=False, augment_shear=False,
-             augment_zoom=False, skip_blank=True, model_dim=3):
+             augment_zoom=False, skip_blank=True, model_dim=3,
+             data_type_generator="combined"):
     """
     Adds data from the data file to the given lists of feature and target data
     :return:
@@ -408,9 +428,34 @@ def add_data(x_list, y_list, data_file, index, patch_shape=None,
             data[i, :, :, :] = data_list[i]
         truth[:, :, :] = data_list[-1]
     truth = truth[np.newaxis]
-    is_added = False
-    if np.any(truth != 0):
-        is_added = True
+
+    # change here to feed more samples
+    # is_added = False
+    # if np.any(truth != 0):
+    #     is_added = True
+
+    is_added = True
+    # change here to feed more samples
+
     if is_added:
         x_list.append(data)
-        y_list.append(truth)
+        if data_type_generator == "cascaded":
+            truth_whole, truth_core = np.copy(truth), np.copy(truth)
+
+            truth_whole[truth_whole > 0] = 1
+            truth_core[truth_core == 1] = 0
+            truth_core[truth_core > 0] = 1
+
+            y_list.append([truth_whole, truth_core])
+        elif data_type_generator == "separated":
+            truth_1, truth_2 = np.copy(truth), np.copy(truth)
+
+            truth_1[truth_1 == 2] = 0
+
+            truth_2[truth_2 == 1] = 0
+            truth_2[truth_2 == 2] = 1
+
+            y_list.append([truth_1, truth_2])
+
+        else:
+            y_list.append(truth)

@@ -386,7 +386,7 @@ def train2d_kits():
                         # default="64-256-1",
                         help="patch shape to train")
     parser.add_argument('-ba', '--batch_size', type=int,
-                        default=32,
+                        default=16,
                         help="train batch size")
     parser.add_argument('-r', '--crop', type=str,
                         default="0", choices=config_dict["crop"])

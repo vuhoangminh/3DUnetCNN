@@ -22,6 +22,7 @@ from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir, get_mo
 from unet3d.training import load_old_model, train_model
 
 from unet2d.model import *
+from projects.kits.proposed2d import casnet_v10
 
 from projects.kits.generator2d import get_training_and_validation_and_testing_generators2d
 # from unet2d.generator import get_training_and_validation_and_testing_generators2d
@@ -137,7 +138,15 @@ def train(args):
                              n_base_filters=args.n_base_filters_unet,
                              loss_function=args.loss,
                              labels=config["labels"])
-
+        elif args.model == "casnet_v10":
+            print("init casnet_v10 model")
+            model = casnet_v10(input_shape=config["input_shape"],
+                               initial_learning_rate=config["initial_learning_rate"],
+                               deconvolution=config["deconvolution"],
+                               depth=args.depth_unet,
+                               n_base_filters=args.n_base_filters_unet,
+                               loss_function="casweighted",
+                               labels=config["labels"])
         else:
             raise ValueError("Model is NotImplemented. Please check")
 
