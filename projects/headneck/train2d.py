@@ -69,7 +69,7 @@ def train(args):
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_and_testing_generators2d(
         data_file_opened,
         batch_size=args.batch_size,
-        data_split=0.9,
+        data_split=0.8,
         overwrite=args.overwrite,
         validation_keys_file=config["validation_file"],
         training_keys_file=config["training_file"],

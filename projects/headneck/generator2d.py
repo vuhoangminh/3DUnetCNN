@@ -11,12 +11,14 @@ from unet3d.generator import get_train_valid_test_split, get_number_of_steps
 from unet3d.generator import get_train_valid_test_split_isbr
 from unet3d.generator import get_number_of_patches, create_patch_index_list
 from unet3d.generator import get_multi_class_labels, get_data_from_file
+from unet3d.utils.threadsafe import threadsafe_generator
 
 import tensorlayer as tl
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
 
-from unet3d.utils.threadsafe import threadsafe_generator
+import unet3d.utils.image_utils as image_utils
+
 # from unet3d.generator import get_training_and_validation_and_testing_generators
 
 
@@ -113,6 +115,14 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
                                             patch_shape=patch_shape,
                                             patch_overlap=0,
                                             skip_blank=skip_blank,
+                                            augment_flipud=augment_flipud,
+                                            augment_fliplr=augment_fliplr,
+                                            augment_elastic=augment_elastic,
+                                            augment_rotation=augment_rotation,
+                                            augment_shift=augment_shift,
+                                            augment_shear=augment_shear,
+                                            augment_zoom=augment_zoom,
+                                            n_augment=n_augment,
                                             is_extract_patch_agressive=is_extract_patch_agressive,
                                             data_type_generator=data_type_generator)
 
@@ -129,8 +139,23 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     #                                                                    data_type_generator=data_type_generator),
     #                                            validation_batch_size)
 
-    num_training_steps = get_number_of_steps(3273, batch_size)
-    num_validation_steps = get_number_of_steps(392, validation_batch_size)
+    # else:
+    #     # num_training_steps = get_number_of_steps(11137, batch_size)
+
+    # 1-512-512
+    # num_training_steps = get_number_of_steps(6690, batch_size)
+    # num_validation_steps = get_number_of_steps(1605, validation_batch_size)
+
+    from unet3d.generator import get_number_of_patches
+    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+                                                                   patch_start_offset=training_patch_start_offset,
+                                                                   patch_overlap=patch_overlap,
+                                                                   is_extract_patch_agressive=is_extract_patch_agressive),
+                                             batch_size)
+    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+                                                                     patch_overlap=validation_patch_overlap,
+                                                                     is_extract_patch_agressive=is_extract_patch_agressive),
+                                               validation_batch_size)
 
     print("Number of training steps: ", num_training_steps)
     print("Number of validation steps: ", num_validation_steps)
@@ -202,18 +227,15 @@ def convert_multioutput_data2d(x_list, y_list):
         if count == 0:
             y_list_whole = [squeeze_data_from_3d_to_2d(y[0])]
             y_list_core = [squeeze_data_from_3d_to_2d(y[1])]
-            y_list_enh = [squeeze_data_from_3d_to_2d(y[2])]
         else:
             y_list_whole.append(squeeze_data_from_3d_to_2d(y[0]))
             y_list_core.append(squeeze_data_from_3d_to_2d(y[1]))
-            y_list_enh.append(squeeze_data_from_3d_to_2d(y[2]))
         count += 1
 
     y_whole = np.asarray(y_list_whole)
     y_core = np.asarray(y_list_core)
-    y_enh = np.asarray(y_list_enh)
 
-    return x, [y_whole, y_core, y_enh]
+    return x, [y_whole, y_core]
 
 
 def elastic_transform_multi2d(x, alpha, sigma, mode="constant", cval=0, is_random=False):
@@ -272,6 +294,13 @@ def elastic_transform_multi2d(x, alpha, sigma, mode="constant", cval=0, is_rando
 def augment_data2d(data, augment_flipud=False, augment_fliplr=False, augment_elastic=False,
                    augment_rotation=False, augment_shift=False, augment_shear=False, augment_zoom=False):
     """ data augumentation """
+    shape_data = data[0].shape
+
+    if np.argmin(shape_data) == 0:
+        data = image_utils.move_axis_data(data, source=0, destination=-1)
+    elif np.argmin(shape_data) == 1:
+        data = image_utils.move_axis_data(data, source=-1, destination=0)
+
     if augment_flipud:
         data = tl.prepro.flip_axis_multi(
             data, axis=0, is_random=True)  # up down
@@ -293,6 +322,11 @@ def augment_data2d(data, augment_flipud=False, augment_fliplr=False, augment_ela
     if augment_zoom:
         data = tl.prepro.zoom_multi(
             data, zoom_range=[0.9, 1.1], is_random=True, fill_mode='constant')
+
+    if np.argmin(shape_data) == 0:
+        data = image_utils.move_axis_data(data, source=-1, destination=0)
+    elif np.argmin(shape_data) == 1:
+        data = image_utils.move_axis_data(data, source=0, destination=-1)
     return data
 
 
@@ -323,39 +357,32 @@ def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
     truth = truth[np.newaxis]
 
     # change here to feed more samples
-    is_added = False
-    if np.any(truth != 0):
-        is_added = True
+    # is_added = False
+    # if np.any(truth != 0):
+    #     is_added = True
 
-    # is_added = True
+    is_added = True
     # change here to feed more samples
 
     if is_added:
         x_list.append(data)
         if data_type_generator == "cascaded":
-            truth_whole, truth_core, truth_enh = np.copy(
-                truth), np.copy(truth), np.copy(truth)
+            truth_whole, truth_core = np.copy(truth), np.copy(truth)
+
             truth_whole[truth_whole > 0] = 1
-            truth_core[truth_core == 2] = 0
+            truth_core[truth_core == 1] = 0
             truth_core[truth_core > 0] = 1
-            truth_enh[truth_enh == 1] = 0
-            truth_enh[truth_enh == 2] = 0
-            truth_enh[truth_enh == 4] = 1
-            y_list.append([truth_whole, truth_core, truth_enh])
+
+            y_list.append([truth_whole, truth_core])
         elif data_type_generator == "separated":
-            truth_1, truth_2, truth_4 = np.copy(
-                truth), np.copy(truth), np.copy(truth)
+            truth_1, truth_2 = np.copy(truth), np.copy(truth)
+
             truth_1[truth_1 == 2] = 0
-            truth_1[truth_1 == 4] = 0
 
             truth_2[truth_2 == 1] = 0
-            truth_2[truth_2 == 4] = 0
             truth_2[truth_2 == 2] = 1
 
-            truth_4[truth_4 == 1] = 0
-            truth_4[truth_4 == 2] = 0
-            truth_4[truth_4 == 4] = 1
-            y_list.append([truth_1, truth_2, truth_4])
+            y_list.append([truth_1, truth_2])
 
         else:
             y_list.append(truth)
@@ -363,6 +390,7 @@ def add_data2d(x_list, y_list, data_file, index, patch_shape=None,
 
 def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
                             skip_blank=True, data_type_generator=False):
+
     if patch_shape:
         index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
                                              patch_start_offset)
@@ -374,13 +402,21 @@ def get_number_of_patches2d(data_file, index_list, patch_shape=None, patch_overl
             x_list = list()
             y_list = list()
             add_data2d(x_list, y_list, data_file, index,
+                       #    augment_fliplr=True,
+                       #    augment_rotation=True,
                        skip_blank=skip_blank, patch_shape=patch_shape,
                        data_type_generator=data_type_generator)
 
-            # a,b = convert_data2d(x_list, y_list, n_labels=2)
-
             if len(x_list) > 0:
                 count += 1
+                # a,b = convert_data2d(x_list, y_list, n_labels=2)
+                # if b[0][1].max()>0 and count % 10 == 0:
+                #     from unet3d.utils.image_utils import display_array_as_image
+                #     display_array_as_image(np.squeeze(a))
+                #     display_array_as_image(np.squeeze(b)[0])
+                #     display_array_as_image(np.squeeze(b)[1])
+                #     t=0
+
         print(">> processing {}/{}, added {}/{}".format(i,
                                                         len(index_list), count, len(index_list)))
 
