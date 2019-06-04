@@ -116,8 +116,8 @@ def get_training_and_validation_and_testing_generators25d(data_file, batch_size,
     #                                                                     patch_overlap=valid_patch_overlap),
     #                                            validation_batch_size)
 
-    num_training_steps = get_number_of_steps(2991, batch_size)
-    num_validation_steps = get_number_of_steps(785, validation_batch_size)
+    num_training_steps = get_number_of_steps(13746, batch_size)
+    num_validation_steps = get_number_of_steps(3369, validation_batch_size)
 
     # from unet3d.generator import get_number_of_patches
     # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
