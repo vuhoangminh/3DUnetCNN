@@ -113,22 +113,22 @@ def get_training_and_validation_and_testing_generators2d(data_file, batch_size, 
     # Set the number of training and testing samples per epoch correctly
     print(">> compute number of training and validation steps")
 
-    num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
-                                                                     patch_start_offset=training_patch_start_offset,
-                                                                     patch_overlap=patch_overlap,
-                                                                     data_type_generator=data_type_generator),
-                                             batch_size)
-    num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
-                                                                       patch_overlap=0,
-                                                                       data_type_generator=data_type_generator),
-                                               validation_batch_size)
+    # num_training_steps = get_number_of_steps(get_number_of_patches2d(data_file, training_list, patch_shape,
+    #                                                                  patch_start_offset=training_patch_start_offset,
+    #                                                                  patch_overlap=patch_overlap,
+    #                                                                  data_type_generator=data_type_generator),
+    #                                          batch_size)
+    # num_validation_steps = get_number_of_steps(get_number_of_patches2d(data_file, validation_list, patch_shape,
+    #                                                                    patch_overlap=0,
+    #                                                                    data_type_generator=data_type_generator),
+    #                                            validation_batch_size)
 
     # else:
     #     # num_training_steps = get_number_of_steps(11137, batch_size)
 
     # 1-512-512
-    # num_training_steps = get_number_of_steps(6690, batch_size)
-    # num_validation_steps = get_number_of_steps(1605, validation_batch_size)
+    num_training_steps = get_number_of_steps(13746, batch_size)
+    num_validation_steps = get_number_of_steps(3369, validation_batch_size)
 
     # from unet3d.generator import get_number_of_patches
     # num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
