@@ -22,7 +22,7 @@ except ImportError:
 
 
 def unet_model_25d(input_shape, pool_size=(2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
-                   depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
+                   depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
                    batch_normalization=False, activation_name="sigmoid",
                    metrics=minh_dice_coef_metric,
                    loss_function="weighted",
@@ -142,3 +142,14 @@ def create_transition_3d_to_2d(input_layer, n_filters, batch_normalization=False
 
     current_layer = Reshape(to_shape)(current_layer)
     return current_layer
+
+
+def main():
+
+    model = unet_model_25d(input_shape=(1, 128, 128, 11),
+                           n_labels=3)
+    model.summary()
+
+
+if __name__ == "__main__":
+    main()

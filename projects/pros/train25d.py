@@ -10,7 +10,7 @@ from comet_ml import Experiment
 # to compute memory consumption ----------------------------------
 
 from unet3d.data import open_data_file
-from projects.kits.generator25d import get_training_and_validation_and_testing_generators25d
+from projects.pros.generator25d import get_training_and_validation_and_testing_generators25d
 from unet25d.model import *
 from unet3d.training import train_model
 from unet3d.utils.path_utils import get_project_dir
@@ -20,13 +20,13 @@ import unet3d.utils.args_utils as get_args
 import unet3d.utils.path_utils as path_utils
 from unet3d.utils.print_utils import print_section
 
-from projects.kits.prepare_data import prepare_data
-from projects.kits.config import config, config_unet
+from projects.pros.prepare_data import prepare_data
+from projects.pros.config import config, config_unet
 
 config.update(config_unet)
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
+os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"  # run on server
 
 
 
@@ -143,7 +143,7 @@ def train(args):
 
     if args.is_test == "0":
         experiment = Experiment(api_key="AgTGwIoRULRgnfVR5M8mZ5AfS",
-                                project_name="kits19",
+                                project_name="pros19",
                                 workspace="vuhoangminh")
     else:
         experiment = None
@@ -173,7 +173,7 @@ def train(args):
 
 def main():
     global config
-    args = get_args.train25d_kits()
+    args = get_args.train25d_pros()
 
     config = path_utils.update_is_augment(args, config)
 

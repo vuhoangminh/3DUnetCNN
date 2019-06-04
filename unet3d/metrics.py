@@ -1,12 +1,8 @@
 import numpy as np
-
 from functools import partial
-
 from keras import backend as K
 from keras.losses import categorical_crossentropy
-
 from brats.config import config
-
 from unet3d.utils import metrics_utils as utils
 
 K.set_image_data_format("channels_first")

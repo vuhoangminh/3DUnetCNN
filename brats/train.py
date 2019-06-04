@@ -9,8 +9,11 @@ from unet3d.utils.path_utils import get_shape_from_string
 from unet3d.utils.path_utils import get_project_dir
 from unet3d.training import train_model
 from unet3d.model import *
-from unet3d.generator import get_training_and_validation_and_testing_generators
+# from unet3d.generator import get_training_and_validation_and_testing_generators
+from brats.generator import get_training_and_validation_and_testing_generators
 from unet3d.data import open_data_file
+
+from brats.proposed3d import casnet_v10
 
 import os
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # run on server
@@ -39,6 +42,18 @@ def train(args):
     config["patch_shape"] = get_shape_from_string(args.patch_shape)
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
+
+    if args.learning_rate is not None:
+        config["initial_learning_rate"] = args.learning_rate
+    if args.n_epochs is not None:
+        config["n_epochs"] = args.n_epochs
+
+    if "casnet" in args.model:
+        config["data_type_generator"] = 'cascaded'
+    elif "sepnet" in args.model:
+        config["data_type_generator"] = 'separated'
+    else:
+        config["data_type_generator"] = 'combined'        
 
     if args.overwrite or not os.path.exists(data_path):
         prepare_data(args)
@@ -69,7 +84,8 @@ def train(args):
         augment_shear=config["augment_shear"],
         augment_zoom=config["augment_zoom"],
         n_augment=config["n_augment"],
-        skip_blank=config["skip_blank"])
+        skip_blank=config["skip_blank"],
+        data_type_generator=config["data_type_generator"])
 
     print("-"*60)
     print("# Load or init model")
@@ -77,7 +93,8 @@ def train(args):
     if not args.overwrite and os.path.exists(config["model_file"]):
         print("load old model")
         from unet3d.utils.model_utils import generate_model
-        model = generate_model(config["model_file"], loss_function=args.loss, labels=config["labels"])
+        model = generate_model(
+            config["model_file"], loss_function=args.loss, labels=config["labels"])
         # model = load_old_model(config["model_file"])
     else:
         # instantiate new model
@@ -102,20 +119,32 @@ def train(args):
                              n_base_filters=args.n_base_filters_unet,
                              loss_function=args.loss,
                              labels=config["labels"])
-        elif args.model == "unet_vae":
-            print("init unet_vae model")
-            model = unet_vae(input_shape=config["input_shape"],
-                             n_labels=config["n_labels"],
-                             initial_learning_rate=config["initial_learning_rate"],
-                             labels=config["labels"])
+        # elif args.model == "unet_vae":
+        #     print("init unet_vae model")
+        #     model = unet_vae(input_shape=config["input_shape"],
+        #                      n_labels=config["n_labels"],
+        #                      initial_learning_rate=config["initial_learning_rate"],
+        #                      labels=config["labels"])
 
-        else:
+        elif args.model == "isensee":
             print("init isensee model")
             model = isensee2017_model(input_shape=config["input_shape"],
                                       n_labels=config["n_labels"],
                                       initial_learning_rate=config["initial_learning_rate"],
                                       loss_function=args.loss,
                                       labels=config["labels"])
+
+        elif args.model == "casnet_v10":
+            print("init casnet_v10 model")
+            model = casnet_v10(input_shape=config["input_shape"],
+                               initial_learning_rate=config["initial_learning_rate"],
+                               deconvolution=config["deconvolution"],
+                               depth=args.depth_unet,
+                               n_base_filters=args.n_base_filters_unet,
+                               loss_function="casweighted",
+                               labels=config["labels"])
+        else:
+            raise ValueError("Model is NotImplemented. Please check")
 
     model.summary()
 

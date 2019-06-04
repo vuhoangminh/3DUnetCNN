@@ -31,24 +31,24 @@ for patch_shape in list_25d_model + list_2d_model + list_3d_model:
         args = get_args.train2d_kits()
         task = "projects/kits/train2d"
         model_dim = 2
-        args.batch_size = 16
+        args.batch_size = 32
     elif patch_shape in list_25d_model:
         args = get_args.train25d_kits()
         task = "projects/kits/train25d"
         model_dim = 25
-        args.batch_size = 16
+        args.batch_size = 32
     else:
         args = get_args.train_kits()
         task = "projects/kits/train"
         model_dim = 3
-        args.batch_size = 1
+        args.batch_size = 2
 
     args.patch_shape = patch_shape
     args.is_test = "0"
 
     for is_augment in ["1"]:
         args.is_augment = is_augment
-        for model_name in ["segnet"]:
+        for model_name in ["unet", "segnet"]:
             args.model = model_name
             for is_denoise in ["0"]:
                 args.is_denoise = is_denoise
