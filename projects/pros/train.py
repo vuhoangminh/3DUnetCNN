@@ -153,6 +153,7 @@ def train(args):
     print("training file:", config["training_file"])
     print("validation file:", config["validation_file"])
     print("testing file:", config["testing_file"])
+    print("labels:", config["labels"])
 
     if args.is_test == "1":
         config["n_epochs"] = 5
