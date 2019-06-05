@@ -125,8 +125,8 @@ def main():
 
     global BRATS_DIR, DATASET_DIR, PROJECT_DIR
 
-    from projects.kits.config import config
-    args = get_args.train_kits()
+    from projects.pros.config import config
+    args = get_args.train_pros()
 
     challenge = args.challenge
     dataset = "original"

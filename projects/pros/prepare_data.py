@@ -2,13 +2,13 @@ import os
 import glob
 import argparse
 
-# # kits19 has different images' shapes. Use its own data function
-# from projects.kits.data import write_data_to_file
+# # pros19 has different images' shapes. Use its own data function
+# from projects.pros.data import write_data_to_file
 
 from unet3d.data import write_data_to_file
 from unet3d.utils.print_utils import print_separator, print_section
 
-from projects.kits.config import config, config_dict
+from projects.pros.config import config, config_dict
 from unet3d.utils.path_utils import get_project_dir, get_h5_training_dir
 from unet3d.utils.path_utils import get_training_h5_filename, get_shape_string, get_shape_from_string
 from unet3d.utils.utils import str2bool
@@ -80,7 +80,7 @@ def prepare_data(args):
 
 
 def main():
-    args = get_args.prepare_data_kits()
+    args = get_args.prepare_data_pros()
 
     args.is_test = "0"
     for is_denoise in ["0"]:

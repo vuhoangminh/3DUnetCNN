@@ -1,9 +1,9 @@
-from projects.kits.loop.loop_utils import run
+from projects.pros.loop.loop_utils import run
 import unet3d.utils.args_utils as get_args
 from unet3d.utils.path_utils import get_model_h5_filename
 import random
 from unet3d.utils.path_utils import get_project_dir
-from projects.kits.config import config, config_unet
+from projects.pros.config import config, config_unet
 import os
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
@@ -28,19 +28,22 @@ list_3d_model = ["256-256-32"]
 
 for patch_shape in list_25d_model + list_2d_model + list_3d_model:
     if patch_shape in list_2d_model:
-        args = get_args.train2d_kits()
-        task = "projects/kits/train2d"
+        args = get_args.train2d_pros()
+        task = "projects/pros/train2d"
+        args.learning_rate = 1e-4
         model_dim = 2
-        args.batch_size = 32
+        args.batch_size = 64
     elif patch_shape in list_25d_model:
-        args = get_args.train25d_kits()
-        task = "projects/kits/train25d"
+        args = get_args.train25d_pros()
+        task = "projects/pros/train25d"
         model_dim = 25
-        args.batch_size = 32
+        args.learning_rate = 1e-4
+        args.batch_size = 64
     else:
-        args = get_args.train_kits()
-        task = "projects/kits/train"
+        args = get_args.train_pros()
+        task = "projects/pros/train"
         model_dim = 3
+        args.learning_rate = 1e-3
         args.batch_size = 2
 
     args.patch_shape = patch_shape
@@ -63,7 +66,7 @@ for patch_shape in list_25d_model + list_2d_model + list_3d_model:
                             model_filename = get_model_h5_filename(
                                 "model", args)
 
-                            cmd = "python {}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba {} -au {} -du 4".format(
+                            cmd = "python {}.py -t \"{}\" -o \"0\" -n \"{}\" -de \"{}\" -hi \"{}\" -ps \"{}\" -l \"{}\" -m \"{}\" -ba {} -au {} -du 4 -lr {}".format(
                                 task,
                                 args.is_test,
                                 args.is_normalize,
@@ -73,7 +76,8 @@ for patch_shape in list_25d_model + list_2d_model + list_3d_model:
                                 args.loss,
                                 args.model,
                                 args.batch_size,
-                                args.is_augment
+                                args.is_augment,
+                                args.learning_rate
                             )
 
                             model_list.append(model_filename)
