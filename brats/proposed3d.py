@@ -1,3 +1,4 @@
+from keras import initializers, regularizers, constraints
 from keras.losses import categorical_crossentropy
 from unet3d.metrics import dice_coefficient_loss
 from unet3d.metrics import minh_dice_coef_metric
@@ -23,6 +24,8 @@ from unet3d.model.blocks import get_down_sampling
 from unet3d.model.blocks import get_up_convolution3d
 from unet3d.model.blocks import squeeze_excite_block3d
 from unet3d.model.blocks import create_convolution_block3d, conv_block_resnet3d
+from unet3d.model.blocks import conv_block_resnet3d_proposed
+
 
 from keras.layers.merge import concatenate
 
@@ -269,6 +272,135 @@ def baseline_resnet(inputs, pool_size=(2, 2, 2), n_labels=1,
     return output
 
 
+# U-Net 3D with proposed resnet_block
+def baseline_resnet_proposed(inputs, pool_size=(2, 2, 2), n_labels=1,
+                             deconvolution=False,
+                             depth=4, n_base_filters=16,
+                             batch_normalization=True,
+                             activation_name="sigmoid",
+                             is_unet_original=True,
+                             weight_decay=1e-5,
+                             name=None,
+                             down_levels=None
+                             ):
+    """
+    Builds the 3D UNet Keras model.f
+    :param metrics: List metrics to be calculated during model training (default is dice coefficient).
+    :param include_label_wise_dice_coefficients: If True and n_labels is greater than 1, model will report the dice
+    coefficient for each label as metric.
+    :param n_base_filters: The number of filters that the first layer in the convolution network will have. Following
+    layers will contain a multiple of this number. Lowering this number will likely reduce the amount of memory required
+    to train the model.
+    :param depth: indicates the depth of the U-shape for the model. The greater the depth, the more max pooling
+    layers will be added to the model. Lowering the depth may reduce the amount of memory required for training.
+    :param input_shape: Shape of the input data (n_chanels, x_size, y_size, z_size). The x, y, and z sizes must be
+    divisible by the pool size to the power of the depth of the UNet, that is pool_size^depth.
+    :param pool_size: Pool size for the max pooling operations.
+    :param n_labels: Number of binary labels that the model is learning.
+    :param initial_learning_rate: Initial learning rate for the model. This will be decayed during training.
+    :param deconvolution: If set to True, will use transpose convolution(deconvolution) instead of up-sampling. This
+    increases the amount memory required during training.
+    :return: Untrained 3D UNet Model
+    """
+    current_layer = inputs
+    levels = list()
+
+    current_layer = Conv3D(n_base_filters, (3, 3, 3),
+                           strides=(1, 1, 1),
+                           padding='same',
+                           kernel_regularizer=regularizers.l2(l=weight_decay))(current_layer)
+
+    # add levels with max pooling
+    for layer_depth in range(depth):
+        n_filters = n_base_filters * (2**layer_depth)
+
+        if down_levels is not None and layer_depth > 0:
+            current_layer = concatenate(
+                [down_levels[layer_depth], current_layer], axis=1)
+            current_layer = Conv3D(n_filters, (1, 1, 1),
+                                   strides=(1, 1, 1),
+                                   padding='same',
+                                   kernel_regularizer=regularizers.l2(l=weight_decay))(current_layer)
+
+        layer = conv_block_resnet3d_proposed(input_layer=current_layer,
+                                             kernel_size=3,
+                                             n_filters=[n_filters,
+                                                        n_filters, n_filters],
+                                             stage=layer_depth,
+                                             block=name+"_en_b",
+                                             weight_decay=weight_decay
+                                             )
+        if layer_depth < depth - 1:
+            current_layer = MaxPooling3D(pool_size=pool_size)(layer)
+            levels.append([layer, current_layer])
+        else:
+            current_layer = layer
+            levels.append([layer])
+
+    # add levels with up-convolution or up-sampling
+    for layer_depth in range(depth-2, -1, -1):
+        n_filters = levels[layer_depth][1]._keras_shape[1]
+        up_convolution = get_up_convolution3d(pool_size=pool_size, deconvolution=deconvolution,
+                                              n_filters=current_layer._keras_shape[1])(current_layer)
+        concat = concatenate([up_convolution, levels[layer_depth][0]], axis=1)
+
+        current_layer = conv_block_resnet3d(input_layer=concat,
+                                            kernel_size=3,
+                                            n_filters=[n_filters,
+                                                       n_filters, n_filters],
+                                            stage=layer_depth,
+                                            block=name+"_de_a",
+                                            weight_decay=weight_decay
+                                            )
+
+        current_layer = conv_block_resnet3d(input_layer=current_layer,
+                                            kernel_size=3,
+                                            n_filters=[n_filters,
+                                                       n_filters, n_filters],
+                                            stage=layer_depth,
+                                            block=name+"_de_b",
+                                            weight_decay=weight_decay
+                                            )
+
+    final_convolution = Conv3D(n_labels, (1, 1, 1))(current_layer)
+    output = Activation(activation_name, name=name)(final_convolution)
+
+    return output
+
+
+# casnet_v11 (similar to v2): replace conv_block by proposed resnet_block
+def casnet_v11(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+               depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
+               batch_normalization=False, activation_name="sigmoid",
+               loss_function="casweighted",
+               is_unet_original=True,
+               weight_decay=1e-5, labels=[1, 2, 4]
+               ):
+
+    inputs = Input(input_shape)
+    inp_whole = inputs
+    down_levels = get_down_sampling(inputs, depth=depth)
+    out_whole = baseline_resnet_proposed(inp_whole, depth=depth, n_base_filters=n_base_filters,
+                                         weight_decay=weight_decay, name="out_whole",
+                                         down_levels=down_levels)
+
+    inp_core = concatenate([out_whole, inp_whole], axis=1)
+    out_core = baseline_resnet_proposed(inp_core, depth=depth, n_base_filters=n_base_filters,
+                                        weight_decay=weight_decay, name="out_core",
+                                        down_levels=down_levels)
+
+    inp_enh = concatenate([out_core, inp_core], axis=1)
+    out_enh = baseline_resnet_proposed(inp_enh, depth=depth, n_base_filters=n_base_filters,
+                                       weight_decay=weight_decay, name="out_enh",
+                                       down_levels=down_levels)
+
+    model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
+
+    return compile_model(model, loss_function=loss_function,
+                         initial_learning_rate=initial_learning_rate,
+                         labels=labels)
+
+
 # casnet_v10 (similar to v2): concat down-sampled input at different levels of encoders
 def casnet_v10(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
                depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
@@ -396,7 +528,7 @@ def casnet_v7(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rat
 
 # casnet_v6 (similar to v2): replace conv_block by resnet_block
 def casnet_v6(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
-              depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False,
+              depth=4, n_base_filters=16, include_label_wise_dice_coefficients=False,
               batch_normalization=False, activation_name="sigmoid",
               loss_function="casweighted",
               is_unet_original=True,
@@ -405,16 +537,20 @@ def casnet_v6(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rat
 
     inputs = Input(input_shape)
     inp_whole = inputs
+    down_levels = get_down_sampling(inputs, depth=depth)
     out_whole = baseline_resnet(inp_whole, depth=depth, n_base_filters=n_base_filters,
-                                weight_decay=weight_decay, name="out_whole")
+                                weight_decay=weight_decay, name="out_whole",
+                                down_levels=down_levels)
 
     inp_core = concatenate([out_whole, inp_whole], axis=1)
     out_core = baseline_resnet(inp_core, depth=depth, n_base_filters=n_base_filters,
-                               weight_decay=weight_decay, name="out_core")
+                               weight_decay=weight_decay, name="out_core",
+                               down_levels=down_levels)
 
     inp_enh = concatenate([out_core, inp_core], axis=1)
     out_enh = baseline_resnet(inp_enh, depth=depth, n_base_filters=n_base_filters,
-                              weight_decay=weight_decay, name="out_enh")
+                              weight_decay=weight_decay, name="out_enh",
+                              down_levels=down_levels)
 
     model = Model(inputs=inputs, outputs=[out_whole, out_core, out_enh])
 
@@ -1004,7 +1140,7 @@ def compile_model(model, loss_function="weighted",
 
 
 def main():
-    model = casnet_v2(input_shape=(4, 160, 192, 128))
+    model = casnet_v6(input_shape=(4, 160, 192, 128))
     model.summary()
 
 

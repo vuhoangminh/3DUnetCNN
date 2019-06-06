@@ -32,7 +32,7 @@ from brats.config import config, config_unet
 config.update(config_unet)
 # pp.pprint(config)
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)
 PROJECT_DIR = get_project_dir(CURRENT_WORKING_DIR, config["project_name"])

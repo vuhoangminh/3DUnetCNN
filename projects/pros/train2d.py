@@ -35,7 +35,7 @@ from unet3d.utils.utils import str2bool
 
 config.update(config_unet)
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
 
 
 CURRENT_WORKING_DIR = os.path.realpath(__file__)

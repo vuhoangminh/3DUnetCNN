@@ -16,7 +16,7 @@ from unet3d.data import open_data_file
 from brats.proposed3d import casnet_v10
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
 
 config.update(config_unet)
 

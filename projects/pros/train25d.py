@@ -26,7 +26,7 @@ from projects.pros.config import config, config_unet
 config.update(config_unet)
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
 
 
 

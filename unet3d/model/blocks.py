@@ -316,7 +316,7 @@ def conv_block_resnet3d(input_layer, kernel_size, n_filters, stage, block,
     x = BatchNorm(name=bn_name_base + '2a')(x, training=train_bn)
     x = Activation('relu')(x)
 
-    x = Conv3D(nb_filter2, (kernel_size, kernel_size),
+    x = Conv3D(nb_filter2, (kernel_size, kernel_size, kernel_size),
                name=conv_name_base + '2b', use_bias=use_bias,
                padding=padding,
                kernel_regularizer=regularizers.l2(l=weight_decay))(x)
@@ -336,6 +336,48 @@ def conv_block_resnet3d(input_layer, kernel_size, n_filters, stage, block,
     shortcut = BatchNorm(name=bn_name_base + '1')(shortcut, training=train_bn)
 
     x = Add()([x, shortcut])
+    x = Activation('relu', name='res' + str(stage) + block + '_out')(x)
+    return x
+
+
+# based on this paper: https://arxiv.org/pdf/1603.05027.pdf
+def conv_block_resnet3d_proposed(input_layer, kernel_size, n_filters, stage, block,
+                                 use_bias=True, train_bn=True,
+                                 padding='same', strides=(1, 1, 1),
+                                 weight_decay=1e-5):
+    """conv_block is the block that has a conv layer at shortcut
+    # Arguments
+        input_layer: input tensor
+        kernel_size: default 3, the kernel size of middle conv layer at main path
+        n_filters: list of integers, the nb_filters of 3 conv layer at main path
+        stage: integer, current stage label, used for generating layer names
+        block: 'a','b'..., current block label, used for generating layer names
+        use_bias: Boolean. To use or not use a bias in conv layers.
+        train_bn: Boolean. Train or freeze Batch Norm layers
+    Note that from stage 3, the first conv layer at main path is with subsample=(2,2)
+    And the shortcut should have subsample=(2,2) as well
+    """
+    nb_filter1, nb_filter2, nb_filter3 = n_filters
+    conv_name_base = 'res' + str(stage) + block + '_branch'
+    bn_name_base = 'bn' + str(stage) + block + '_branch'
+
+    x = BatchNorm(name=bn_name_base + '2a')(input_layer, training=train_bn)
+    x = Activation('relu')(x)
+    x = Conv3D(nb_filter1, (kernel_size, kernel_size, kernel_size),
+               strides=strides,
+               name=conv_name_base + '2a', use_bias=use_bias,
+               padding=padding,
+               kernel_regularizer=regularizers.l2(l=weight_decay))(x)
+
+    x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
+    x = Activation('relu')(x)
+    x = Conv3D(nb_filter2, (kernel_size, kernel_size, kernel_size),
+               strides=strides,
+               name=conv_name_base + '2b', use_bias=use_bias,
+               padding=padding,
+               kernel_regularizer=regularizers.l2(l=weight_decay))(x)
+
+    x = Add()([x, input_layer])
     x = Activation('relu', name='res' + str(stage) + block + '_out')(x)
     return x
 

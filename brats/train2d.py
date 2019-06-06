@@ -24,7 +24,7 @@ from unet3d.data import open_data_file
 import os
 import unet3d.utils.path_utils as path_utils
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
 
 
 # pp = pprint.PrettyPrinter(indent=4)
