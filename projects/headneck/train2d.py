@@ -52,6 +52,11 @@ def train(args):
     config["input_shape"] = tuple(
         [config["nb_channels"]] + list(config["patch_shape"]))
 
+    if args.learning_rate is not None:
+        config["initial_learning_rate"] = args.learning_rate
+    if args.n_epochs is not None:
+        config["n_epochs"] = args.n_epochs        
+
     if "casnet" in args.model:
         config["data_type_generator"] = 'cascaded'
     elif "sepnet" in args.model:
