@@ -22,7 +22,7 @@ out_file_list = list()
 
 list_25d_model = []
 list_2d_model = []
-list_3d_model = ["160-192-128"]
+list_3d_model = ["160-192-64", "128-128-128", "160-192-32"]
 
 
 for patch_shape in list_25d_model + list_2d_model + list_3d_model:
@@ -40,14 +40,17 @@ for patch_shape in list_25d_model + list_2d_model + list_3d_model:
         args = get_args.train()
         task = "brats/train"
         model_dim = 3
-        args.batch_size = 1
+        if patch_shape == "160-192-64" or patch_shape == "128-128-128":
+            args.batch_size = 2
+        else:
+            args.batch_size = 4
 
     args.patch_shape = patch_shape
     args.is_test = "0"
 
     for is_augment in ["1"]:
         args.is_augment = is_augment
-        for model_name in ["segnet"]:
+        for model_name in ["casnet_v6", "casnet_v10", "casnet_v11"]:
             args.model = model_name
             for is_denoise in ["0"]:
                 args.is_denoise = is_denoise
@@ -80,7 +83,7 @@ for patch_shape in list_25d_model + list_2d_model + list_3d_model:
 
 
 combined = list(zip(model_list, cmd_list))
-random.shuffle(combined)
+# random.shuffle(combined)
 
 model_list[:], cmd_list = zip(*combined)
 
