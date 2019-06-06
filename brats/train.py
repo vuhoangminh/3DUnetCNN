@@ -13,7 +13,7 @@ from unet3d.model import *
 from brats.generator import get_training_and_validation_and_testing_generators
 from unet3d.data import open_data_file
 
-from brats.proposed3d import casnet_v10
+from brats.proposed3d import casnet_v6, casnet_v10, casnet_v11
 
 import os
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # run on server
@@ -53,7 +53,7 @@ def train(args):
     elif "sepnet" in args.model:
         config["data_type_generator"] = 'separated'
     else:
-        config["data_type_generator"] = 'combined'        
+        config["data_type_generator"] = 'combined'
 
     if args.overwrite or not os.path.exists(data_path):
         prepare_data(args)
@@ -134,9 +134,27 @@ def train(args):
                                       loss_function=args.loss,
                                       labels=config["labels"])
 
+        elif args.model == "casnet_v6":
+            print("init casnet_v6 model")
+            model = casnet_v6(input_shape=config["input_shape"],
+                              initial_learning_rate=config["initial_learning_rate"],
+                              deconvolution=config["deconvolution"],
+                              depth=args.depth_unet,
+                              n_base_filters=args.n_base_filters_unet,
+                              loss_function="casweighted",
+                              labels=config["labels"])
         elif args.model == "casnet_v10":
             print("init casnet_v10 model")
             model = casnet_v10(input_shape=config["input_shape"],
+                               initial_learning_rate=config["initial_learning_rate"],
+                               deconvolution=config["deconvolution"],
+                               depth=args.depth_unet,
+                               n_base_filters=args.n_base_filters_unet,
+                               loss_function="casweighted",
+                               labels=config["labels"])
+        elif args.model == "casnet_v11":
+            print("init casnet_v11 model")
+            model = casnet_v11(input_shape=config["input_shape"],
                                initial_learning_rate=config["initial_learning_rate"],
                                deconvolution=config["deconvolution"],
                                depth=args.depth_unet,
