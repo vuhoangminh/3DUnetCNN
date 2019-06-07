@@ -229,8 +229,8 @@ def create_convolution_block3d(input_layer, n_filters, batch_normalization=False
                    strides=strides,
                    kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
     if batch_normalization:
-        # layer = GroupNormalization(groups=8, axis=1)(layer)
-        layer = BatchNorm()(layer, training=True)
+        layer = GroupNormalization(groups=8, axis=1)(layer)
+        # layer = BatchNorm()(layer, training=True)
     elif instance_normalization:
         try:
             from keras_contrib.layers.normalization import InstanceNormalization
@@ -317,29 +317,31 @@ def conv_block_resnet3d(input_layer, kernel_size, n_filters, stage, block,
                name=conv_name_base + '2a', use_bias=use_bias,
                padding=padding,
                kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
-    # x = GroupNormalization(groups=8, axis=1)(x)
-    x = BatchNorm(name=bn_name_base + '2a')(x, training=train_bn)
+    x = GroupNormalization(groups=8, axis=1)(x)
+    # x = BatchNorm(name=bn_name_base + '2a')(x, training=train_bn)
     x = Activation('relu')(x)
 
     x = Conv3D(nb_filter2, (kernel_size, kernel_size, kernel_size),
                name=conv_name_base + '2b', use_bias=use_bias,
                padding=padding,
                kernel_regularizer=regularizers.l2(l=weight_decay))(x)
-    x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
-    # x = GroupNormalization(groups=8, axis=1)(x)
+    # x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
+    x = GroupNormalization(groups=8, axis=1)(x)
     x = Activation('relu')(x)
 
     x = Conv3D(nb_filter3, (1, 1, 1), name=conv_name_base +
                '2c', use_bias=use_bias,
                padding=padding,
                kernel_regularizer=regularizers.l2(l=weight_decay))(x)
-    x = BatchNorm(name=bn_name_base + '2c')(x, training=train_bn)
+    x = GroupNormalization(groups=8, axis=1)(x)
+    # x = BatchNorm(name=bn_name_base + '2c')(x, training=train_bn)
 
     shortcut = Conv3D(nb_filter3, (1, 1, 1), strides=strides,
                       name=conv_name_base + '1', use_bias=use_bias,
                       padding=padding,
                       kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
-    shortcut = BatchNorm(name=bn_name_base + '1')(shortcut, training=train_bn)
+    shortcut = GroupNormalization(groups=8, axis=1)(shortcut)
+    # shortcut = BatchNorm(name=bn_name_base + '1')(shortcut, training=train_bn)
 
     x = Add()([x, shortcut])
     x = Activation('relu', name='res' + str(stage) + block + '_out')(x)
@@ -367,7 +369,8 @@ def conv_block_resnet3d_proposed(input_layer, kernel_size, n_filters, stage, blo
     conv_name_base = 'res' + str(stage) + block + '_branch'
     bn_name_base = 'bn' + str(stage) + block + '_branch'
 
-    x = BatchNorm(name=bn_name_base + '2a')(input_layer, training=train_bn)
+    # x = BatchNorm(name=bn_name_base + '2a')(input_layer, training=train_bn)
+    x = GroupNormalization(groups=8, axis=1)(input_layer)
     x = Activation('relu')(x)
     x = Conv3D(nb_filter1, (kernel_size, kernel_size, kernel_size),
                strides=strides,
@@ -375,7 +378,8 @@ def conv_block_resnet3d_proposed(input_layer, kernel_size, n_filters, stage, blo
                padding=padding,
                kernel_regularizer=regularizers.l2(l=weight_decay))(x)
 
-    x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
+    # x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
+    x = GroupNormalization(groups=8, axis=1)(x)
     x = Activation('relu')(x)
     x = Conv3D(nb_filter2, (kernel_size, kernel_size, kernel_size),
                strides=strides,

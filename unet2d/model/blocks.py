@@ -316,27 +316,31 @@ def conv_block_resnet2d(input_layer, kernel_size, n_filters, stage, block,
                name=conv_name_base + '2a', use_bias=use_bias,
                padding=padding,
                kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
-    x = BatchNorm(name=bn_name_base + '2a')(x, training=train_bn)
+    # x = BatchNorm(name=bn_name_base + '2a')(x, training=train_bn)
+    x = GroupNormalization(groups=8, axis=1)(x)    
     x = Activation('relu')(x)
 
     x = Conv2D(nb_filter2, (kernel_size, kernel_size),
                name=conv_name_base + '2b', use_bias=use_bias,
                padding=padding,
                kernel_regularizer=regularizers.l2(l=weight_decay))(x)
-    x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
+    # x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
+    x = GroupNormalization(groups=8, axis=1)(x)
     x = Activation('relu')(x)
 
     x = Conv2D(nb_filter3, (1, 1), name=conv_name_base +
                '2c', use_bias=use_bias,
                padding=padding,
                kernel_regularizer=regularizers.l2(l=weight_decay))(x)
-    x = BatchNorm(name=bn_name_base + '2c')(x, training=train_bn)
+    # x = BatchNorm(name=bn_name_base + '2c')(x, training=train_bn)
+    x = GroupNormalization(groups=8, axis=1)(x)
 
     shortcut = Conv2D(nb_filter3, (1, 1), strides=strides,
                       name=conv_name_base + '1', use_bias=use_bias,
                       padding=padding,
                       kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
-    shortcut = BatchNorm(name=bn_name_base + '1')(shortcut, training=train_bn)
+    shortcut = GroupNormalization(groups=8, axis=1)(shortcut)                      
+    # shortcut = BatchNorm(name=bn_name_base + '1')(shortcut, training=train_bn)
 
     x = Add()([x, shortcut])
     x = Activation('relu', name='res' + str(stage) + block + '_out')(x)
