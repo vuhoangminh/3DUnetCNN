@@ -29,6 +29,9 @@ class BatchNorm(KL.BatchNormalization):
         return super(self.__class__, self).call(inputs, training=training)
 
 
+get_custom_objects().update({'BatchNorm': BatchNorm})
+
+
 class GroupNormalization(Layer):
     """Group normalization layer
 
