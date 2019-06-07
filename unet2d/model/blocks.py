@@ -29,6 +29,9 @@ class BatchNorm(KL.BatchNormalization):
         return super(self.__class__, self).call(inputs, training=training)
 
 
+get_custom_objects().update({'BatchNorm': BatchNorm})
+
+
 class GroupNormalization(Layer):
     """Group normalization layer
 
@@ -226,7 +229,8 @@ def create_convolution_block2d(input_layer, n_filters, batch_normalization=False
                    strides=strides,
                    kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
     if batch_normalization:
-        layer = GroupNormalization(groups=16, axis=1)(layer)
+        # layer = GroupNormalization(groups=16, axis=1)(layer)
+        layer = BatchNorm()(layer, training=True)
     elif instance_normalization:
         try:
             from keras_contrib.layers.normalization import InstanceNormalization

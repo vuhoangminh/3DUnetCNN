@@ -229,7 +229,8 @@ def create_convolution_block3d(input_layer, n_filters, batch_normalization=False
                    strides=strides,
                    kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
     if batch_normalization:
-        layer = GroupNormalization(groups=16, axis=1)(layer)
+        # layer = GroupNormalization(groups=8, axis=1)(layer)
+        layer = BatchNorm()(layer, training=True)
     elif instance_normalization:
         try:
             from keras_contrib.layers.normalization import InstanceNormalization
@@ -316,6 +317,7 @@ def conv_block_resnet3d(input_layer, kernel_size, n_filters, stage, block,
                name=conv_name_base + '2a', use_bias=use_bias,
                padding=padding,
                kernel_regularizer=regularizers.l2(l=weight_decay))(input_layer)
+    # x = GroupNormalization(groups=8, axis=1)(x)
     x = BatchNorm(name=bn_name_base + '2a')(x, training=train_bn)
     x = Activation('relu')(x)
 
@@ -324,6 +326,7 @@ def conv_block_resnet3d(input_layer, kernel_size, n_filters, stage, block,
                padding=padding,
                kernel_regularizer=regularizers.l2(l=weight_decay))(x)
     x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
+    # x = GroupNormalization(groups=8, axis=1)(x)
     x = Activation('relu')(x)
 
     x = Conv3D(nb_filter3, (1, 1, 1), name=conv_name_base +
