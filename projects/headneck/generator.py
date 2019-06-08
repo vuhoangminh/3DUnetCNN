@@ -11,6 +11,7 @@ from unet3d.utils.patches import compute_patch_indices, get_random_nd_index, get
 import tensorlayer as tl
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import map_coordinates
+from unet3d.utils.threadsafe import threadsafe_generator
 
 import unet3d.utils.image_utils as image_utils
 
@@ -168,6 +169,7 @@ def split_list(input_list, split=0.8, shuffle_list=True):
     return training, testing
 
 
+@threadsafe_generator
 def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, patch_shape=None,
                    patch_overlap=0, patch_start_offset=None, shuffle_index_list=True,
                    skip_blank=True, is_create_patch_index_list_original=True,
