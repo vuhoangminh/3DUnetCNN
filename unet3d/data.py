@@ -122,4 +122,5 @@ def write_data_to_file(training_data_files, out_file, image_shape, brats_dir,
 
 
 def open_data_file(filename, readwrite="r"):
-    return tables.open_file(filename, readwrite)
+    return tables.open_file(filename, readwrite, driver="H5FD_CORE")
+    # return tables.open_file(filename, readwrite)

@@ -577,7 +577,7 @@ def train_pros():
                         default="256-256-128",
                         help="image shape to read")
     parser.add_argument('-ps', '--patch_shape', type=str,
-                        default="32-256-256",
+                        default="256-256-32",
                         help="patch shape to train")
     parser.add_argument('-ba', '--batch_size', type=int,
                         default=1,

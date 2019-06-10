@@ -116,7 +116,7 @@ def train_model(experiment, model, model_file, training_generator, validation_ge
                                           validation_steps=validation_steps,
                                           verbose=1,
                                         #   workers=4, 
-                                        #   max_queue_size=1000,
+                                          max_queue_size=1000,
                                         #   use_multiprocessing=True,
                                           callbacks=get_callbacks(model_file,
                                                                   initial_learning_rate=initial_learning_rate,
